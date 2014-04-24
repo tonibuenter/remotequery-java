@@ -7,7 +7,7 @@ $(document)
           var insert$ = $('#insert');
           var update$ = $('#update');
           var delete$ = $('#delete');
-          var fields$ = $('#fields').find('input');
+          var fields$ = $('#editPanel').find('input');
 
           log('warn', 'Starting sending service entries to server ...');
 
@@ -104,7 +104,7 @@ $(document)
                 },
                 {
                   'serviceId' : 'insertAddress',
-                  'serviceStatement' : 'insert into ADDRESS (FIRST_NAME, LAST_NAME, STREET, CITY, ZIP, COUNTRY) values (:firstName, :lastName, :street, :city, :country)'
+                  'serviceStatement' : 'insert into ADDRESS (FIRST_NAME, LAST_NAME, STREET, CITY, ZIP, COUNTRY) values (:firstName, :lastName, :street, :city, :zippp, :country)'
                 },
 
                 {

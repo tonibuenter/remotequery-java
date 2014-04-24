@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -49,9 +50,8 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.reflect.TypeToken;
 
 /**
- * TODOs set-0, set-1, ... set-initial, set-parameter:, set-session,
- * ...
- * set-application, ... 
+ * TODOs set-0, set-1, ... set-initial, set-parameter:, set-session, ...
+ * set-application, ...
  * 
  * @author tonibuenter
  * 
@@ -1553,6 +1553,13 @@ public class RemoteQuery {
 
 	}
 
+	/**
+	 * ServiceEntry class holds all information a service such as serviceId,
+	 * statements, data source name and access.
+	 * 
+	 * @author tonibuenter
+	 * 
+	 */
 	public static class ServiceEntry implements Serializable {
 
 		public static final String SYSTEM_ROLENAME = "SYSTEM";
@@ -1612,6 +1619,32 @@ public class RemoteQuery {
 			return "ServiceEntry [serviceId=" + serviceId + ", serviceStatement="
 			    + serviceStatement + ", accessRoles=" + accessRoles
 			    + ", datasourceName=" + datasourceName + "]";
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result
+			    + ((serviceId == null) ? 0 : serviceId.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			ServiceEntry other = (ServiceEntry) obj;
+			if (serviceId == null) {
+				if (other.serviceId != null)
+					return false;
+			} else if (!serviceId.equals(other.serviceId))
+				return false;
+			return true;
 		}
 
 	}
@@ -1764,6 +1797,12 @@ public class RemoteQuery {
 
 		@Override
 		public void add(ServiceEntry serviceEntry) {
+			ProcessLog pLog = ProcessLog.Current();
+			if (entries.contains(serviceEntry)) {
+				pLog.warn("ServiceEntry " + serviceEntry.getServiceId()
+				    + " will be replaced by new ServiceEntry.", logger);
+				entries.remove(serviceEntry);
+			}
 			entries.add(serviceEntry);
 		}
 	}
