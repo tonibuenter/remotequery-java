@@ -322,7 +322,7 @@ public class RemoteQuery {
 					}
 					// Resolve one level of include
 					// TODO all levels
-					// the include means acctually include service statement, no further
+					// the include means actually include service statement, no further
 					// access checks are done
 					if (serviceStmt.startsWith(include_)) {
 						String serviceId2 = serviceStmt.substring(include_.length());
