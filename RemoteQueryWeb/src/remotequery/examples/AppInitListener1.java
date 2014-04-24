@@ -9,8 +9,7 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
 import org.hsqldb.jdbc.JDBCPool;
-import org.ooit.RemoteQuery.IRoleProvider;
-import org.ooit.RemoteQuery.*;
+import org.remotequery.RemoteQuery.*;
 
 public class AppInitListener1 implements ServletContextListener {
 

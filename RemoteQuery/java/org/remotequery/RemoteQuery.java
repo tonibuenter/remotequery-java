@@ -1,4 +1,4 @@
-package org.ooit;
+package org.remotequery;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -32,7 +32,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,6 +39,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.sql.DataSource;
+
+import org.remotequery.RemoteQueryServlet.WebConstants;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -68,43 +69,18 @@ public class RemoteQuery {
 	 */
 	public static String ENCODING = "UTF-8";
 
-	/**
-	 * "ANONYMOUS" is the default user name.
-	 */
-	public final static String ANONYMOUS = "ANONYMOUS";
-
-	
-
-	/**
-	 * "$WEBROOT" is the name to which the web root directory is bound to (relevant only for web application).
-	 */
-	public static final String $WEBROOT = "$WEBROOT";
-
-	public static final String $TODAY_ISO_DATE = "$TODAY_ISO_DATE";
-	// TODO not used ... public static final String $REQUESTID = "$REQUESTID";
-	
-	
-	/**
-	 * Initial level parameter name for the serviceId value (relevant only for web application).
-	 */
-	public static final String $SERVICEID = "$SERVICEID";
-	// TODO not used :: public static final String $SQCOMMANDS = "$SQCOMMANDS";
-	
-	public static final String $USERID = "$USERID";
-
-	public static final String $TIMESTAMP = "$TIMESTAMP";
-	// public static final String $VALUE = "$VALUE";
-	public static final String $CURRENT_TIME_MILLIS = "$CURRENT_TIME_MILLIS";
-
 	public static final int INITIAL = 0;
 	public static final int REQUEST = 1;
-	public static final int SESSION = 2;
+	public static final int INTER_REQUEST = 2;
+	public static final int SESSION = 3;
+	public static final int APPLICATION = 4;
 
 	public static class MiniLanguageTokens {
+		public static String serviceId = "serviceId";
+		public static String include = "include";
 		public static String set = "set";
 		public static String set_if_empty = "set-if-empty";
 		public static String java = "java";
-
 	}
 
 	//
@@ -114,18 +90,43 @@ public class RemoteQuery {
 	public static char STATEMENT_DELIMITER = ';';
 	public static char STATEMENT_ESCAPE = '\\';
 
+	/**
+	 * The DataSourceEntry class main responsibility is to provide a data source
+	 * object.
+	 * 
+	 * @author tonibuenter
+	 * 
+	 */
 	public static class DataSourceEntry {
 
+		/**
+		 * Provide a data source object for the default data source name.
+		 * 
+		 * @param ds
+		 */
 		public DataSourceEntry(DataSource ds) {
 			DataSources.getInstance().put(ds);
 		}
 
-		public DataSourceEntry(String dataSourceName, DataSource ds) {
+		/**
+		 * Provide a data source object for the dataSourceName.
+		 * 
+		 * @param ds
+		 * @param dataSourceName
+		 */
+
+		public DataSourceEntry(DataSource ds, String dataSourceName) {
 			DataSources.getInstance().put(dataSourceName, ds);
 		}
 
 	}
 
+	/**
+	 * Singleton for keeping the data source objects.
+	 * 
+	 * @author tonibuenter
+	 * 
+	 */
 	public static class DataSources {
 
 		private static DataSources instance;
@@ -206,6 +207,13 @@ public class RemoteQuery {
 		}
 	}
 
+	/**
+	 * Interface for service repositories. Currently we have a JSON base and a SQL
+	 * base service repository.
+	 * 
+	 * @author tonibuenter
+	 * 
+	 */
 	public static interface IServiceRepository {
 
 		ServiceEntry get(String serviceId) throws Exception;
@@ -214,206 +222,16 @@ public class RemoteQuery {
 
 	}
 
-	public static class JsonUtils {
-
-		private static final Logger logger = Logger.getLogger(JsonUtils.class
-		    .getName());
-
-		public static String toJson(Object object) {
-			Gson gson = new Gson();
-			String jsonStr = gson.toJson(object);
-			return jsonStr;
-		}
-
-		public static <T> T fromJson(String jsonStr, Class<T> classOfT) {
-			Gson gson = new Gson();
-			return gson.fromJson(jsonStr, classOfT);
-		}
-
-		public static String toJson(String name, String value) {
-			Gson gson = new Gson();
-			JsonObject jo = new JsonObject();
-			jo.addProperty(name, value);
-
-			return gson.toJson(jo);
-		}
-
-		public static String toJson(String name, Object value) {
-			if (value instanceof String) {
-				return toJson(name, (String) value);
-			}
-			Gson gson = new Gson();
-			JsonObject o = new JsonObject();
-			JsonElement e = gson.toJsonTree(value);
-			o.add(name, e);
-			return gson.toJson(o);
-		}
-
-		public static String toJson(JsonObject jsonObject) {
-			return jsonObject.toString();
-		}
-
-		public static JsonObject toJsonObject(String s) {
-			JsonParser jp = new JsonParser();
-			JsonObject jo = jp.parse(s).getAsJsonObject();
-			return jo;
-		}
-
-		public static String exception(String message) {
-			return toJson("exception", message);
-		}
-
-		public static String message(String message) {
-			return toJson("message", message);
-		}
-
-		public static Map<String, String> toStringMap(String jsonString) {
-			JsonParser p = new JsonParser();
-			JsonObject jsonObject = (JsonObject) p.parse(jsonString);
-			Set<Map.Entry<String, JsonElement>> jsonElements = jsonObject.entrySet();
-			Map<String, String> map = new HashMap<String, String>();
-			for (Map.Entry<String, JsonElement> entry : jsonElements) {
-				String key = entry.getKey();
-				JsonElement je = entry.getValue();
-				if (je.isJsonPrimitive()) {
-					JsonPrimitive jp = (JsonPrimitive) je;
-					if (jp.isBoolean() || jp.isNumber() || jp.isString()) {
-						map.put(key, jp.getAsString());
-					}
-				}
-			}
-			return map;
-		}
-
-		public static String jsonNoop() {
-			return toJson("NOOP");
-		}
-
-		public static class Parameters extends HashMap<String, String> {
-
-			/**
-	         * 
-	         */
-			private static final long serialVersionUID = 1L;
-
-		}
-
-		public static String jsonException(String message) {
-			return toJson("exception", message);
-		}
-
-		public static String jsonMessage(String message) {
-			return toJson("message", message);
-		}
-
-		public static <E> E toObject(String json, Class<E> claxx) {
-			return new Gson().fromJson(json, claxx);
-		}
-
-		public static <E> E toObjectSilently(String json, Class<E> claxx) {
-			try {
-				return new Gson().fromJson(json, claxx);
-			} catch (Exception e) {
-			}
-			return null;
-		}
-
-		//
-		// LIST MAP start
-		//
-		private static Object _toListMapE(JsonElement je) {
-			if (je.isJsonNull()) {
-				return null;
-			}
-			if (je.isJsonPrimitive()) {
-				return _toListMapP(je.getAsJsonPrimitive());
-			}
-			if (je.isJsonArray()) {
-				return _toListMapA(je.getAsJsonArray());
-			}
-			if (je.isJsonObject()) {
-				return _toListMapO(je.getAsJsonObject());
-			}
-			return null;
-		}
-
-		private static String _toListMapP(JsonPrimitive jp) {
-			return jp.getAsString();
-		}
-
-		private static Object _toListMapA(JsonArray ja) {
-			List<Object> list = new ArrayList<Object>(ja.size());
-			for (int i = 0; i < ja.size(); i++) {
-				JsonElement je = ja.get(i);
-				Object v = _toListMapE(je);
-				if (v != null) {
-					list.add(v);
-				}
-			}
-			return list;
-		}
-
-		private static Object _toListMapO(JsonObject jo) {
-			Set<Map.Entry<String, JsonElement>> jes = jo.entrySet();
-			Map<String, Object> map = new HashMap<String, Object>();
-			for (Map.Entry<String, JsonElement> entry : jes) {
-				String key = entry.getKey();
-				Object v = _toListMapE(entry.getValue());
-				if (v != null) {
-					map.put(key, v);
-				}
-			}
-			return map;
-		}
-
-		public static Object toListMap(String jsonString) {
-			JsonParser p = new JsonParser();
-			JsonElement je = (JsonObject) p.parse(jsonString);
-			return _toListMapE(je);
-		}
-
-		public static Object toObject(String json, Type type) {
-			try {
-				return new Gson().fromJson(json, type);
-			} catch (Exception e) {
-				logger.severe(Utils.getStackTrace(e));
-			}
-			return null;
-		}
-
-		//
-		// LIST MAP end
-		//
-
-		@SuppressWarnings("unchecked")
-		public static <E> E[] toArray(String jsonString, Class<E> claxx) {
-
-			JsonParser p = new JsonParser();
-			E[] array = null;
-			Gson g = new Gson();
-			JsonElement je = (JsonElement) p.parse(jsonString);
-			if (je.isJsonArray()) {
-				JsonArray a = je.getAsJsonArray();
-				array = (E[]) Array.newInstance(claxx, a.size());
-				int index = 0;
-				for (JsonElement e : a) {
-					array[index] = g.fromJson(e, claxx);
-					index++;
-				}
-			}
-			return array;
-
-		}
-
-		public static <E> List<E> toList(String jsonString, Class<E> claxx) {
-			return Utils.asList(toArray(jsonString, claxx));
-
-		}
-	}
-
+	/**
+	 * MainQuery is the main class the provides the processing of a RemoteQuery
+	 * request. It takes care of the service statement parsing and processing.
+	 * 
+	 * @author tonibuenter
+	 * 
+	 */
 	public static class MainQuery implements IQuery {
 
-		// TODO idea how to create your own plugins like 'my-sql-extension:select
+		// TODO idea :: how to create your own plugins like 'my-sql-extension:select
 		// %SELECTLIST% where %WHERE% clause'
 
 		public static final String constant_ = "constant:";
@@ -443,7 +261,7 @@ public class RemoteQuery {
 			return processStore.get(key);
 		}
 
-		public RemoteQuery.Result run(RemoteQuery.Request request) {
+		public Result run(RemoteQuery.Request request) {
 			Result result = null;
 			ProcessLog log = ProcessLog.Current();
 			String serviceId = request.getServiceId();
@@ -451,8 +269,8 @@ public class RemoteQuery {
 			if (Utils.isEmpty(userId)) {
 				log.warn(
 				    "Request object has no userId set. Process continues with userId="
-				        + ANONYMOUS, logger);
-				request.setUserId(ANONYMOUS);
+				        + WebConstants.ANONYMOUS, logger);
+				request.setUserId(WebConstants.ANONYMOUS);
 				userId = request.getUserId();
 			}
 			// TODO better in the process object ?
@@ -757,6 +575,13 @@ public class RemoteQuery {
 	//
 	//
 
+	/**
+	 * BuildIns is a collection of Java IQueries which solve rather universal
+	 * tasks such as : register a service,
+	 * 
+	 * @author tonibuenter
+	 * 
+	 */
 	public static class BuiltIns {
 
 		public static class RegisterService implements IQuery {
@@ -790,6 +615,13 @@ public class RemoteQuery {
 		}
 	}
 
+	/**
+	 * ProcessLog class is a collector of log information specific to a single
+	 * request resolution.
+	 * 
+	 * @author tonibuenter
+	 * 
+	 */
 	public static class ProcessLog implements Serializable {
 
 		public static final int USER_OK_CODE = 10;
@@ -1136,7 +968,7 @@ public class RemoteQuery {
 	 * $Parameter: the $Paramters like $USERID, $USERTID (an optional technical
 	 * user id), $SERVICEID, $SESSIONID, $C
 	 * 
-	 * @author Toni A. Bünter, OOIT.com AG
+	 * @author tonibuenter
 	 * 
 	 */
 	public static class Request implements Serializable {
@@ -1146,11 +978,8 @@ public class RemoteQuery {
 	 */
 		private static final long serialVersionUID = 1L;
 
-		public static int INITIAL = 0;
-		public static int REQUEST = 1;
-		public static int INTER_REQUEST = 2;
-		public static int SESSION = 3;
-		public static int APPLICATION = 4;
+		// public static int INITIAL = 0;
+		// public static int REQUEST = 1;
 
 		private String serviceId;
 		private String userId;
@@ -2059,10 +1888,6 @@ public class RemoteQuery {
 			}
 		};
 
-		public static final String nowIsoDate() {
-			return IsoDateTL.get().format(new Date());
-		}
-
 		public static final String nowIsoDateTimeFull() {
 			return IsoDateTimeFullTL.get().format(new Date());
 		}
@@ -2075,8 +1900,20 @@ public class RemoteQuery {
 			return IsoTimeTL.get().format(new Date());
 		}
 
+		public static final String nowIsoDate() {
+			return IsoDateTL.get().format(new Date());
+		}
+
 		public static Date parseDate(String date) throws ParseException {
 			return IsoDateTL.get().parse(date);
+		}
+
+		public static String toIsoDate(long timeMillis) {
+			return IsoDateTL.get().format(new Date(timeMillis));
+		}
+
+		public static String toIsoDate(Date time) {
+			return IsoDateTL.get().format(time);
 		}
 
 		public static Date parseTime(String date) throws ParseException {
@@ -2095,12 +1932,8 @@ public class RemoteQuery {
 			return formatToDateTime(new Date(time));
 		}
 
-		public static String formatToDate(Date time) {
-			return IsoDateTL.get().format(time);
-		}
-
 		public static String formatToDate(long time) {
-			return formatToDate(new Date(time));
+			return toIsoDate(new Date(time));
 		}
 
 		public static String formatToTime(Date time) {
@@ -2165,33 +1998,6 @@ public class RemoteQuery {
 			return 60 * c.get(Calendar.HOUR_OF_DAY) + c.get(Calendar.MINUTE);
 		}
 
-		public static String toIsoDate(Date date) {
-			return IsoDateTL.get().format(date);
-		}
-
-		//
-		// public static Date toDate2_(String isoDateString_or_numberOfdays) {
-		// Date date = null;
-		// try {
-		// if (NumberUtils.isDigits(isoDateString_or_numberOfdays)) {
-		// int d = Integer.parseInt(isoDateString_or_numberOfdays);
-		// GregorianCalendar gc = new GregorianCalendar(1900,
-		// Calendar.JANUARY, 1);
-		// gc.add(Calendar.DATE, d - 2);
-		// date = gc.getTime();
-		// } else {
-		// date = toDate(isoDateString_or_numberOfdays);
-		// }
-		// } catch (Exception e) {
-		// logger.info(e);
-		// }
-		// return date;
-		// }
-
-		public static String toIsoDate(long date) {
-			return IsoDateTL.get().format(new Date(date));
-		}
-
 		public static long toDateInMillis(String isoDateString) {
 			try {
 				return IsoDateTL.get().parse(isoDateString).getTime();
@@ -2227,6 +2033,10 @@ public class RemoteQuery {
 			return res;
 		}
 
+		public static String toIsoDateTimeSec(long timeMillis) {
+			return toIsoDateTimeSec(new Date(timeMillis));
+		}
+
 		public static String toIsoDateTimeSec(Date date) {
 			return IsoDateTimeSecTL.get().format(date);
 		}
@@ -2239,7 +2049,7 @@ public class RemoteQuery {
 		};
 
 		public static String nowIsoDateTimeSec() {
-			return IsoDateTimeSecTL.get().format(new Date());
+			return toIsoDateTimeSec(new Date());
 		}
 
 		public static String getStackTrace(Throwable t) {
@@ -2654,6 +2464,202 @@ public class RemoteQuery {
 			return map;
 		}
 
+	}
+
+	public static class JsonUtils {
+
+		private static final Logger logger = Logger.getLogger(JsonUtils.class
+		    .getName());
+
+		public static String toJson(Object object) {
+			Gson gson = new Gson();
+			String jsonStr = gson.toJson(object);
+			return jsonStr;
+		}
+
+		public static <T> T fromJson(String jsonStr, Class<T> classOfT) {
+			Gson gson = new Gson();
+			return gson.fromJson(jsonStr, classOfT);
+		}
+
+		public static String toJson(String name, String value) {
+			Gson gson = new Gson();
+			JsonObject jo = new JsonObject();
+			jo.addProperty(name, value);
+
+			return gson.toJson(jo);
+		}
+
+		public static String toJson(String name, Object value) {
+			if (value instanceof String) {
+				return toJson(name, (String) value);
+			}
+			Gson gson = new Gson();
+			JsonObject o = new JsonObject();
+			JsonElement e = gson.toJsonTree(value);
+			o.add(name, e);
+			return gson.toJson(o);
+		}
+
+		public static String toJson(JsonObject jsonObject) {
+			return jsonObject.toString();
+		}
+
+		public static JsonObject toJsonObject(String s) {
+			JsonParser jp = new JsonParser();
+			JsonObject jo = jp.parse(s).getAsJsonObject();
+			return jo;
+		}
+
+		public static String exception(String message) {
+			return toJson("exception", message);
+		}
+
+		public static String message(String message) {
+			return toJson("message", message);
+		}
+
+		public static Map<String, String> toStringMap(String jsonString) {
+			JsonParser p = new JsonParser();
+			JsonObject jsonObject = (JsonObject) p.parse(jsonString);
+			Set<Map.Entry<String, JsonElement>> jsonElements = jsonObject.entrySet();
+			Map<String, String> map = new HashMap<String, String>();
+			for (Map.Entry<String, JsonElement> entry : jsonElements) {
+				String key = entry.getKey();
+				JsonElement je = entry.getValue();
+				if (je.isJsonPrimitive()) {
+					JsonPrimitive jp = (JsonPrimitive) je;
+					if (jp.isBoolean() || jp.isNumber() || jp.isString()) {
+						map.put(key, jp.getAsString());
+					}
+				}
+			}
+			return map;
+		}
+
+		public static String jsonNoop() {
+			return toJson("NOOP");
+		}
+
+		public static class Parameters extends HashMap<String, String> {
+
+			/**
+	         * 
+	         */
+			private static final long serialVersionUID = 1L;
+
+		}
+
+		public static String jsonException(String message) {
+			return toJson("exception", message);
+		}
+
+		public static String jsonMessage(String message) {
+			return toJson("message", message);
+		}
+
+		public static <E> E toObject(String json, Class<E> claxx) {
+			return new Gson().fromJson(json, claxx);
+		}
+
+		public static <E> E toObjectSilently(String json, Class<E> claxx) {
+			try {
+				return new Gson().fromJson(json, claxx);
+			} catch (Exception e) {
+			}
+			return null;
+		}
+
+		//
+		// LIST MAP start
+		//
+		private static Object _toListMapE(JsonElement je) {
+			if (je.isJsonNull()) {
+				return null;
+			}
+			if (je.isJsonPrimitive()) {
+				return _toListMapP(je.getAsJsonPrimitive());
+			}
+			if (je.isJsonArray()) {
+				return _toListMapA(je.getAsJsonArray());
+			}
+			if (je.isJsonObject()) {
+				return _toListMapO(je.getAsJsonObject());
+			}
+			return null;
+		}
+
+		private static String _toListMapP(JsonPrimitive jp) {
+			return jp.getAsString();
+		}
+
+		private static Object _toListMapA(JsonArray ja) {
+			List<Object> list = new ArrayList<Object>(ja.size());
+			for (int i = 0; i < ja.size(); i++) {
+				JsonElement je = ja.get(i);
+				Object v = _toListMapE(je);
+				if (v != null) {
+					list.add(v);
+				}
+			}
+			return list;
+		}
+
+		private static Object _toListMapO(JsonObject jo) {
+			Set<Map.Entry<String, JsonElement>> jes = jo.entrySet();
+			Map<String, Object> map = new HashMap<String, Object>();
+			for (Map.Entry<String, JsonElement> entry : jes) {
+				String key = entry.getKey();
+				Object v = _toListMapE(entry.getValue());
+				if (v != null) {
+					map.put(key, v);
+				}
+			}
+			return map;
+		}
+
+		public static Object toListMap(String jsonString) {
+			JsonParser p = new JsonParser();
+			JsonElement je = (JsonObject) p.parse(jsonString);
+			return _toListMapE(je);
+		}
+
+		public static Object toObject(String json, Type type) {
+			try {
+				return new Gson().fromJson(json, type);
+			} catch (Exception e) {
+				logger.severe(Utils.getStackTrace(e));
+			}
+			return null;
+		}
+
+		//
+		// LIST MAP end
+		//
+
+		@SuppressWarnings("unchecked")
+		public static <E> E[] toArray(String jsonString, Class<E> claxx) {
+
+			JsonParser p = new JsonParser();
+			E[] array = null;
+			Gson g = new Gson();
+			JsonElement je = (JsonElement) p.parse(jsonString);
+			if (je.isJsonArray()) {
+				JsonArray a = je.getAsJsonArray();
+				array = (E[]) Array.newInstance(claxx, a.size());
+				int index = 0;
+				for (JsonElement e : a) {
+					array[index] = g.fromJson(e, claxx);
+					index++;
+				}
+			}
+			return array;
+
+		}
+
+		public static <E> List<E> toList(String jsonString, Class<E> claxx) {
+			return Utils.asList(toArray(jsonString, claxx));
+		}
 	}
 
 }

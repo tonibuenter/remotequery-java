@@ -1,16 +1,9 @@
-package org.ooit;
+package org.remotequery;
 
-import static org.ooit.RemoteQuery.$CURRENT_TIME_MILLIS;
-import static org.ooit.RemoteQuery.$SERVICEID;
-import static org.ooit.RemoteQuery.$TIMESTAMP;
-import static org.ooit.RemoteQuery.$TODAY_ISO_DATE;
-import static org.ooit.RemoteQuery.$USERID;
-import static org.ooit.RemoteQuery.$WEBROOT;
-import static org.ooit.RemoteQuery.ANONYMOUS;
-import static org.ooit.RemoteQuery.INITIAL;
-import static org.ooit.RemoteQuery.REQUEST;
-import static org.ooit.RemoteQuery.SESSION;
-import static org.ooit.RemoteQuery.ENCODING;
+import static org.remotequery.RemoteQuery.ENCODING;
+import static org.remotequery.RemoteQuery.INITIAL;
+import static org.remotequery.RemoteQuery.REQUEST;
+import static org.remotequery.RemoteQuery.SESSION;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -25,27 +18,64 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.ooit.RemoteQuery.IRoleProvider;
-import org.ooit.RemoteQuery.IRoleProviderFactory;
-import org.ooit.RemoteQuery.JsonUtils;
-import org.ooit.RemoteQuery.ProcessLog;
-import org.ooit.RemoteQuery.Request;
-import org.ooit.RemoteQuery.Result;
-import org.ooit.RemoteQuery.RoleProviderFactorySingleton;
-import org.ooit.RemoteQuery.Utils;
+import org.remotequery.RemoteQuery.IRoleProvider;
+import org.remotequery.RemoteQuery.IRoleProviderFactory;
+import org.remotequery.RemoteQuery.JsonUtils;
+import org.remotequery.RemoteQuery.ProcessLog;
+import org.remotequery.RemoteQuery.Request;
+import org.remotequery.RemoteQuery.Result;
+import org.remotequery.RemoteQuery.RoleProviderFactorySingleton;
+import org.remotequery.RemoteQuery.Utils;
 
 public class RemoteQueryServlet extends HttpServlet {
 	/**
      * 
      */
 	private static final long serialVersionUID = 1L;
+
+	/**
+	 * Class containing constants for the web programming with RemoteQuery.
+	 * 
+	 * @author tonibuenter
+	 * 
+	 */
+	public static final class WebConstants {
+
+		//
+		/**
+		 * "ANONYMOUS" is the default user name.
+		 */
+		public final static String ANONYMOUS = "ANONYMOUS";
+		/**
+		 * "$WEBROOT" is the name to which the web root directory is bound to
+		 * (relevant only for web application).
+		 */
+		public static final String $WEBROOT = "$WEBROOT";
+		/**
+		 * "$DATE" is the inital parameter name which will have an iso formated date
+		 * string of the time the request is created.
+		 */
+		public static final String $DATE = "$DATE";
+		// TODO not used ... public static final String $REQUESTID = "$REQUESTID";
+		/**
+		 * Initial level parameter name for the serviceId value (relevant only for
+		 * web application).
+		 */
+		public static final String $SERVICEID = "$SERVICEID";
+
+		public static final String $TIMESTAMP = "$TIMESTAMP";
+
+		public static final String $CURRENT_TIME_MILLIS = "$CURRENT_TIME_MILLIS";
+
+		public static final String $USERID = "$USERID";
+
+	}
+
 	//
 	//
 	//
 	private String servletName = "";
 	private String webRoot = "";
-	//
-
 	//
 	private static final Logger logger = Logger
 	    .getLogger(RemoteQueryServlet.class.getName());
@@ -72,7 +102,7 @@ public class RemoteQueryServlet extends HttpServlet {
 		logger.fine("start " + servletName + ".doGet");
 		ProcessLog rLog = ProcessLog.Current();
 		String userId = request.getUserPrincipal() != null ? request
-		    .getUserPrincipal().getName() : ANONYMOUS;
+		    .getUserPrincipal().getName() : WebConstants.ANONYMOUS;
 		HttpSession session = request.getSession();
 
 		// String rootPath = session.getServletContext().getRealPath("/");
@@ -131,13 +161,22 @@ public class RemoteQueryServlet extends HttpServlet {
 			//
 			//
 
-			rqRequest.put(INITIAL, $SERVICEID, serviceId);
-			rqRequest.put(INITIAL, $USERID, userId);
-			rqRequest.put(INITIAL, $TIMESTAMP, Utils.nowIsoDateTimeSec());
-			rqRequest.put(INITIAL, $TODAY_ISO_DATE, Utils.nowIsoDate());
-			rqRequest.put(INITIAL, $CURRENT_TIME_MILLIS,
-			    "" + System.currentTimeMillis());
-			rqRequest.put(INITIAL, $WEBROOT, webRoot);
+			long currentTimeMillis = System.currentTimeMillis();
+
+			rqRequest.put(INITIAL, WebConstants.$WEBROOT, webRoot);
+
+			rqRequest.put(INITIAL, WebConstants.$SERVICEID, serviceId);
+
+			rqRequest.put(INITIAL, WebConstants.$USERID, userId);
+
+			rqRequest.put(INITIAL, WebConstants.$CURRENT_TIME_MILLIS, ""
+			    + currentTimeMillis);
+
+			rqRequest.put(INITIAL, WebConstants.$TIMESTAMP,
+			    Utils.toIsoDateTimeSec(currentTimeMillis));
+
+			rqRequest.put(INITIAL, WebConstants.$DATE,
+			    Utils.toIsoDate(currentTimeMillis));
 
 			//
 			//

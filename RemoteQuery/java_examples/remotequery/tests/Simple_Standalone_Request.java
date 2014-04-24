@@ -7,13 +7,15 @@ import junit.framework.Assert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.ooit.RemoteQuery.DataSourceEntry;
-import org.ooit.RemoteQuery.Request;
-import org.ooit.RemoteQuery.Result;
-import static org.ooit.RemoteQuery.*;
-import org.ooit.RemoteQuery.ServiceEntry;
-import org.ooit.RemoteQuery.ServiceRepository;
-import org.ooit.RemoteQuery.Utils;
+
+import static org.remotequery.RemoteQuery.*;
+
+import org.remotequery.RemoteQuery.DataSourceEntry;
+import org.remotequery.RemoteQuery.Request;
+import org.remotequery.RemoteQuery.Result;
+import org.remotequery.RemoteQuery.ServiceEntry;
+import org.remotequery.RemoteQuery.ServiceRepository;
+import org.remotequery.RemoteQuery.Utils;
 
 /**
  * 
