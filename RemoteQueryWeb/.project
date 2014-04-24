@@ -3,6 +3,7 @@
 	<name>RemoteQueryWeb</name>
 	<comment></comment>
 	<projects>
+		<project>RemoteQuery</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
