@@ -999,6 +999,9 @@ public class RemoteQuery {
 				fileList[i] = new HashMap<String, Serializable>();
 		}
 
+		public Request() {
+		}
+
 		public Request(String serviceId) {
 			this.serviceId = serviceId;
 		}

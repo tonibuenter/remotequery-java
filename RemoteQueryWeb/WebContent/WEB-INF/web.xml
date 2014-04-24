@@ -11,7 +11,7 @@
 
 	<servlet>
 		<servlet-name>RemoteQueryServlet</servlet-name>
-		<servlet-class>org.ooit.RemoteQueryServlet</servlet-class>
+		<servlet-class>org.remotequery.RemoteQueryServlet</servlet-class>
 		<load-on-startup>1001</load-on-startup>
 	</servlet>
 

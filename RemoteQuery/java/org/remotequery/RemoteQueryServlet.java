@@ -8,6 +8,8 @@ import static org.remotequery.RemoteQuery.SESSION;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Enumeration;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -21,6 +23,7 @@ import javax.servlet.http.HttpSession;
 import org.remotequery.RemoteQuery.IRoleProvider;
 import org.remotequery.RemoteQuery.IRoleProviderFactory;
 import org.remotequery.RemoteQuery.JsonUtils;
+import org.remotequery.RemoteQuery.MainQuery;
 import org.remotequery.RemoteQuery.ProcessLog;
 import org.remotequery.RemoteQuery.Request;
 import org.remotequery.RemoteQuery.Result;
@@ -76,6 +79,7 @@ public class RemoteQueryServlet extends HttpServlet {
 	//
 	private String servletName = "";
 	private String webRoot = "";
+	private String webAccessServiceId = "";
 	//
 	private static final Logger logger = Logger
 	    .getLogger(RemoteQueryServlet.class.getName());
@@ -88,6 +92,9 @@ public class RemoteQueryServlet extends HttpServlet {
 
 		//
 		webRoot = this.getServletContext().getRealPath("/");
+
+		//
+		webAccessServiceId = config.getInitParameter("webAccessServiceId");
 	}
 
 	@Override
@@ -97,17 +104,18 @@ public class RemoteQueryServlet extends HttpServlet {
 	}
 
 	@Override
-	public void doGet(final HttpServletRequest request,
-	    HttpServletResponse response) throws ServletException, IOException {
+	public void doGet(final HttpServletRequest httpRequest,
+	    HttpServletResponse httpResponse) throws ServletException, IOException {
 		logger.fine("start " + servletName + ".doGet");
 		ProcessLog rLog = ProcessLog.Current();
-		String userId = request.getUserPrincipal() != null ? request
+
+		String userId = httpRequest.getUserPrincipal() != null ? httpRequest
 		    .getUserPrincipal().getName() : WebConstants.ANONYMOUS;
-		HttpSession session = request.getSession();
+		HttpSession session = httpRequest.getSession();
 
 		// String rootPath = session.getServletContext().getRealPath("/");
 
-		String requestUri = request.getRequestURI();
+		String requestUri = httpRequest.getRequestURI();
 		logger.info("Request URI " + requestUri);
 		String[] parts = requestUri.split("/");
 
@@ -123,12 +131,12 @@ public class RemoteQueryServlet extends HttpServlet {
 				logger.severe("serviceId is blank! requestUri: " + requestUri);
 				return;
 			}
-			Request rqRequest = new Request(serviceId);
+			Request request = new Request();
 
 			//
 			// userId (independent from $USERID !
 			//
-			rqRequest.setUserId(userId);
+			request.setUserId(userId);
 
 			//
 			//
@@ -138,13 +146,13 @@ public class RemoteQueryServlet extends HttpServlet {
 
 			IRoleProviderFactory rpf = RoleProviderFactorySingleton.getInstance();
 			if (rpf != null) {
-				rqRequest.setRoleProvider(rpf.getRoleProvider(userId));
+				request.setRoleProvider(rpf.getRoleProvider(userId));
 			} else {
-				rqRequest.setRoleProvider(new IRoleProvider() {
+				request.setRoleProvider(new IRoleProvider() {
 
 					@Override
 					public boolean isInRole(String role) {
-						return request.isUserInRole(role);
+						return httpRequest.isUserInRole(role);
 					}
 
 					@Override
@@ -163,19 +171,19 @@ public class RemoteQueryServlet extends HttpServlet {
 
 			long currentTimeMillis = System.currentTimeMillis();
 
-			rqRequest.put(INITIAL, WebConstants.$WEBROOT, webRoot);
+			request.put(INITIAL, WebConstants.$WEBROOT, webRoot);
 
-			rqRequest.put(INITIAL, WebConstants.$SERVICEID, serviceId);
+			request.put(INITIAL, WebConstants.$SERVICEID, serviceId);
 
-			rqRequest.put(INITIAL, WebConstants.$USERID, userId);
+			request.put(INITIAL, WebConstants.$USERID, userId);
 
-			rqRequest.put(INITIAL, WebConstants.$CURRENT_TIME_MILLIS, ""
+			request.put(INITIAL, WebConstants.$CURRENT_TIME_MILLIS, ""
 			    + currentTimeMillis);
 
-			rqRequest.put(INITIAL, WebConstants.$TIMESTAMP,
+			request.put(INITIAL, WebConstants.$TIMESTAMP,
 			    Utils.toIsoDateTimeSec(currentTimeMillis));
 
-			rqRequest.put(INITIAL, WebConstants.$DATE,
+			request.put(INITIAL, WebConstants.$DATE,
 			    Utils.toIsoDate(currentTimeMillis));
 
 			//
@@ -184,11 +192,11 @@ public class RemoteQueryServlet extends HttpServlet {
 			//
 
 			@SuppressWarnings("rawtypes")
-			Enumeration enumer = request.getParameterNames();
+			Enumeration enumer = httpRequest.getParameterNames();
 			while (enumer.hasMoreElements()) {
 				String name = (String) enumer.nextElement();
-				String value = request.getParameter(name);
-				rqRequest.put(REQUEST, name, value);
+				String value = httpRequest.getParameter(name);
+				request.put(REQUEST, name, value);
 				logger.fine("http request parameter: " + name + ":" + value);
 			}
 
@@ -203,24 +211,46 @@ public class RemoteQueryServlet extends HttpServlet {
 				String name = (String) enumer.nextElement();
 				Object value = session.getAttribute(name);
 				if (value instanceof String) {
-					rqRequest.put(SESSION, name, (String) value);
+					request.put(SESSION, name, (String) value);
 					logger.fine("http session parameter: " + name + ":" + value);
 				}
 
 			}
 
 			//
+			// Check for web access service id and run ti
+			//
+
+			if (!Utils.isBlank(webAccessServiceId)) {
+				request.setServiceId(webAccessServiceId);
+				MainQuery process = new MainQuery();
+				Result r = process.run(request);
+				String exception = r.getException();
+				if (Utils.isBlank(exception)) {
+					Map<String, String> map = r.getFirstRowAsMap();
+					for (Entry<String, String> entry : map.entrySet()) {
+						session.setAttribute(entry.getKey(), entry.getValue());
+					}
+				} else {
+					returnString(JsonUtils.exception(exception), httpResponse);
+					return;
+				}
+			}
+
+			request.setServiceId(serviceId);
+			//
+			//
 			//
 			long startTime = System.currentTimeMillis();
-			RemoteQuery.MainQuery process = new RemoteQuery.MainQuery();
-			Result result = process.run(rqRequest);
+			MainQuery process = new MainQuery();
+			Result result = process.run(request);
 			rLog.system("Request time used (ms):"
 			    + (System.currentTimeMillis() - startTime), logger);
 			if (result != null) {
 				String s = JsonUtils.toJson(result);
-				returnString(s, response);
+				returnString(s, httpResponse);
 			} else {
-				returnString(JsonUtils.toJson("empty"), response);
+				returnString(JsonUtils.toJson("empty"), httpResponse);
 			}
 		} catch (Exception e) {
 			logger.severe(Utils.getStackTrace(e));
