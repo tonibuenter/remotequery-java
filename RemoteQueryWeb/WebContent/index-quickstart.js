@@ -74,6 +74,7 @@ $(document)
             log('info', 'call ' + serviceId + '  with ' + parameters);
             rQ.call(serviceId, parameters, function(resultData) {
               log('info', serviceId + ' done ...')
+              search$.click();
             });
           }
           

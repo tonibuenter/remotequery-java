@@ -58,21 +58,40 @@ import com.google.gson.reflect.TypeToken;
  */
 public class RemoteQuery {
 
+	/**
+	 * "DEFAULT_DATASOURCE" is the default data source name.
+	 */
 	public static String DEFAULT_DATASOURCE_NAME = "DEFAULT_DATASOURCE";
 
-	public static String encoding = "UTF-8";
+	/**
+	 * UTF-8 is the default encoding.
+	 */
+	public static String ENCODING = "UTF-8";
 
+	/**
+	 * "ANONYMOUS" is the default user name.
+	 */
 	public final static String ANONYMOUS = "ANONYMOUS";
 
+	
+
+	/**
+	 * "$WEBROOT" is the name to which the web root directory is bound to (relevant only for web application).
+	 */
 	public static final String $WEBROOT = "$WEBROOT";
 
 	public static final String $TODAY_ISO_DATE = "$TODAY_ISO_DATE";
-	public static final String $REQUESTID = "$REQUESTID";
+	// TODO not used ... public static final String $REQUESTID = "$REQUESTID";
+	
+	
+	/**
+	 * Initial level parameter name for the serviceId value (relevant only for web application).
+	 */
 	public static final String $SERVICEID = "$SERVICEID";
-	public static final String $SQCOMMANDS = "$SQCOMMANDS";
+	// TODO not used :: public static final String $SQCOMMANDS = "$SQCOMMANDS";
+	
 	public static final String $USERID = "$USERID";
-	// public static final String $USERTID = "$USERTID";
-	// public static final String $NEW_TID = "$NEW_TID";
+
 	public static final String $TIMESTAMP = "$TIMESTAMP";
 	// public static final String $VALUE = "$VALUE";
 	public static final String $CURRENT_TIME_MILLIS = "$CURRENT_TIME_MILLIS";
@@ -1756,7 +1775,7 @@ public class RemoteQuery {
 		 * @param string
 		 *          file path or json string
 		 * @param charsetName
-		 *          encoding for reading the file
+		 *          ENCODING for reading the file
 		 */
 		@SuppressWarnings("unchecked")
 		public ServiceRepositoryJson(String string, String charsetName) {
@@ -2396,7 +2415,7 @@ public class RemoteQuery {
 
 		public static String readFileToString(File file, String charsetName) {
 			BufferedReader r = null;
-			charsetName = charsetName == null ? encoding : charsetName;
+			charsetName = charsetName == null ? ENCODING : charsetName;
 			StringBuffer buf = new StringBuffer((int) file.length());
 			try {
 				r = new BufferedReader(new InputStreamReader(new FileInputStream(file),

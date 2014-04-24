@@ -10,7 +10,7 @@ import static org.ooit.RemoteQuery.ANONYMOUS;
 import static org.ooit.RemoteQuery.INITIAL;
 import static org.ooit.RemoteQuery.REQUEST;
 import static org.ooit.RemoteQuery.SESSION;
-import static org.ooit.RemoteQuery.encoding;
+import static org.ooit.RemoteQuery.ENCODING;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -190,10 +190,10 @@ public class RemoteQueryServlet extends HttpServlet {
 
 	public static void returnString(String s, HttpServletResponse response) {
 		try {
-			byte[] document = s.getBytes(encoding);
+			byte[] document = s.getBytes(ENCODING);
 			response.setContentType("application/json");
 			response.setContentLength(document.length);
-			response.setCharacterEncoding(encoding);
+			response.setCharacterEncoding(ENCODING);
 
 			OutputStream out = response.getOutputStream();
 			out.write(document);
