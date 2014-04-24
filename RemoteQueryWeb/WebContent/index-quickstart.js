@@ -104,7 +104,7 @@ $(document)
                 },
                 {
                   'serviceId' : 'insertAddress',
-                  'serviceStatement' : 'insert into ADDRESS (FIRST_NAME, LAST_NAME, STREET, CITY, ZIP, COUNTRY) values (:firstName, :lastName, :street, :city, :zippp, :country)'
+                  'serviceStatement' : 'insert into ADDRESS (FIRST_NAME, LAST_NAME, STREET, CITY, ZIP, COUNTRY) values (:firstName, :lastName, :street, :city, :zipppp, :country)'
                 },
 
                 {
