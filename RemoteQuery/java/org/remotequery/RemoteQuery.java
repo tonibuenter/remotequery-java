@@ -1721,6 +1721,7 @@ public class RemoteQuery {
 				String sql = selectQuery != null ? selectQuery : "select "
 				    + COL_SERVICE_STATEMENT + ", " + COL_ACCESS_ROLES + " from "
 				    + tableName + " where " + COL_SERVICE_ID + " = ?";
+				ps.setString(1, serviceId);
 				ps = con.prepareStatement(sql);
 				rs = ps.getResultSet();
 				if (rs.next()) {
