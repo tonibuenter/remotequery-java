@@ -1,9 +1,6 @@
 package org.remotequery;
 
 import static org.remotequery.RemoteQuery.ENCODING;
-import static org.remotequery.RemoteQuery.INITIAL;
-import static org.remotequery.RemoteQuery.REQUEST;
-import static org.remotequery.RemoteQuery.SESSION;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -72,6 +69,13 @@ public class RemoteQueryServlet extends HttpServlet {
 
 		public static final String $USERID = "$USERID";
 
+		public static final int INITIAL = 0;
+		public static final int REQUEST = 10;
+		public static final int HEADER = 20;
+		public static final int INTER_REQUEST = 30;
+		public static final int SESSION = 40;
+		public static final int APPLICATION = 50;
+
 	}
 
 	//
@@ -79,7 +83,7 @@ public class RemoteQueryServlet extends HttpServlet {
 	//
 	private String servletName = "";
 	private String webRoot = "";
-	private String webAccessServiceId = "";
+	private String accessServiceId = "";
 	//
 	private static final Logger logger = Logger
 	    .getLogger(RemoteQueryServlet.class.getName());
@@ -94,7 +98,7 @@ public class RemoteQueryServlet extends HttpServlet {
 		webRoot = this.getServletContext().getRealPath("/");
 
 		//
-		webAccessServiceId = config.getInitParameter("webAccessServiceId");
+		accessServiceId = config.getInitParameter("accessServiceId");
 	}
 
 	@Override
@@ -131,7 +135,7 @@ public class RemoteQueryServlet extends HttpServlet {
 				logger.severe("serviceId is blank! requestUri: " + requestUri);
 				return;
 			}
-			Request request = new Request();
+			Request request = new Request(WebConstants.REQUEST);
 
 			//
 			// userId (independent from $USERID !
@@ -171,19 +175,19 @@ public class RemoteQueryServlet extends HttpServlet {
 
 			long currentTimeMillis = System.currentTimeMillis();
 
-			request.put(INITIAL, WebConstants.$WEBROOT, webRoot);
+			request.put(WebConstants.INITIAL, WebConstants.$WEBROOT, webRoot);
 
-			request.put(INITIAL, WebConstants.$SERVICEID, serviceId);
+			request.put(WebConstants.INITIAL, WebConstants.$SERVICEID, serviceId);
 
-			request.put(INITIAL, WebConstants.$USERID, userId);
+			request.put(WebConstants.INITIAL, WebConstants.$USERID, userId);
 
-			request.put(INITIAL, WebConstants.$CURRENT_TIME_MILLIS, ""
+			request.put(WebConstants.INITIAL, WebConstants.$CURRENT_TIME_MILLIS, ""
 			    + currentTimeMillis);
 
-			request.put(INITIAL, WebConstants.$TIMESTAMP,
+			request.put(WebConstants.INITIAL, WebConstants.$TIMESTAMP,
 			    Utils.toIsoDateTimeSec(currentTimeMillis));
 
-			request.put(INITIAL, WebConstants.$DATE,
+			request.put(WebConstants.INITIAL, WebConstants.$DATE,
 			    Utils.toIsoDate(currentTimeMillis));
 
 			//
@@ -192,12 +196,25 @@ public class RemoteQueryServlet extends HttpServlet {
 			//
 
 			@SuppressWarnings("rawtypes")
-			Enumeration enumer = httpRequest.getParameterNames();
-			while (enumer.hasMoreElements()) {
-				String name = (String) enumer.nextElement();
+			Enumeration e = httpRequest.getParameterNames();
+			while (e.hasMoreElements()) {
+				String name = (String) e.nextElement();
 				String value = httpRequest.getParameter(name);
-				request.put(REQUEST, name, value);
+				request.put(WebConstants.REQUEST, name, value);
 				logger.fine("http request parameter: " + name + ":" + value);
+			}
+
+			//
+			//
+			// REQUEST HEADERS
+			//
+
+			e = httpRequest.getHeaderNames();
+			while (e.hasMoreElements()) {
+				String name = (String) e.nextElement();
+				String value = httpRequest.getHeader(name);
+				request.put(WebConstants.HEADER, name, value);
+				logger.fine("http header: " + name + ":" + value);
 			}
 
 			//
@@ -206,23 +223,23 @@ public class RemoteQueryServlet extends HttpServlet {
 			//
 			//
 
-			enumer = session.getAttributeNames();
-			while (enumer.hasMoreElements()) {
-				String name = (String) enumer.nextElement();
+			e = session.getAttributeNames();
+			while (e.hasMoreElements()) {
+				String name = (String) e.nextElement();
 				Object value = session.getAttribute(name);
 				if (value instanceof String) {
-					request.put(SESSION, name, (String) value);
+					request.put(WebConstants.SESSION, name, (String) value);
 					logger.fine("http session parameter: " + name + ":" + value);
 				}
 
 			}
 
 			//
-			// Check for web access service id and run ti
+			// Check for accessServiceId and run ti
 			//
 
-			if (!Utils.isBlank(webAccessServiceId)) {
-				request.setServiceId(webAccessServiceId);
+			if (!Utils.isBlank(accessServiceId)) {
+				request.setServiceId(accessServiceId);
 				MainQuery process = new MainQuery();
 				Result r = process.run(request);
 				String exception = r.getException();

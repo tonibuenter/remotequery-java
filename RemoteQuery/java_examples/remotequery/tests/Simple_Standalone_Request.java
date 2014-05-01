@@ -76,7 +76,8 @@ public class Simple_Standalone_Request {
 		//
 
 		// 4.1 Insert
-		Request request = new Request("insertAddress");
+		Request request = new Request();
+		request.setServiceId("insertAddress");
 		request.setUserId("testuser");
 		request.put("firstName", "Sophie");
 		request.put("lastName", "McGraham");
@@ -84,7 +85,8 @@ public class Simple_Standalone_Request {
 		task.run(request);
 
 		// 4.1 Select
-		request = new Request("selectAddresses");
+		request = new Request();
+		request.setServiceId("selectAddresses");
 		Result result = new MainQuery().run(request);
 		Assert.assertEquals(1, result.getTotalCount());
 

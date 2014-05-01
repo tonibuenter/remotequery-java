@@ -35,6 +35,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -69,11 +70,8 @@ public class RemoteQuery {
 	 */
 	public static String ENCODING = "UTF-8";
 
-	public static final int INITIAL = 0;
-	public static final int REQUEST = 1;
-	public static final int INTER_REQUEST = 2;
-	public static final int SESSION = 3;
-	public static final int APPLICATION = 4;
+	public static final char DEFAULT_DEL = ',';
+	public static final char DEFAULT_ESC = '\\';
 
 	public static class MiniLanguageTokens {
 		public static String serviceId = "serviceId";
@@ -978,19 +976,14 @@ public class RemoteQuery {
 	 */
 		private static final long serialVersionUID = 1L;
 
-		// public static int INITIAL = 0;
-		// public static int REQUEST = 1;
-
 		private String serviceId;
 		private String userId;
 		private IRoleProvider roleProvider;
 		private Set<String> roles = new HashSet<String>();
 		@SuppressWarnings("unchecked")
-		private Map<String, String>[] parameterList = new Map[4];
-		{
-			for (int i = 0; i < 4; i++)
-				parameterList[i] = new HashMap<String, String>();
-		}
+		private TreeMap<Integer, Map<String, String>> parametersTreeMap = new TreeMap<Integer, Map<String, String>>();
+
+		private int defaultLevel = 10;
 
 		@SuppressWarnings("unchecked")
 		private Map<String, Serializable>[] fileList = new Map[4];
@@ -1002,8 +995,8 @@ public class RemoteQuery {
 		public Request() {
 		}
 
-		public Request(String serviceId) {
-			this.serviceId = serviceId;
+		public Request(int defaultLevel) {
+			this.defaultLevel = defaultLevel;
 		}
 
 		public String getServiceId() {
@@ -1014,29 +1007,51 @@ public class RemoteQuery {
 			this.serviceId = serviceId;
 		}
 
+		public Map<String, String> getParametersMinLevel(int level) {
+			Set<Integer> keys = parametersTreeMap.keySet();
+			for (Integer key : keys) {
+				if (key == level) {
+					return parametersTreeMap.get(key);
+				}
+			}
+			return null;
+		}
+
 		public Map<String, String> getParameters(int level) {
-			return this.parameterList[level];
+			return parametersTreeMap.get(new Integer(level));
 		}
 
 		public String getValue(int level, String key) {
-			return this.parameterList[level].get(key);
+			Map<String, String> parameters = getParameters(level);
+			if (parameters != null) {
+				return parameters.get(key);
+			}
+			return null;
 		}
 
-		public String getValue(String key) {
-			for (int level = 0; level < APPLICATION; level++) {
-				if (parameterList[level].containsKey(key)) {
-					return getValue(level, key);
+		public String getValue(String name) {
+			Set<Integer> keys = parametersTreeMap.keySet();
+			for (Integer key : keys) {
+				Map<String, String> parameters = getParameters(key);
+				String s = parameters.get(name);
+				if (s != null) {
+					return s;
 				}
 			}
 			return null;
 		}
 
 		public String put(int level, String key, String value) {
-			return this.parameterList[level].put(key, value);
+			Map<String, String> parameters = getParameters(level);
+			if (parameters == null) {
+				parameters = new HashMap<String, String>();
+				parametersTreeMap.put(level, parameters);
+			}
+			return parameters.put(key, value);
 		}
 
 		public String put(String key, String value) {
-			return this.parameterList[REQUEST].put(key, value);
+			return put(defaultLevel, key, value);
 		}
 
 		public IRoleProvider getRoleProvider() {
@@ -2131,6 +2146,10 @@ public class RemoteQuery {
 				}
 			}
 			return res.toString();
+		}
+
+		public static String[] tokenize(String string) {
+			return tokenize(string, DEFAULT_DEL, DEFAULT_ESC);
 		}
 
 		public static String[] tokenize(String string, char del, char esc) {
