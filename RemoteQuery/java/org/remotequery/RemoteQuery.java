@@ -162,49 +162,6 @@ public class RemoteQuery {
 
 	}
 
-	public interface IRoleProvider {
-
-		/**
-		 * optional
-		 * 
-		 * @param userId
-		 * @return
-		 */
-		Set<String> getRoles(String userId);
-
-		/**
-		 * mandatory
-		 * 
-		 * @param userId
-		 * @param role
-		 * @return
-		 */
-		boolean isInRole(String role);
-	}
-
-	public interface IRoleProviderFactory {
-		IRoleProvider getRoleProvider(String userId);
-	}
-
-	/**
-	 * RoleProviderFactorySingleton serves as a holder for a IRoleProviderFactory
-	 * 
-	 * @author tonibuenter
-	 * 
-	 */
-	public static class RoleProviderFactorySingleton {
-
-		private static IRoleProviderFactory instance;
-
-		public static IRoleProviderFactory getInstance() {
-			return instance;
-		}
-
-		public static void setInstance(IRoleProviderFactory instance) {
-			RoleProviderFactorySingleton.instance = instance;
-		}
-	}
-
 	/**
 	 * Interface for service repositories. Currently we have a JSON base and a SQL
 	 * base service repository.
@@ -285,7 +242,7 @@ public class RemoteQuery {
 					hasAccess = true;
 				} else {
 					for (String accessRole : accessRoles) {
-						if (request.isInRole(accessRole)) {
+						if (request.getRoles().contains(accessRole)) {
 							hasAccess = true;
 							break;
 						}
@@ -978,12 +935,15 @@ public class RemoteQuery {
 
 		private String serviceId;
 		private String userId;
-		private IRoleProvider roleProvider;
 		private Set<String> roles = new HashSet<String>();
+		// private IRoleProvider roleProvider;
+
 		@SuppressWarnings("unchecked")
 		private TreeMap<Integer, Map<String, String>> parametersTreeMap = new TreeMap<Integer, Map<String, String>>();
 
 		private int defaultLevel = 10;
+
+		private transient Map<String, Object> transientAttributes = new HashMap<String, Object>();
 
 		@SuppressWarnings("unchecked")
 		private Map<String, Serializable>[] fileList = new Map[4];
@@ -1054,27 +1014,27 @@ public class RemoteQuery {
 			return put(defaultLevel, key, value);
 		}
 
-		public IRoleProvider getRoleProvider() {
-			return roleProvider;
-		}
-
-		public void setRoleProvider(IRoleProvider roleProvider) {
-			this.roleProvider = roleProvider;
-		}
+		// public IRoleProvider getRoleProvider() {
+		// return roleProvider;
+		// }
+		//
+		// public void setRoleProvider(IRoleProvider roleProvider) {
+		// this.roleProvider = roleProvider;
+		// }
 
 		public void addRole(String role) {
 			this.roles.add(role);
 		}
 
-		public boolean isInRole(String role) {
-			if (roles.contains(role)) {
-				return true;
-			}
-			if (roleProvider != null && roleProvider.isInRole(role)) {
-				return true;
-			}
-			return false;
-		}
+		// public boolean isInRole(String role) {
+		// if (roles.contains(role)) {
+		// return true;
+		// }
+		// if (roleProvider != null && roleProvider.isInRole(role)) {
+		// return true;
+		// }
+		// return false;
+		// }
 
 		public String getUserId() {
 			return userId;
@@ -1084,12 +1044,64 @@ public class RemoteQuery {
 			this.userId = userId;
 		}
 
+		public Set<String> getRoles() {
+			return roles;
+		}
+
+		public void setRoles(Set<String> roles) {
+			this.roles = roles;
+		}
+
+		public void setTransientAttribute(String name, Object value) {
+			this.transientAttributes.put(name, value);
+
+		}
+
+		public Object getTransientAttribute(String name) {
+			return this.transientAttributes.get(name);
+		}
+
 	}
 
 	public static class Result {
 
 		private static final Logger logger = Logger.getLogger(Result.class
 		    .getName());
+
+		public static Map<String, String> asPropertyMap(Object object) {
+			Map<String, String> map = new HashMap<String, String>();
+			Method[] methods = object.getClass().getMethods();
+			for (Method method : methods) {
+				String name = Utils.getStringGetterMethodName(method);
+				if (!Utils.isBlank(name)) {
+					try {
+						Object o = method.invoke(object, null);
+						String value = o == null ? null : o.toString();
+						if (!Utils.isBlank(value)) {
+							map.put(name, value);
+						}
+					} catch (Exception e) {
+						logger.warning(e.getMessage());
+					}
+				}
+			}
+			return map;
+		}
+
+		public static Result asPagingResult(Object object) {
+			Map<String, String> pm = asPropertyMap(object);
+			String[] header = new String[pm.size()];
+			String[] row = new String[pm.size()];
+			int i = 0;
+			for (String key : pm.keySet()) {
+				header[i] = key;
+				row[i] = pm.get(key);
+				i++;
+			}
+			Result pr = new Result(header);
+			pr.addRow(row);
+			return pr;
+		}
 
 		//
 		// Object Level
@@ -2464,6 +2476,25 @@ public class RemoteQuery {
 				}
 			}
 			return values;
+		}
+
+		public static String getStringGetterMethodName(Method method) {
+
+			if (method.getParameterTypes().length != 0) {
+				return null;
+			}
+			if (String.class.equals(method.getReturnType()) == false) {
+				return null;
+			}
+			String methodName = method.getName();
+
+			if (!methodName.startsWith("get") || !(methodName.length() > 3)
+			    || !Character.isUpperCase(methodName.charAt(3))) {
+				return null;
+			}
+			return Character.toLowerCase(methodName.charAt(3))
+			    + methodName.substring(4);
+
 		}
 
 		@SuppressWarnings("unchecked")

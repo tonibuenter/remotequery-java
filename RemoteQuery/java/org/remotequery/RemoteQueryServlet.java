@@ -7,7 +7,6 @@ import java.io.OutputStream;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.logging.Logger;
 
 import javax.servlet.ServletConfig;
@@ -17,14 +16,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.remotequery.RemoteQuery.IRoleProvider;
-import org.remotequery.RemoteQuery.IRoleProviderFactory;
 import org.remotequery.RemoteQuery.JsonUtils;
 import org.remotequery.RemoteQuery.MainQuery;
 import org.remotequery.RemoteQuery.ProcessLog;
 import org.remotequery.RemoteQuery.Request;
 import org.remotequery.RemoteQuery.Result;
-import org.remotequery.RemoteQuery.RoleProviderFactorySingleton;
 import org.remotequery.RemoteQuery.Utils;
 
 public class RemoteQueryServlet extends HttpServlet {
@@ -148,24 +144,24 @@ public class RemoteQueryServlet extends HttpServlet {
 			//
 			//
 
-			IRoleProviderFactory rpf = RoleProviderFactorySingleton.getInstance();
-			if (rpf != null) {
-				request.setRoleProvider(rpf.getRoleProvider(userId));
-			} else {
-				request.setRoleProvider(new IRoleProvider() {
-
-					@Override
-					public boolean isInRole(String role) {
-						return httpRequest.isUserInRole(role);
-					}
-
-					@Override
-					public Set<String> getRoles(String userId) {
-						throw new RuntimeException("'getRoles' not implemented!");
-					}
-				});
-
-			}
+			// IRoleProviderFactory rpf = RoleProviderFactorySingleton.getInstance();
+			// if (rpf != null) {
+			// request.setRoleProvider(rpf.getRoleProvider(userId));
+			// } else {
+			// request.setRoleProvider(new IRoleProvider() {
+			//
+			// @Override
+			// public boolean isInRole(String role) {
+			// return httpRequest.isUserInRole(role);
+			// }
+			//
+			// @Override
+			// public Set<String> getRoles(String userId) {
+			// throw new RuntimeException("'getRoles' not implemented!");
+			// }
+			// });
+			//
+			// }
 
 			//
 			//
@@ -238,6 +234,8 @@ public class RemoteQueryServlet extends HttpServlet {
 			// Check for accessServiceId and run ti
 			//
 
+			request.setTransientAttribute("httpRequest", httpRequest);
+
 			if (!Utils.isBlank(accessServiceId)) {
 				request.setServiceId(accessServiceId);
 				MainQuery process = new MainQuery();
@@ -252,6 +250,8 @@ public class RemoteQueryServlet extends HttpServlet {
 					returnString(JsonUtils.exception(exception), httpResponse);
 					return;
 				}
+			} else {
+				logger.fine("No accessServiceId defined. No accessService processing.");
 			}
 
 			request.setServiceId(serviceId);

@@ -1,7 +1,6 @@
 package remotequery.examples;
 
 import java.sql.Connection;
-import java.util.Set;
 import java.util.logging.Logger;
 
 import javax.servlet.ServletContext;
@@ -9,7 +8,12 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
 import org.hsqldb.jdbc.JDBCPool;
-import org.remotequery.RemoteQuery.*;
+import org.remotequery.RemoteQuery.BuiltIns;
+import org.remotequery.RemoteQuery.DataSourceEntry;
+import org.remotequery.RemoteQuery.IServiceRepository;
+import org.remotequery.RemoteQuery.ServiceEntry;
+import org.remotequery.RemoteQuery.ServiceRepository;
+import org.remotequery.RemoteQuery.Utils;
 
 public class AppInitListener1 implements ServletContextListener {
 
@@ -64,13 +68,6 @@ public class AppInitListener1 implements ServletContextListener {
 			// create and set as default serviceRepository
 			IServiceRepository repo = new ServiceRepository("[]");
 
-			//
-			// AppInit-C :: RoleProviderFactory, here we use a dummy role provider
-			// factory and register it at the RoleProviderFactorySingleton
-			//
-
-			DummyRoleProviderFactory roleProviderFactory = new DummyRoleProviderFactory();
-			RoleProviderFactorySingleton.setInstance(roleProviderFactory);
 
 			//
 			// AppInit-D :: Addl Built-In RegisterService service
@@ -117,32 +114,3 @@ public class AppInitListener1 implements ServletContextListener {
 	}
 }
 
-class DummyRoleProviderFactory implements IRoleProviderFactory {
-
-	private DummyRoleProvider dummyRoleProvider = new DummyRoleProvider();
-
-	public static class DummyRoleProvider implements IRoleProvider {
-
-		public DummyRoleProvider() {
-		}
-
-		Set<String> dummyRoleSet = Utils.asSet("ADMIN", "MANAGER");
-
-		@Override
-		public Set<String> getRoles(String userId) {
-			return dummyRoleSet;
-		}
-
-		@Override
-		public boolean isInRole(String role) {
-			return dummyRoleSet.contains(role);
-		}
-	}
-
-	@Override
-	public IRoleProvider getRoleProvider(String userId) {
-		// TODO Auto-generated method stub
-		return dummyRoleProvider;
-	}
-
-}
