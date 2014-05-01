@@ -80,7 +80,7 @@ public class RemoteQueryServlet extends HttpServlet {
 	private String servletName = "";
 	private String webRoot = "";
 	private String accessServiceId = "";
-	//...
+	//
 	private static final Logger logger = Logger
 	    .getLogger(RemoteQueryServlet.class.getName());
 
