@@ -1,12 +1,15 @@
 RemoteQuery Repository
 ======================
 
-The RemoteQuery repository contains the following projects:
+The RemoteQuery repository contains the projects *RemoteQuery* and *RemoteQueryWeb*.
 
 RemoteQuery
 -----------
 
-RemoteQuery is the root project with code doing the RemoteQuery processing including code for web (Java Servlets, ASP.net Handlers, ...)
+The RemoteQuery project is the main project. It includes the RemoteQuery class and the RemoteQueryServlet (web component).
+Currently the Java implementation is ready for use.
+
+It is planned to have RemoteQuery for ASP.NET and PHP ready end of this year.
 
 
 RemoteQueryWeb
