@@ -1,7 +1,7 @@
 RemoteQuery Repository
 ======================
 
-The RemoteQuery repository contains the projects *RemoteQuery* and *RemoteQueryWeb*.
+The RemoteQuery repository contains the projects *RemoteQuery* and *RemoteQueryWeb*. RemoteQuery is often abbrevated as 'RQ' or 'rQ'.
 
 RemoteQuery
 -----------
@@ -18,7 +18,7 @@ RemoteQueryWeb
 RemoteQueryWeb is a sample Java Web project for using RemoteQuery in a simple Java Servlet base web application.
 
 
-Essential components for Java
+Essential RQ components for Java
 --------------------
 
 + [RemoteQuery.java] (https://github.com/tonibuenter/RemoteQuery/blob/master/RemoteQuery/java/org/remotequery/RemoteQuery.java)
@@ -27,7 +27,7 @@ Essential components for Java
 
 
 
-Quick Start for JavaWeb with RemoteQuery
+Quick Start for a RQ-based web application with Java
 ----------------------------------------
 
 + Download the content of **RemoteQueryWeb** 
