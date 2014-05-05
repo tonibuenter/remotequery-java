@@ -2,9 +2,13 @@
 
 
 	<target name="copyRemoteQueryComponents">
-		<echo message="../RemoteQuery" />
+		<echo message="Copy Java Content" />
 		<copy todir="src" overwrite="true">
 			<fileset dir="../RemoteQuery/java" defaultexcludes="yes" />
+		</copy>
+		<echo message="Copy GSON" />
+		<copy todir="libs" overwrite="true">
+			<fileset file="../RemoteQuery/java_libs/gson-2.2.4.jar" defaultexcludes="yes" />
 		</copy>
 	</target>
 
