@@ -3,8 +3,12 @@
 	xmlns="http://java.sun.com/xml/ns/j2ee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd">
 	<display-name>RemoteQueryWeb</display-name>
-	
-	
+
+	<context-param>
+		<param-name>dbUrl</param-name>
+		<param-value>jdbc:hsqldb:file:~/RemoteQueryDB;shutdown=true</param-value>
+	</context-param>
+
 	<listener>
 		<listener-class>remotequery.examples.AppInitListener1</listener-class>
 	</listener>
@@ -23,4 +27,5 @@
 	<welcome-file-list>
 		<welcome-file>index.html</welcome-file>
 	</welcome-file-list>
+	
 </web-app>
