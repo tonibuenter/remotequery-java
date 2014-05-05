@@ -15,6 +15,7 @@ import org.remotequery.RemoteQuery.ServiceEntry;
 import org.remotequery.RemoteQuery.ServiceRepository;
 import org.remotequery.RemoteQuery.Utils;
 
+
 public class AppInitListener1 implements ServletContextListener {
 
 	private JDBCPool dataSource = null;

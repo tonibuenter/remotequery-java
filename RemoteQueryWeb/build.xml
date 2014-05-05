@@ -1,0 +1,12 @@
+<project name="RemoteQueryWebBuild" default="copyRemoteQueryComponents">
+
+
+	<target name="copyRemoteQueryComponents">
+		<echo message="../RemoteQuery" />
+		<copy todir="src" overwrite="true">
+			<fileset dir="../RemoteQuery/java" defaultexcludes="yes" />
+		</copy>
+	</target>
+
+
+</project>
