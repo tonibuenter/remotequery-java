@@ -21,8 +21,8 @@ RemoteQueryWeb is a sample Java Web project for using RemoteQuery in a simple Ja
 Essential components for Java
 --------------------
 
-+ **RemoteQuery** : 
-+ **RemoteQueryWeb** : 
++ **RemoteQuery** : [Link to src] (https://github.com/tonibuenter/RemoteQuery/blob/master/RemoteQuery/java/org/remotequery/RemoteQuery.java)
++ **RemoteQueryServlet** : [Link to src](https://github.com/tonibuenter/RemoteQuery/blob/master/RemoteQuery/java/org/remotequery/RemoteQueryServlet.java)
 + gson-2.2.4.jar (see subfolder java_libs)
 
 
