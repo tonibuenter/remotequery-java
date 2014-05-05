@@ -1157,6 +1157,7 @@ public class RemoteQuery {
 
 		public void addRow(String... row) {
 			table.add(Arrays.asList(row));
+			update();
 		}
 
 		public String getName() {
@@ -1721,9 +1722,10 @@ public class RemoteQuery {
 				String sql = selectQuery != null ? selectQuery : "select "
 				    + COL_SERVICE_STATEMENT + ", " + COL_ACCESS_ROLES + " from "
 				    + tableName + " where " + COL_SERVICE_ID + " = ?";
-				ps.setString(1, serviceId);
 				ps = con.prepareStatement(sql);
-				rs = ps.getResultSet();
+				ps.setString(1, serviceId);
+
+				rs = ps.executeQuery();
 				if (rs.next()) {
 					String serviceStatement = rs.getString(COL_SERVICE_STATEMENT);
 					String accessRoles = rs.getString(COL_ACCESS_ROLES);
