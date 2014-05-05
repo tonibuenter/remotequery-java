@@ -23,7 +23,7 @@ Essential components for Java
 
 + **RemoteQuery** : [Link to src] (https://github.com/tonibuenter/RemoteQuery/blob/master/RemoteQuery/java/org/remotequery/RemoteQuery.java)
 + **RemoteQueryServlet** : [Link to src](https://github.com/tonibuenter/RemoteQuery/blob/master/RemoteQuery/java/org/remotequery/RemoteQueryServlet.java)
-+ gson-2.2.4.jar (see subfolder java_libs)
++ gson-2.2.4.jar [See RemoteQuery/java_libs] (https://github.com/tonibuenter/RemoteQuery/tree/master/RemoteQuery/java_libs) or on Google Code
 
 
 
