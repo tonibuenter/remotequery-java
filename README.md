@@ -11,6 +11,8 @@ Currently the Java implementation is ready for use.
 
 It is planned to have RemoteQuery for ASP.NET and PHP ready end of this year.
 
++ [RemoteQuery README.rd](https://github.com/tonibuenter/RemoteQuery/blob/master/RemoteQuery/README.rd)
+
 
 RemoteQueryWeb
 --------------
