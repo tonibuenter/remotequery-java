@@ -938,7 +938,6 @@ public class RemoteQuery {
 		private Set<String> roles = new HashSet<String>();
 		// private IRoleProvider roleProvider;
 
-		@SuppressWarnings("unchecked")
 		private TreeMap<Integer, Map<String, String>> parametersTreeMap = new TreeMap<Integer, Map<String, String>>();
 
 		private int defaultLevel = 10;
@@ -978,7 +977,12 @@ public class RemoteQuery {
 		}
 
 		public Map<String, String> getParameters(int level) {
-			return parametersTreeMap.get(new Integer(level));
+			Map<String, String> map = parametersTreeMap.get(new Integer(level));
+			if (map == null) {
+				map = new HashMap<String, String>();
+				parametersTreeMap.put(new Integer(level), map);
+			}
+			return map;
 		}
 
 		public String getValue(int level, String key) {
@@ -1075,7 +1079,7 @@ public class RemoteQuery {
 				String name = Utils.getStringGetterMethodName(method);
 				if (!Utils.isBlank(name)) {
 					try {
-						Object o = method.invoke(object, null);
+						Object o = method.invoke(object, (Object[]) null);
 						String value = o == null ? null : o.toString();
 						if (!Utils.isBlank(value)) {
 							map.put(name, value);
@@ -1157,6 +1161,7 @@ public class RemoteQuery {
 
 		public void addRow(String... row) {
 			table.add(Arrays.asList(row));
+			update();
 		}
 
 		public String getName() {
@@ -1427,6 +1432,12 @@ public class RemoteQuery {
 
 		public void setProcessLog(ProcessLog processLog) {
 			this.processLog = processLog;
+		}
+
+		public static Result createSingleValue(String header, String value) {
+			Result r = new Result(header);
+			r.addRow(value);
+			return r;
 		}
 
 	}
@@ -1721,9 +1732,10 @@ public class RemoteQuery {
 				String sql = selectQuery != null ? selectQuery : "select "
 				    + COL_SERVICE_STATEMENT + ", " + COL_ACCESS_ROLES + " from "
 				    + tableName + " where " + COL_SERVICE_ID + " = ?";
-				ps.setString(1, serviceId);
 				ps = con.prepareStatement(sql);
-				rs = ps.getResultSet();
+				ps.setString(1, serviceId);
+
+				rs = ps.executeQuery();
 				if (rs.next()) {
 					String serviceStatement = rs.getString(COL_SERVICE_STATEMENT);
 					String accessRoles = rs.getString(COL_ACCESS_ROLES);

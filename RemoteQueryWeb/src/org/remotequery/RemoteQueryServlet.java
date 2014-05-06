@@ -231,7 +231,7 @@ public class RemoteQueryServlet extends HttpServlet {
 			}
 
 			//
-			// Check for accessServiceId and run ti
+			// Check for accessServiceId and run it
 			//
 
 			request.setTransientAttribute("httpRequest", httpRequest);
@@ -240,9 +240,9 @@ public class RemoteQueryServlet extends HttpServlet {
 				request.setServiceId(accessServiceId);
 				MainQuery process = new MainQuery();
 				Result r = process.run(request);
-				String exception = r.getException();
+				String exception = r == null ? null : r.getException();
 				if (Utils.isBlank(exception)) {
-					Map<String, String> map = r.getFirstRowAsMap();
+					Map<String, String> map = request.getParameters(WebConstants.SESSION);
 					for (Entry<String, String> entry : map.entrySet()) {
 						session.setAttribute(entry.getKey(), entry.getValue());
 					}
@@ -254,7 +254,16 @@ public class RemoteQueryServlet extends HttpServlet {
 				logger.fine("No accessServiceId defined. No accessService processing.");
 			}
 
+			//
+			// prepare main RemoteQuery call
+			//
+
+			// reset serviceId
 			request.setServiceId(serviceId);
+			// reset userId
+			userId = request.getUserId();
+			request.put(WebConstants.INITIAL, WebConstants.$USERID, userId);
+
 			//
 			//
 			//
