@@ -977,7 +977,12 @@ public class RemoteQuery {
 		}
 
 		public Map<String, String> getParameters(int level) {
-			return parametersTreeMap.get(new Integer(level));
+			Map<String, String> map = parametersTreeMap.get(new Integer(level));
+			if (map == null) {
+				map = new HashMap<String, String>();
+				parametersTreeMap.put(new Integer(level), map);
+			}
+			return map;
 		}
 
 		public String getValue(int level, String key) {
@@ -1427,6 +1432,12 @@ public class RemoteQuery {
 
 		public void setProcessLog(ProcessLog processLog) {
 			this.processLog = processLog;
+		}
+
+		public static Result createSingleValue(String header, String value) {
+			Result r = new Result(header);
+			r.addRow(value);
+			return r;
 		}
 
 	}
