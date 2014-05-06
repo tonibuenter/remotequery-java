@@ -7,6 +7,20 @@ RemoteQuery is a very simple but powerful tool for service creation and combinat
 + Any RQ service can be protected with a list of access roles
 + A program implementing the RQ interface is already an RQ service
 + The RQ Servlet enables SQ services as REST services
++ Any SQL statement with named parameter is SQ service
++ The RQ Servlet directly maps HTTP parameters to SQ named parameters
+
+Example
+-------
+
+Let us assume we have a RQ entry like "addressSearch select * from T_ADDRESS where city like :searchString".
+The URL http://hostname/remoteQuery/SearchAddress?searchString=Zuer% will get a list of addresses a RQ result format
+
+{
+  header : ['firstName', 'lastName', .... , 'city']
+  table : [['Hans', ' Maier', ... , 'Zuerich'],[...]] 
+}
+
 
 
 Classes and Libs
