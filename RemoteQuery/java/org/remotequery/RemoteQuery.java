@@ -938,7 +938,6 @@ public class RemoteQuery {
 		private Set<String> roles = new HashSet<String>();
 		// private IRoleProvider roleProvider;
 
-		@SuppressWarnings("unchecked")
 		private TreeMap<Integer, Map<String, String>> parametersTreeMap = new TreeMap<Integer, Map<String, String>>();
 
 		private int defaultLevel = 10;
@@ -1075,7 +1074,7 @@ public class RemoteQuery {
 				String name = Utils.getStringGetterMethodName(method);
 				if (!Utils.isBlank(name)) {
 					try {
-						Object o = method.invoke(object, null);
+						Object o = method.invoke(object, (Object[]) null);
 						String value = o == null ? null : o.toString();
 						if (!Utils.isBlank(value)) {
 							map.put(name, value);
