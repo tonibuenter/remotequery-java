@@ -297,5 +297,9 @@ public class RemoteQueryServlet extends HttpServlet {
 			logger.severe(Utils.getStackTrace(e));
 		}
 	}
+	
+	public class IUploadFileHandler {
+
+	}
 
 }
