@@ -4,7 +4,11 @@ import static org.remotequery.RemoteQuery.ENCODING;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
@@ -23,6 +27,17 @@ import org.remotequery.RemoteQuery.Request;
 import org.remotequery.RemoteQuery.Result;
 import org.remotequery.RemoteQuery.Utils;
 
+/**
+ * The following init parameters are checked by the RemoteQueryServlet:
+ * "accessServiceId" and "requestDataHandler". The "accessServiceId" defines a
+ * RemoteQuery (RQ) that will be called before the main RQ defined by the HTTP
+ * request parameters. If there is a "accessServiceId" RQ and the call returns
+ * an Exception string the main RQ is not executed. If the "accessServiceId" RQ
+ * return all SESSION level parameters of the RQ request are written back to the
+ * HTTP session object.
+ * 
+ * 
+ * */
 public class RemoteQueryServlet extends HttpServlet {
 	/**
      * 
@@ -72,6 +87,9 @@ public class RemoteQueryServlet extends HttpServlet {
 		public static final int SESSION = 40;
 		public static final int APPLICATION = 50;
 
+		public static final String dataurl_ = "dataurl_";
+		public static final int MAX_FIELD_LENGTH = 50 * 1024 * 1024;
+
 	}
 
 	//
@@ -80,6 +98,8 @@ public class RemoteQueryServlet extends HttpServlet {
 	private String servletName = "";
 	private String webRoot = "";
 	private String accessServiceId = "";
+	private String requestDataHandler = "";
+
 	//
 	private static final Logger logger = Logger
 	    .getLogger(RemoteQueryServlet.class.getName());
@@ -92,15 +112,17 @@ public class RemoteQueryServlet extends HttpServlet {
 
 		//
 		webRoot = this.getServletContext().getRealPath("/");
-
 		//
 		accessServiceId = config.getInitParameter("accessServiceId");
+		//
+		requestDataHandler = config.getInitParameter("requestDataHandler");
+
 	}
 
 	@Override
-	public void doPost(HttpServletRequest request, HttpServletResponse response)
-	    throws ServletException, IOException {
-		doGet(request, response);
+	public void doPost(HttpServletRequest httpRequest,
+	    HttpServletResponse response) throws ServletException, IOException {
+		doGet(httpRequest, response);
 	}
 
 	@Override
@@ -140,31 +162,6 @@ public class RemoteQueryServlet extends HttpServlet {
 
 			//
 			//
-			// RoleProvider :: use RoleProviderFactorySingleton or the web
-			//
-			//
-
-			// IRoleProviderFactory rpf = RoleProviderFactorySingleton.getInstance();
-			// if (rpf != null) {
-			// request.setRoleProvider(rpf.getRoleProvider(userId));
-			// } else {
-			// request.setRoleProvider(new IRoleProvider() {
-			//
-			// @Override
-			// public boolean isInRole(String role) {
-			// return httpRequest.isUserInRole(role);
-			// }
-			//
-			// @Override
-			// public Set<String> getRoles(String userId) {
-			// throw new RuntimeException("'getRoles' not implemented!");
-			// }
-			// });
-			//
-			// }
-
-			//
-			//
 			// INITIAL parameter
 			//
 			//
@@ -187,17 +184,43 @@ public class RemoteQueryServlet extends HttpServlet {
 			    Utils.toIsoDate(currentTimeMillis));
 
 			//
+			// REQUEST DATA
 			//
-			// REQUEST PARAMETERS
+
+			RequestData requestData = null;
+			if (Utils.isBlank(requestDataHandler)) {
+				try {
+					IRequestDataHandler rdh = (IRequestDataHandler) Class.forName(
+					    requestDataHandler).newInstance();
+					requestData = rdh.process(httpRequest);
+				} catch (Exception e1) {
+					logger.warning(e1.getMessage());
+				}
+			}
+			if (requestData == null) {
+				requestData = getRequestData(httpRequest);
+			}
+
+			Map<String, List<String>> param = requestData.getParameters();
+			for (Entry<String, List<String>> entry : param.entrySet()) {
+				String name = entry.getKey();
+				String value = Utils.joinTokens(entry.getValue());
+				request.put(WebConstants.REQUEST, name, value);
+				logger.fine("request data: " + name + ":" + value);
+			}
+
+			//
+			//
+			// REQUEST HEADERS
 			//
 
 			@SuppressWarnings("rawtypes")
-			Enumeration e = httpRequest.getParameterNames();
+			Enumeration e = httpRequest.getHeaderNames();
 			while (e.hasMoreElements()) {
 				String name = (String) e.nextElement();
-				String value = httpRequest.getParameter(name);
-				request.put(WebConstants.REQUEST, name, value);
-				logger.fine("http request parameter: " + name + ":" + value);
+				String value = httpRequest.getHeader(name);
+				request.put(WebConstants.HEADER, name, value);
+				logger.fine("http header: " + name + ":" + value);
 			}
 
 			//
@@ -230,11 +253,12 @@ public class RemoteQueryServlet extends HttpServlet {
 
 			}
 
+			request.setTransientAttribute("httpRequest", httpRequest);
+			request.setTransientAttribute("requestData", requestData);
+
 			//
 			// Check for accessServiceId and run it
 			//
-
-			request.setTransientAttribute("httpRequest", httpRequest);
 
 			if (!Utils.isBlank(accessServiceId)) {
 				request.setServiceId(accessServiceId);
@@ -297,9 +321,58 @@ public class RemoteQueryServlet extends HttpServlet {
 			logger.severe(Utils.getStackTrace(e));
 		}
 	}
-	
-	public class IUploadFileHandler {
 
+	public interface IRequestDataHandler {
+		RequestData process(HttpServletRequest httpRequest) throws Exception;
+	}
+
+	public static class RequestData implements Serializable {
+
+		private HashMap<String, List<String>> parameters;
+		private HashMap<String, String> fileInfo;
+		/**
+     * 
+     */
+		private static final long serialVersionUID = 1L;
+
+		public void add(String name, String value) {
+			List<String> values = parameters.get(name);
+			if (values == null) {
+				values = new ArrayList<String>();
+				parameters.put(name, values);
+			}
+			values.add(value);
+		}
+
+		public String getParameter(String name) {
+			List<String> values = parameters.get(name);
+			return values != null && values.size() > 0 ? values.get(0) : null;
+		}
+
+		public List<String> getParameterValues(String name) {
+			return parameters.get(name);
+		}
+
+		public HashMap<String, List<String>> getParameters() {
+			return parameters;
+		}
+
+		public Map<String, String> getFileInfo() {
+			return fileInfo;
+		}
+	}
+
+	public static RequestData getRequestData(HttpServletRequest httpRequest) {
+		RequestData rd = new RequestData();
+		@SuppressWarnings("rawtypes")
+		Enumeration e = httpRequest.getParameterNames();
+		while (e.hasMoreElements()) {
+			String name = (String) e.nextElement();
+			String value = httpRequest.getParameter(name);
+			rd.add(name, value);
+			logger.fine("http request parameter: " + name + ":" + value);
+		}
+		return rd;
 	}
 
 }
