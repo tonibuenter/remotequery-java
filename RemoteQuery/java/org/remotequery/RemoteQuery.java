@@ -2177,9 +2177,33 @@ public class RemoteQuery {
 			return tokenize(string, DEFAULT_DEL, DEFAULT_ESC);
 		}
 
-		public static String joinTokens(List<String> list) {
+		public static String joinTokens(Collection<String> list) {
 			// TODO apply del and esc !!!
-			return list == null ? "" : list.toString();
+			String res = "";
+			int i = 0;
+			for (String s : list) {
+				s = escape(s, DEFAULT_DEL, DEFAULT_ESC);
+				if (i == 0) {
+					res = s;
+				} else {
+					res = res + DEFAULT_DEL + s;
+				}
+				i++;
+			}
+			return res;
+		}
+
+		public static String escape(String in, char del, char esc) {
+			char[] chars = in.toCharArray();
+			String res = "";
+			for (int i = 0; i < chars.length; i++) {
+				char c = chars[i];
+				if (c == del || c == esc) {
+					res += esc;
+				}
+				res += c;
+			}
+			return res;
 		}
 
 		public static String[] tokenize(String string, char del, char esc) {
