@@ -188,7 +188,7 @@ public class RemoteQueryServlet extends HttpServlet {
 			//
 
 			RequestData requestData = null;
-			if (Utils.isBlank(requestDataHandler)) {
+			if (!Utils.isBlank(requestDataHandler)) {
 				try {
 					IRequestDataHandler rdh = (IRequestDataHandler) Class.forName(
 					    requestDataHandler).newInstance();
@@ -328,8 +328,8 @@ public class RemoteQueryServlet extends HttpServlet {
 
 	public static class RequestData implements Serializable {
 
-		private HashMap<String, List<String>> parameters;
-		private HashMap<String, String> fileInfo;
+		private Map<String, List<String>> parameters = new HashMap<String, List<String>>();
+		private Map<String, String> fileInfo = new HashMap<String, String>();
 		/**
      * 
      */
@@ -346,14 +346,14 @@ public class RemoteQueryServlet extends HttpServlet {
 
 		public String getParameter(String name) {
 			List<String> values = parameters.get(name);
-			return values != null && values.size() > 0 ? values.get(0) : null;
+			return values != null && values.size() > 0 ? Utils.joinTokens(values) : null;
 		}
 
 		public List<String> getParameterValues(String name) {
 			return parameters.get(name);
 		}
 
-		public HashMap<String, List<String>> getParameters() {
+		public  Map<String, List<String>> getParameters() {
 			return parameters;
 		}
 

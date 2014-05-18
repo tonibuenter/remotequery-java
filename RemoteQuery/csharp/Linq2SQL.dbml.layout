@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ordesignerObjectsDiagram dslVersion="1.0.0.0" absoluteBounds="0, 0, 11, 8.5" name="Linq2SQL">
+  <DataContextMoniker Name="/Linq2SQLDataContext" />
+  <nestedChildShapes>
+    <classShape Id="a1a1b7e4-b07e-451c-b8af-397168d1a3a0" absoluteBounds="4.625, 0.5, 2, 2.1316349283854166">
+      <DataClassMoniker Name="/Linq2SQLDataContext/DBOBJ" />
+      <nestedChildShapes>
+        <elementListCompartment Id="0cbc2320-a4d2-4da7-bc9e-830027e4bce6" absoluteBounds="4.6400000000000006, 0.96, 1.9700000000000002, 1.5716349283854165" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="a854e562-9ead-495e-b884-5f7e44359165" absoluteBounds="7.25, 4.75, 2, 1.7526472981770831">
+      <DataClassMoniker Name="/Linq2SQLDataContext/DBVAL" />
+      <nestedChildShapes>
+        <elementListCompartment Id="196733ec-62ba-4fec-90db-2e427922eed4" absoluteBounds="7.265, 5.21, 1.9700000000000002, 1.1926472981770833" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="c32ce5bf-8305-4aa3-bc53-4b66a381ae8a" absoluteBounds="6.875, 2.375, 2, 1.94214111328125">
+      <DataClassMoniker Name="/Linq2SQLDataContext/DBVVAL" />
+      <nestedChildShapes>
+        <elementListCompartment Id="3424a39f-d025-44d4-8efa-29616688bcba" absoluteBounds="6.89, 2.835, 1.9700000000000002, 1.38214111328125" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="adde234d-9972-4ba1-a1bd-a92802dace38" absoluteBounds="0.5, 0.5, 2, 1.37365966796875">
+      <DataClassMoniker Name="/Linq2SQLDataContext/MOATT" />
+      <nestedChildShapes>
+        <elementListCompartment Id="d7f34bd0-adc4-4afb-b235-1e5a493f7c8d" absoluteBounds="0.51500000000000057, 0.96, 1.9700000000000002, 0.81365966796875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="f2bb2d61-3cbb-4bb0-a0a8-d2cf5473a69c" absoluteBounds="0.5, 5.25, 2, 1.1841658528645833">
+      <DataClassMoniker Name="/Linq2SQLDataContext/TUSR" />
+      <nestedChildShapes>
+        <elementListCompartment Id="d2189d2e-adf0-4d5d-9714-fee50e788186" absoluteBounds="0.51499999999999968, 5.71, 1.9700000000000002, 0.62416585286458326" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+  </nestedChildShapes>
+</ordesignerObjectsDiagram>
