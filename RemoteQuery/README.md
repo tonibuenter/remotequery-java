@@ -15,13 +15,25 @@ Example
 -------
 
 Let us assume we have a RQ entry like 
-"addressSearch select * from T_ADDRESS where city like :searchString".
-The URL http://hostname/remoteQuery/SearchAddress?searchString=Zuer% 
+```
+SERVICE_ID   : 'SearchAddress'
+SERVICE_STMT : 'addressSearch select * from T_ADDRESS where city like :searchString'
+```
+
+The URL 
+``
+http://hostname/remoteQuery/SearchAddress?searchString=Zuer%
+```
+ 
 will get a list of addresses a RQ result format
-```json
+
+```JSON
 {
   header : ['firstName', 'lastName', .... , 'city']
-  table : [['Hans', ' Maier', ... , 'Zuerich'],[...]] 
+  table : [
+  			['Hans', ' Maier', ... , 'Zuerich'],
+  			[...]
+  ] 
 }
 ```
 
