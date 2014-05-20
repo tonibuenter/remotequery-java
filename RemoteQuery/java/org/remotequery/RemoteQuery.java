@@ -70,15 +70,32 @@ public class RemoteQuery {
 	 */
 	public static String ENCODING = "UTF-8";
 
+	public static int MAX_RECURSION = 20;
+
 	public static final char DEFAULT_DEL = ',';
 	public static final char DEFAULT_ESC = '\\';
 
-	public static class MiniLanguageTokens {
+	public static class MLT {
+		public static final String serviceId = "serviceId";
+		public static final String include = "include";
+		public static final String java = "java";
+		public static final String sql = "sql";
+		public static final String constant = "constant";
+		public static final String set = "set";
+		public static final String set_if_empty = "set-if-empty";
+		public static final String set_if_null = "set-if-null";
+	}
+
+	public static class Params {
 		public static String serviceId = "serviceId";
-		public static String include = "include";
-		public static String set = "set";
-		public static String set_if_empty = "set-if-empty";
-		public static String java = "java";
+		public static String serviceStatement = "serviceStatement";
+		public static String accessRoles = "accessRoles";
+	}
+
+	public static class DBColumns {
+		public static String serviceId = "serviceId";
+		public static String serviceStatement = "serviceStatement";
+		public static String accessRoles = "accessRoles";
 	}
 
 	//
@@ -189,15 +206,6 @@ public class RemoteQuery {
 		// TODO idea :: how to create your own plugins like 'my-sql-extension:select
 		// %SELECTLIST% where %WHERE% clause'
 
-		public static final String constant_ = "constant:";
-		public static final String setifnull_ = "set-if-null:";
-		public static final String setifempty_ = "set-if-empty:";
-		public static final String set_ = "set:";
-		public static final String sql_ = "sql:";
-		public static final String java_ = "java:";
-		public static final String serviceId_ = "serviceId:";
-		public static final String include_ = "include:";
-
 		/**
 		 * 
 		 */
@@ -219,6 +227,7 @@ public class RemoteQuery {
 		public Result run(RemoteQuery.Request request) {
 			Result result = null;
 			ProcessLog log = ProcessLog.Current();
+			log.incrRecursion();
 			String serviceId = request.getServiceId();
 			String userId = request.getUserId();
 			if (Utils.isEmpty(userId)) {
@@ -268,60 +277,16 @@ public class RemoteQuery {
 				    STATEMENT_DELIMITER, STATEMENT_ESCAPE);
 
 				// parameterSupport = ParameterSupport.begin(con, sqRequest, sqEntry);
-
 				for (String serviceStmt : statements) {
-					serviceStmt = serviceStmt.trim();
-					if (Utils.isEmpty(serviceStmt)) {
-						log.warn("Empty query - no processing.", logger);
-						continue;
-					}
-					// Resolve one level of include
-					// TODO all levels
-					// the include means actually include service statement, no further
-					// access checks are done
-					if (serviceStmt.startsWith(include_)) {
-						String serviceId2 = serviceStmt.substring(include_.length());
-						ServiceEntry se2 = ServiceRepository.getInstance().get(serviceId2);
-						serviceStmt = se2.getServiceStatement();
+					Result result2 = processSingleStatement(request, serviceEntry,
+					    serviceStmt);
+					if (result2 != null) {
+						if (result != null) {
+							result2.setSubResult(result);
+						}
+						result = result2;
 					}
 
-					if (serviceStmt.startsWith(java_)) {
-						result = processJava(serviceStmt, request);
-					} else if (serviceStmt.startsWith(sql_)) {
-						result = processSql(serviceEntry, serviceStmt, request);
-
-					} else if (serviceStmt.startsWith(set_)) {
-						try {
-							String[] pairs = serviceStmt.substring(set_.length()).split(",");
-							for (String pair : pairs) {
-								String[] nv = pair.split("=");
-								request.put(nv[0], nv[1]);
-							}
-						} catch (Exception e) {
-							logger.severe(Utils.getStackTrace(e));
-						}
-					} else if (serviceStmt.startsWith(setifnull_)) {
-						try {
-							String[] pairs = serviceStmt.substring(setifnull_.length())
-							    .split(",");
-							for (String pair : pairs) {
-								String[] nv = pair.split("=");
-								if (request.getValue(nv[0]) == null) {
-									request.put(nv[0], nv[1]);
-								}
-							}
-						} catch (Exception e) {
-							log.error("", e, logger);
-						}
-					} else if (serviceStmt.startsWith(serviceId_)) {
-						String parentServiceId = serviceEntry.getServiceId();
-						String subServiceId = serviceStmt.substring(serviceId_.length());
-						request.setServiceId(subServiceId);
-						result = run(request);
-						request.setServiceId(parentServiceId);
-					} else {
-						result = processSql(serviceEntry, serviceStmt, request);
-					}
 				}
 
 			} catch (Exception e) {
@@ -337,11 +302,133 @@ public class RemoteQuery {
 			return result;
 		}
 
-		private Result processJava(String query, Request request)
+		private Result processSingleStatement(Request request,
+		    ServiceEntry serviceEntry, String serviceStmt) {
+			ProcessLog log = ProcessLog.Current();
+			try {
+				Result result = null;
+
+				log.incrRecursion();
+				int recursion = log.getRecursionValue();
+				if (recursion > MAX_RECURSION) {
+					log.error("Recursion limit reached " + MAX_RECURSION
+					    + ". Stop processing.", logger);
+					return null;
+				}
+
+				serviceStmt = serviceStmt.trim();
+				if (Utils.isEmpty(serviceStmt)) {
+					log.warn("Empty serviceStmt -> no processing.", logger);
+					return null;
+				}
+
+				String[] p = Utils.tokenize(serviceStmt, ':', STATEMENT_ESCAPE);
+
+				// unexpected parsing result
+				if (p == null || p.length == 0) {
+					log.warn("Unexpected serviceStmt : " + serviceStmt + ". Skipping!",
+					    logger);
+					return null;
+				}
+				//
+				// plain SQL case
+				//
+				if (p.length == 1) {
+					result = processSql(serviceEntry, serviceStmt, request);
+					return result;
+				}
+				String cmd = p[0];
+				String stmt = p[1];
+				//
+				// include
+				//
+				if (cmd.equals(MLT.include)) {
+					ServiceEntry se2 = ServiceRepository.getInstance().get(stmt);
+					if (se2 == null) {
+						log.warn("Tried to include " + stmt + ". Skipping.", logger);
+						return null;
+					}
+					String includeServiceStmt = se2.getServiceStatement();
+					result = processSingleStatement(request, serviceEntry,
+					    includeServiceStmt);
+					return result;
+				}
+				//
+				// java:
+				//
+				if (cmd.equals(MLT.java)) {
+					result = processJava(stmt, request);
+					return result;
+				}
+				//
+				// sql:
+				//
+				if (cmd.equals(MLT.sql)) {
+					result = processSql(serviceEntry, stmt, request);
+					return result;
+				}
+				//
+				// set, ... request parameter assignements
+				//
+				if (cmd.startsWith(MLT.set)) {
+					String ls = "";
+					String setType = MLT.set;
+					if (cmd.startsWith(MLT.set_if_empty)) {
+						setType = MLT.set_if_empty;
+						ls = cmd.substring(MLT.set_if_empty.length());
+					} else if (cmd.startsWith(MLT.set_if_null)) {
+						setType = MLT.set_if_null;
+						ls = cmd.substring(MLT.set_if_null.length());
+					} else {
+						ls = cmd.substring(MLT.set.length());
+					}
+					int level = Utils.parseLevel(ls);
+
+					String[] pairs = stmt.split(",");
+					for (String pair : pairs) {
+						String[] nv = pair.split("=");
+						String name = nv[0];
+						String value = nv.length > 1 ? nv[1] : null;
+						String oldVale = request.getValue(name);
+						if (oldVale == null && cmd.startsWith(MLT.set_if_null)) {
+							request.put(level, nv[0], nv[1]);
+						}
+						if ((oldVale == null || oldVale.trim().length() == 0)
+						    && cmd.startsWith(MLT.set_if_empty)) {
+							request.put(level, nv[0], nv[1]);
+						} else if (cmd.startsWith(MLT.set_if_empty)) {
+							request.put(level, nv[0], nv[1]);
+						} else {
+							request.put(level, nv[0], nv[1]);
+						}
+
+					}
+					return null;
+				}
+				if (cmd.equals(MLT.serviceId)) {
+					String parentServiceId = serviceEntry.getServiceId();
+					String subServiceId = stmt;
+					request.setServiceId(subServiceId);
+					result = run(request);
+					request.setServiceId(parentServiceId);
+					return result;
+				}
+			} catch (Exception e) {
+				log.error(
+				    "ServiceStmt for " + serviceStmt + " failed. Skip execution.",
+				    logger);
+
+			} finally {
+				log.decrRecursion();
+			}
+			return null;
+
+		}
+
+		private Result processJava(String className, Request request)
 		    throws InstantiationException, IllegalAccessException,
 		    ClassNotFoundException {
 			Result result = null;
-			String className = query.substring(java_.length());
 
 			Object serviceObject = Class.forName(className).newInstance();
 			if (serviceObject instanceof IQuery) {
@@ -356,7 +443,7 @@ public class RemoteQuery {
 			return result;
 		}
 
-		public Result processSql(ServiceEntry serviceEntry, String query,
+		public Result processSql(ServiceEntry serviceEntry, String sql,
 		    Request request) {
 
 			Result result = null;
@@ -368,10 +455,6 @@ public class RemoteQuery {
 
 			QueryAndParams qap = null;
 
-			String sql = query;
-			if (sql.startsWith(sql_)) {
-				sql = sql.substring(sql_.length());
-			}
 			log.system("sql before conversion: " + sql);
 
 			qap = convertQuery(sql);
@@ -558,9 +641,9 @@ public class RemoteQuery {
 						sr.add(serviceEntry);
 					}
 				} else {
-					String serviceId = request.getValue("serviceId");
-					String serviceStatement = request.getValue("serviceStatement");
-					String accessRoles = request.getValue("accessRoles");
+					String serviceId = request.getValue(Params.serviceId);
+					String serviceStatement = request.getValue(Params.serviceStatement);
+					String accessRoles = request.getValue(Params.accessRoles);
 					IServiceRepository sr = ServiceRepository.getInstance();
 					sr.add(new ServiceEntry(serviceId, serviceStatement, accessRoles));
 				}
@@ -727,8 +810,21 @@ public class RemoteQuery {
 		private Long lastUsedTime;
 		private String userId;
 		private String name;
+		private int recursion = 0;
 
 		public ProcessLog() {
+		}
+
+		public void incrRecursion() {
+			recursion++;
+		}
+
+		public void decrRecursion() {
+			recursion--;
+		}
+
+		public int getRecursionValue() {
+			return recursion;
 		}
 
 		public void infoUser(String line) {
@@ -1120,6 +1216,7 @@ public class RemoteQuery {
 		private List<String> header = new ArrayList<String>();
 		private String exception = null;
 		private ProcessLog processLog = null;
+		private Result subResult = null;
 
 		public static boolean USE_CAMEL_CASE_FOR_RESULT_HEADER = true;
 
@@ -1438,6 +1535,14 @@ public class RemoteQuery {
 			Result r = new Result(header);
 			r.addRow(value);
 			return r;
+		}
+
+		public Result getSubResult() {
+			return subResult;
+		}
+
+		public void setSubResult(Result subResult) {
+			this.subResult = subResult;
 		}
 
 	}
@@ -1933,6 +2038,17 @@ public class RemoteQuery {
 
 		public static final String nowIsoDateTimeFull() {
 			return IsoDateTimeFullTL.get().format(new Date());
+		}
+
+		public static int parseLevel(String ls) {
+			try {
+				if (ls.startsWith("-")) {
+					return Integer.parseInt(ls.substring(1));
+				}
+			} catch (Exception e) {
+				logger.severe(Utils.getStackTrace(e));
+			}
+			return 0;
 		}
 
 		public static final String nowIsoDateTime() {
