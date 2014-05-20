@@ -27,7 +27,7 @@ http://hostname/remoteQuery/SearchAddress?searchString=Zuer%
  
 will get a list of addresses a RQ result format
 
-```JSON
+```
 {
   header : ['firstName', 'lastName', .... , 'city']
   table : [
