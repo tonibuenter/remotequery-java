@@ -21,7 +21,7 @@ SERVICE_STMT : 'addressSearch select * from T_ADDRESS where city like :searchStr
 ```
 
 The URL 
-``
+```
 http://hostname/remoteQuery/SearchAddress?searchString=Zuer%
 ```
  
