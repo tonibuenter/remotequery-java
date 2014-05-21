@@ -78,12 +78,19 @@ public class RemoteQuery {
 	public static class MLT {
 		public static final String serviceId = "serviceId";
 		public static final String include = "include";
+		//
 		public static final String java = "java";
 		public static final String sql = "sql";
-		public static final String constant = "constant";
+		//
 		public static final String set = "set";
 		public static final String set_if_empty = "set-if-empty";
 		public static final String set_if_null = "set-if-null";
+		//
+		public static final String tx_begin = "tx-begin";
+		public static final String tx_commit = "tx_commit";
+		//
+		public static final String if_ = "if";
+		public static final String else_ = "else";
 	}
 
 	public static class Params {
@@ -98,6 +105,26 @@ public class RemoteQuery {
 		public static String accessRoles = "accessRoles";
 	}
 
+	public static class LevelConstants {
+		public static final int INITIAL = 0;
+		public static final int REQUEST = 10;
+		public static final int HEADER = 20;
+		public static final int INTER_REQUEST = 30;
+		public static final int SESSION = 40;
+		public static final int APPLICATION = 50;
+	}
+
+	private static Map<String, Integer> LevelConstantNames = new HashMap<String, Integer>();
+	static {
+		LevelConstantNames.put("INITIAL", new Integer(LevelConstants.INITIAL));
+		LevelConstantNames.put("REQUEST", new Integer(LevelConstants.REQUEST));
+		LevelConstantNames.put("HEADER", new Integer(LevelConstants.HEADER));
+		LevelConstantNames.put("INTER_REQUEST", new Integer(
+		    LevelConstants.INTER_REQUEST));
+		LevelConstantNames.put("SESSION", new Integer(LevelConstants.SESSION));
+		LevelConstantNames.put("APPLICATION", new Integer(
+		    LevelConstants.APPLICATION));
+	}
 	//
 	//
 	//
@@ -371,38 +398,7 @@ public class RemoteQuery {
 				// set, ... request parameter assignements
 				//
 				if (cmd.startsWith(MLT.set)) {
-					String ls = "";
-					String setType = MLT.set;
-					if (cmd.startsWith(MLT.set_if_empty)) {
-						setType = MLT.set_if_empty;
-						ls = cmd.substring(MLT.set_if_empty.length());
-					} else if (cmd.startsWith(MLT.set_if_null)) {
-						setType = MLT.set_if_null;
-						ls = cmd.substring(MLT.set_if_null.length());
-					} else {
-						ls = cmd.substring(MLT.set.length());
-					}
-					int level = Utils.parseLevel(ls);
-
-					String[] pairs = stmt.split(",");
-					for (String pair : pairs) {
-						String[] nv = pair.split("=");
-						String name = nv[0];
-						String value = nv.length > 1 ? nv[1] : null;
-						String oldVale = request.getValue(name);
-						if (oldVale == null && cmd.startsWith(MLT.set_if_null)) {
-							request.put(level, nv[0], nv[1]);
-						}
-						if ((oldVale == null || oldVale.trim().length() == 0)
-						    && cmd.startsWith(MLT.set_if_empty)) {
-							request.put(level, nv[0], nv[1]);
-						} else if (cmd.startsWith(MLT.set_if_empty)) {
-							request.put(level, nv[0], nv[1]);
-						} else {
-							request.put(level, nv[0], nv[1]);
-						}
-
-					}
+					applySetCommand(request, cmd, stmt);
 					return null;
 				}
 				if (cmd.equals(MLT.serviceId)) {
@@ -423,6 +419,66 @@ public class RemoteQuery {
 			}
 			return null;
 
+		}
+
+		public static void applySetCommand(Request request, String cmd, String stmt) {
+			String ls = "";
+			if (cmd.startsWith(MLT.set_if_empty)) {
+				ls = cmd.substring(MLT.set_if_empty.length());
+			} else if (cmd.startsWith(MLT.set_if_null)) {
+				ls = cmd.substring(MLT.set_if_null.length());
+			} else {
+				ls = cmd.substring(MLT.set.length());
+			}
+			Integer level = parseLevel(ls);
+			if (level == null) {
+				logger.severe("Syntax error int set clause: " + cmd + " (stmt : "
+				    + stmt + "). Skipping.");
+				return;
+			}
+
+			String[] pairs = stmt.split(",");
+			for (String pair : pairs) {
+				String[] nv = pair.split("=");
+				String n = nv[0];
+				String v = nv.length > 1 ? nv[1] : null;
+				String oldValue = request.getValue(n);
+				if (oldValue == null && cmd.startsWith(MLT.set_if_null)) {
+					request.put(level, n, v);
+				} else if ((oldValue == null || oldValue.trim().length() == 0)
+				    && cmd.startsWith(MLT.set_if_empty)) {
+					request.put(level, n, v);
+				} else {
+					request.put(level, n, v);
+				}
+			}
+		}
+
+		/**
+		 * Parses the input string and return
+		 * 
+		 * @param ls
+		 * @return
+		 */
+		public static Integer parseLevel(String ls) {
+			try {
+				ls = ls.trim();
+				if (ls.length() == 0) {
+					return 0;
+				}
+
+				if (ls.startsWith("-")) {
+					ls = ls.substring(1);
+				}
+				Integer l = LevelConstantNames.get(ls.toUpperCase());
+				if (l != null) {
+					return l;
+				}
+				return Integer.parseInt(ls);
+			} catch (Exception e) {
+				logger.severe(Utils.getStackTrace(e));
+			}
+			return null;
 		}
 
 		private Result processJava(String className, Request request)
@@ -1949,16 +2005,6 @@ public class RemoteQuery {
 			return tokens;
 		}
 
-		public static void main(String[] args) {
-			StringTokenizer2 tokenizer = new StringTokenizer2(args[0], ';', '$');
-
-			System.err.println("countTokens: " + tokenizer.countTokens());
-
-			while (tokenizer.hasMoreTokens()) {
-				System.err.println("ST2: " + tokenizer.nextToken());
-			}
-		}
-
 		/**
 		 * Static convenience method for converting a string directly into an array
 		 * of String by using the delimiter and escape character as specified.
@@ -2038,17 +2084,6 @@ public class RemoteQuery {
 
 		public static final String nowIsoDateTimeFull() {
 			return IsoDateTimeFullTL.get().format(new Date());
-		}
-
-		public static int parseLevel(String ls) {
-			try {
-				if (ls.startsWith("-")) {
-					return Integer.parseInt(ls.substring(1));
-				}
-			} catch (Exception e) {
-				logger.severe(Utils.getStackTrace(e));
-			}
-			return 0;
 		}
 
 		public static final String nowIsoDateTime() {
@@ -2307,6 +2342,10 @@ public class RemoteQuery {
 				i++;
 			}
 			return res;
+		}
+
+		public static String joinTokens(String[] list) {
+			return joinTokens(Arrays.asList(list));
 		}
 
 		public static String escape(String in, char del, char esc) {
