@@ -13,11 +13,11 @@ using System.Xml;
 using Org.JGround.Util;
 using Org.JGround.Web;
 
-namespace org.remotequery
+namespace Org.Remotequery
 {
 
 
- public class RemoteQuery : IHttpHandler, IRequiresSessionState
+ public class RemoteQueryServlet : IHttpHandler, IRequiresSessionState
     {
 
         //

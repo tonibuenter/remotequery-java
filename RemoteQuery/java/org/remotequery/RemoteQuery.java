@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Level;
@@ -76,15 +77,17 @@ public class RemoteQuery {
 	public static final char DEFAULT_ESC = '\\';
 
 	public static class MLT {
-		public static final String serviceId = "serviceId";
-		public static final String include = "include";
-		//
+		// code indication
 		public static final String java = "java";
 		public static final String sql = "sql";
-		//
+		// combination
+		public static final String serviceId = "serviceId";
+		public static final String include = "include";
+		// parameter manipulation
 		public static final String set = "set";
 		public static final String set_if_empty = "set-if-empty";
 		public static final String set_if_null = "set-if-null";
+		public static final String set_null = "set-null";
 		//
 		public static final String tx_begin = "tx-begin";
 		public static final String tx_commit = "tx_commit";
@@ -360,7 +363,7 @@ public class RemoteQuery {
 				//
 				// plain SQL case
 				//
-				if (p.length == 1) {
+				if (p.length == 1 || !startsWithMLT(serviceStmt)) {
 					result = processSql(serviceEntry, serviceStmt, request);
 					return result;
 				}
@@ -421,7 +424,47 @@ public class RemoteQuery {
 
 		}
 
+		public static boolean startsWithMLT(String serviceStmt) {
+			if (serviceStmt.startsWith(MLT.include)) {
+				return true;
+			}
+			if (serviceStmt.startsWith(MLT.java)) {
+				return true;
+			}
+			if (serviceStmt.startsWith(MLT.serviceId)) {
+				return true;
+			}
+			if (serviceStmt.startsWith(MLT.sql)) {
+				return true;
+			}
+			if (serviceStmt.startsWith(MLT.set)) {
+				return true;
+			}
+			if (serviceStmt.startsWith(MLT.tx_begin)) {
+				return true;
+			}
+			if (serviceStmt.startsWith(MLT.tx_commit)) {
+				return true;
+			}
+			return false;
+		}
+
 		public static void applySetCommand(Request request, String cmd, String stmt) {
+			if (cmd.startsWith(MLT.set_null)) {
+				TreeMap<Integer, Map<String, String>> ptm = request
+				    .getParametersTreeMap();
+				String[] keys = Utils.tokenize(stmt, ',');
+				for (String key : keys) {
+
+					for (Entry<Integer, Map<String, String>> e : ptm.entrySet()) {
+						Map<String, String> m = e.getValue();
+						if (m != null) {
+							m.remove(key);
+						}
+					}
+				}
+
+			}
 			String ls = "";
 			if (cmd.startsWith(MLT.set_if_empty)) {
 				ls = cmd.substring(MLT.set_if_empty.length());
@@ -1215,6 +1258,10 @@ public class RemoteQuery {
 
 		public Object getTransientAttribute(String name) {
 			return this.transientAttributes.get(name);
+		}
+
+		public TreeMap<Integer, Map<String, String>> getParametersTreeMap() {
+			return parametersTreeMap;
 		}
 
 	}
@@ -2328,6 +2375,10 @@ public class RemoteQuery {
 			return tokenize(string, DEFAULT_DEL, DEFAULT_ESC);
 		}
 
+		public static String[] tokenize(String string, char del) {
+			return tokenize(string, del, DEFAULT_ESC);
+		}
+
 		public static String joinTokens(Collection<String> list) {
 			// TODO apply del and esc !!!
 			String res = "";
@@ -2368,7 +2419,7 @@ public class RemoteQuery {
 			// first we count the tokens
 			int count = 1;
 			boolean inescape = false;
-			char c;
+			char c, pc = 0;
 			StringBuffer buf = new StringBuffer();
 			for (int i = 0; i < string.length(); i++) {
 				c = string.charAt(i);
@@ -2392,13 +2443,22 @@ public class RemoteQuery {
 					tokens[k] = buf.toString();
 					buf.delete(0, buf.length());
 					k++;
+					pc = c;
 					continue;
 				}
 				if (c == esc && !inescape) {
 					inescape = true;
+					pc = c;
 					continue;
 				}
+				//
+				// append
+				//
+				if (c != del && pc == esc) {
+					buf.append(pc);
+				}
 				buf.append(c);
+				pc = c;
 				inescape = false;
 			}
 			tokens[k] = buf.toString();

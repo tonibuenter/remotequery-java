@@ -84,7 +84,6 @@ public class RemoteQueryServlet extends HttpServlet {
 
 		public static final String $USERID = "$USERID";
 
-
 		public static final String dataurl_ = "dataurl_";
 		public static final int MAX_FIELD_LENGTH = 50 * 1024 * 1024;
 
@@ -344,14 +343,15 @@ public class RemoteQueryServlet extends HttpServlet {
 
 		public String getParameter(String name) {
 			List<String> values = parameters.get(name);
-			return values != null && values.size() > 0 ? Utils.joinTokens(values) : null;
+			return values != null && values.size() > 0 ? Utils.joinTokens(values)
+			    : null;
 		}
 
 		public List<String> getParameterValues(String name) {
 			return parameters.get(name);
 		}
 
-		public  Map<String, List<String>> getParameters() {
+		public Map<String, List<String>> getParameters() {
 			return parameters;
 		}
 
@@ -366,7 +366,8 @@ public class RemoteQueryServlet extends HttpServlet {
 		Enumeration e = httpRequest.getParameterNames();
 		while (e.hasMoreElements()) {
 			String name = (String) e.nextElement();
-			String value = httpRequest.getParameter(name);
+			String[] values = httpRequest.getParameterValues(name);
+			String value = Utils.joinTokens(values);
 			rd.add(name, value);
 			logger.fine("http request parameter: " + name + ":" + value);
 		}
