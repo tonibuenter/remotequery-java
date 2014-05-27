@@ -1,6 +1,10 @@
 package org.remotequery;
 
 import static org.remotequery.RemoteQuery.ENCODING;
+import static org.remotequery.RemoteQuery.LevelConstants.HEADER;
+import static org.remotequery.RemoteQuery.LevelConstants.INITIAL;
+import static org.remotequery.RemoteQuery.LevelConstants.REQUEST;
+import static org.remotequery.RemoteQuery.LevelConstants.SESSION;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -80,13 +84,6 @@ public class RemoteQueryServlet extends HttpServlet {
 
 		public static final String $USERID = "$USERID";
 
-		public static final int INITIAL = 0;
-		public static final int REQUEST = 10;
-		public static final int HEADER = 20;
-		public static final int INTER_REQUEST = 30;
-		public static final int SESSION = 40;
-		public static final int APPLICATION = 50;
-
 		public static final String dataurl_ = "dataurl_";
 		public static final int MAX_FIELD_LENGTH = 50 * 1024 * 1024;
 
@@ -129,7 +126,6 @@ public class RemoteQueryServlet extends HttpServlet {
 	public void doGet(final HttpServletRequest httpRequest,
 	    HttpServletResponse httpResponse) throws ServletException, IOException {
 		logger.fine("start " + servletName + ".doGet");
-		ProcessLog rLog = ProcessLog.Current();
 
 		String userId = httpRequest.getUserPrincipal() != null ? httpRequest
 		    .getUserPrincipal().getName() : WebConstants.ANONYMOUS;
@@ -149,11 +145,12 @@ public class RemoteQueryServlet extends HttpServlet {
 		//
 
 		try {
+			ProcessLog rLog = ProcessLog.Current();
 			if (Utils.isBlank(serviceId)) {
 				logger.severe("serviceId is blank! requestUri: " + requestUri);
 				return;
 			}
-			Request request = new Request(WebConstants.REQUEST);
+			Request request = new Request(REQUEST);
 
 			//
 			// userId (independent from $USERID !
@@ -168,19 +165,19 @@ public class RemoteQueryServlet extends HttpServlet {
 
 			long currentTimeMillis = System.currentTimeMillis();
 
-			request.put(WebConstants.INITIAL, WebConstants.$WEBROOT, webRoot);
+			request.put(INITIAL, WebConstants.$WEBROOT, webRoot);
 
-			request.put(WebConstants.INITIAL, WebConstants.$SERVICEID, serviceId);
+			request.put(INITIAL, WebConstants.$SERVICEID, serviceId);
 
-			request.put(WebConstants.INITIAL, WebConstants.$USERID, userId);
+			request.put(INITIAL, WebConstants.$USERID, userId);
 
-			request.put(WebConstants.INITIAL, WebConstants.$CURRENT_TIME_MILLIS, ""
+			request.put(INITIAL, WebConstants.$CURRENT_TIME_MILLIS, ""
 			    + currentTimeMillis);
 
-			request.put(WebConstants.INITIAL, WebConstants.$TIMESTAMP,
+			request.put(INITIAL, WebConstants.$TIMESTAMP,
 			    Utils.toIsoDateTimeSec(currentTimeMillis));
 
-			request.put(WebConstants.INITIAL, WebConstants.$DATE,
+			request.put(INITIAL, WebConstants.$DATE,
 			    Utils.toIsoDate(currentTimeMillis));
 
 			//
@@ -205,7 +202,7 @@ public class RemoteQueryServlet extends HttpServlet {
 			for (Entry<String, List<String>> entry : param.entrySet()) {
 				String name = entry.getKey();
 				String value = Utils.joinTokens(entry.getValue());
-				request.put(WebConstants.REQUEST, name, value);
+				request.put(REQUEST, name, value);
 				logger.fine("request data: " + name + ":" + value);
 			}
 
@@ -219,7 +216,7 @@ public class RemoteQueryServlet extends HttpServlet {
 			while (e.hasMoreElements()) {
 				String name = (String) e.nextElement();
 				String value = httpRequest.getHeader(name);
-				request.put(WebConstants.HEADER, name, value);
+				request.put(HEADER, name, value);
 				logger.fine("http header: " + name + ":" + value);
 			}
 
@@ -232,7 +229,7 @@ public class RemoteQueryServlet extends HttpServlet {
 			while (e.hasMoreElements()) {
 				String name = (String) e.nextElement();
 				String value = httpRequest.getHeader(name);
-				request.put(WebConstants.HEADER, name, value);
+				request.put(HEADER, name, value);
 				logger.fine("http header: " + name + ":" + value);
 			}
 
@@ -247,7 +244,7 @@ public class RemoteQueryServlet extends HttpServlet {
 				String name = (String) e.nextElement();
 				Object value = session.getAttribute(name);
 				if (value instanceof String) {
-					request.put(WebConstants.SESSION, name, (String) value);
+					request.put(SESSION, name, (String) value);
 					logger.fine("http session parameter: " + name + ":" + value);
 				}
 
@@ -266,7 +263,7 @@ public class RemoteQueryServlet extends HttpServlet {
 				Result r = process.run(request);
 				String exception = r == null ? null : r.getException();
 				if (Utils.isBlank(exception)) {
-					Map<String, String> map = request.getParameters(WebConstants.SESSION);
+					Map<String, String> map = request.getParameters(SESSION);
 					for (Entry<String, String> entry : map.entrySet()) {
 						session.setAttribute(entry.getKey(), entry.getValue());
 					}
@@ -286,7 +283,7 @@ public class RemoteQueryServlet extends HttpServlet {
 			request.setServiceId(serviceId);
 			// reset userId
 			userId = request.getUserId();
-			request.put(WebConstants.INITIAL, WebConstants.$USERID, userId);
+			request.put(INITIAL, WebConstants.$USERID, userId);
 
 			//
 			//
@@ -304,6 +301,8 @@ public class RemoteQueryServlet extends HttpServlet {
 			}
 		} catch (Exception e) {
 			logger.severe(Utils.getStackTrace(e));
+		} finally {
+			ProcessLog.RemoveCurrent();
 		}
 	}
 
@@ -346,14 +345,15 @@ public class RemoteQueryServlet extends HttpServlet {
 
 		public String getParameter(String name) {
 			List<String> values = parameters.get(name);
-			return values != null && values.size() > 0 ? Utils.joinTokens(values) : null;
+			return values != null && values.size() > 0 ? Utils.joinTokens(values)
+			    : null;
 		}
 
 		public List<String> getParameterValues(String name) {
 			return parameters.get(name);
 		}
 
-		public  Map<String, List<String>> getParameters() {
+		public Map<String, List<String>> getParameters() {
 			return parameters;
 		}
 
@@ -368,7 +368,8 @@ public class RemoteQueryServlet extends HttpServlet {
 		Enumeration e = httpRequest.getParameterNames();
 		while (e.hasMoreElements()) {
 			String name = (String) e.nextElement();
-			String value = httpRequest.getParameter(name);
+			String[] values = httpRequest.getParameterValues(name);
+			String value = Utils.joinTokens(values);
 			rd.add(name, value);
 			logger.fine("http request parameter: " + name + ":" + value);
 		}

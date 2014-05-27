@@ -101,20 +101,20 @@ $(document)
             var serviceEntries = [
                 {
                   'serviceId' : 'selectAddresses',
-                  'serviceStatement' : 'select FIRST_NAME, LAST_NAME, STREET, CITY, ZIP, COUNTRY from ADDRESS where STREET like :searchString or FIRST_NAME like :searchString or LAST_NAME like :searchString or CITY like :searchString'
+                  'statements' : 'select FIRST_NAME, LAST_NAME, STREET, CITY, ZIP, COUNTRY from ADDRESS where STREET like :searchString or FIRST_NAME like :searchString or LAST_NAME like :searchString or CITY like :searchString'
                 },
                 {
                   'serviceId' : 'insertAddress',
-                  'serviceStatement' : 'insert into ADDRESS (FIRST_NAME, LAST_NAME, STREET, CITY, ZIP, COUNTRY) values (:firstName, :lastName, :street, :city, :zipppp, :country)'
+                  'statements' : 'insert into ADDRESS (FIRST_NAME, LAST_NAME, STREET, CITY, ZIP, COUNTRY) values (:firstName, :lastName, :street, :city, :zipppp, :country)'
                 },
 
                 {
                   'serviceId' : 'updateAddress',
-                  'serviceStatement' : 'update ADDRESS set STREET = :street, CITY = :city, ZIP = :zip, COUNTRY = :country '
+                  'statements' : 'update ADDRESS set STREET = :street, CITY = :city, ZIP = :zip, COUNTRY = :country '
                       + idWhereClause
                 }, {
                   'serviceId' : 'deleteAddress',
-                  'serviceStatement' : 'delete from ADDRESS ' + idWhereClause
+                  'statements' : 'delete from ADDRESS ' + idWhereClause
                 } ];
 
             rQ.call(rQ.names.RegisterService, {

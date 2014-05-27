@@ -64,9 +64,9 @@ public class Simple_Standalone_Request {
 		//
 		ServiceRepository sr = new ServiceRepository(
 		    "["
-		        + "{'serviceId':'insertAddress','serviceStatement':'insert into TEST_1.T_PERSON(FIRST_NAME,LAST_NAME) values (:firstName,:lastName)'}"
+		        + "{'serviceId':'insertAddress','statements':'insert into TEST_1.T_PERSON(FIRST_NAME,LAST_NAME) values (:firstName,:lastName)'}"
 		        + ","
-		        + "{'serviceId':'selectAddresses','serviceStatement':'select * from TEST_1.T_PERSON'}"
+		        + "{'serviceId':'selectAddresses','statements':'select * from TEST_1.T_PERSON'}"
 		        + "]");
 		ServiceEntry se = sr.get("insertAddress");
 		Assert.assertEquals("insertAddress", se.getServiceId());

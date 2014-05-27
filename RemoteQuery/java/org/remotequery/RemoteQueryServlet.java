@@ -126,7 +126,6 @@ public class RemoteQueryServlet extends HttpServlet {
 	public void doGet(final HttpServletRequest httpRequest,
 	    HttpServletResponse httpResponse) throws ServletException, IOException {
 		logger.fine("start " + servletName + ".doGet");
-		ProcessLog rLog = ProcessLog.Current();
 
 		String userId = httpRequest.getUserPrincipal() != null ? httpRequest
 		    .getUserPrincipal().getName() : WebConstants.ANONYMOUS;
@@ -146,6 +145,7 @@ public class RemoteQueryServlet extends HttpServlet {
 		//
 
 		try {
+			ProcessLog rLog = ProcessLog.Current();
 			if (Utils.isBlank(serviceId)) {
 				logger.severe("serviceId is blank! requestUri: " + requestUri);
 				return;
@@ -301,6 +301,8 @@ public class RemoteQueryServlet extends HttpServlet {
 			}
 		} catch (Exception e) {
 			logger.severe(Utils.getStackTrace(e));
+		} finally {
+			ProcessLog.RemoveCurrent();
 		}
 	}
 

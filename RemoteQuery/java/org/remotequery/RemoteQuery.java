@@ -90,21 +90,18 @@ public class RemoteQuery {
 		public static final String set_null = "set-null";
 		//
 		public static final String tx_begin = "tx-begin";
-		public static final String tx_commit = "tx_commit";
-		//
-		public static final String if_ = "if";
-		public static final String else_ = "else";
+		public static final String tx_commit = "tx-commit";
 	}
 
 	public static class Params {
 		public static String serviceId = "serviceId";
-		public static String serviceStatement = "serviceStatement";
+		public static String statements = "statements";
 		public static String accessRoles = "accessRoles";
 	}
 
 	public static class DBColumns {
 		public static String serviceId = "serviceId";
-		public static String serviceStatement = "serviceStatement";
+		public static String statements = "statements";
 		public static String accessRoles = "accessRoles";
 	}
 
@@ -272,6 +269,10 @@ public class RemoteQuery {
 				//
 				ServiceEntry serviceEntry = ServiceRepository.getInstance().get(
 				    serviceId);
+				if (serviceEntry == null) {
+					log.error("No ServiceEntry found for " + serviceId, logger);
+					return new Result(log);
+				}
 				//
 				// CHECK ACCESS
 				//
@@ -293,6 +294,7 @@ public class RemoteQuery {
 				} else {
 					log.warn("No access to " + serviceId + " for " + userId + " (roles: "
 					    + accessRoles + ")", logger);
+					return new Result(log);
 				}
 				//
 				// START PROCESSING STATEMENTS
@@ -301,15 +303,15 @@ public class RemoteQuery {
 				log.system("ServiceEntry found for userId=" + userId + " is : "
 				    + serviceEntry, logger);
 
-				String serviceStatement = serviceEntry.getServiceStatement();
+				String statements = serviceEntry.getStatements();
 
-				String[] statements = Utils.tokenize(serviceStatement,
+				String[] statementList = Utils.tokenize(statements,
 				    STATEMENT_DELIMITER, STATEMENT_ESCAPE);
 
 				// parameterSupport = ParameterSupport.begin(con, sqRequest, sqEntry);
-				for (String serviceStmt : statements) {
+				for (String statement : statementList) {
 					Result result2 = processSingleStatement(request, serviceEntry,
-					    serviceStmt);
+					    statement);
 					if (result2 != null) {
 						if (result != null) {
 							result2.setSubResult(result);
@@ -378,7 +380,7 @@ public class RemoteQuery {
 						log.warn("Tried to include " + stmt + ". Skipping.", logger);
 						return null;
 					}
-					String includeServiceStmt = se2.getServiceStatement();
+					String includeServiceStmt = se2.getStatements();
 					result = processSingleStatement(request, serviceEntry,
 					    includeServiceStmt);
 					return result;
@@ -463,6 +465,7 @@ public class RemoteQuery {
 						}
 					}
 				}
+				return;
 
 			}
 			String ls = "";
@@ -741,10 +744,10 @@ public class RemoteQuery {
 					}
 				} else {
 					String serviceId = request.getValue(Params.serviceId);
-					String serviceStatement = request.getValue(Params.serviceStatement);
+					String statements = request.getValue(Params.statements);
 					String accessRoles = request.getValue(Params.accessRoles);
 					IServiceRepository sr = ServiceRepository.getInstance();
-					sr.add(new ServiceEntry(serviceId, serviceStatement, accessRoles));
+					sr.add(new ServiceEntry(serviceId, statements, accessRoles));
 				}
 				return new Result(pLog);
 			}
@@ -1076,6 +1079,10 @@ public class RemoteQuery {
 
 		public static ProcessLog Current() {
 			return TL.get();
+		}
+
+		public static void RemoveCurrent() {
+			TL.remove();
 		}
 
 		public static ProcessLog newOnThread(String userId) {
@@ -1667,27 +1674,26 @@ public class RemoteQuery {
 		private static final long serialVersionUID = 1L;
 
 		private String serviceId;
-		private String serviceStatement;
+		private String statements;
 		private Set<String> accessRoles;
 
 		private String datasourceName = DEFAULT_DATASOURCE_NAME;
 
-		public ServiceEntry(String serviceId, String serviceStatement,
-		    String accessRoles) {
+		public ServiceEntry(String serviceId, String statements, String accessRoles) {
 			super();
 			this.serviceId = serviceId;
-			this.serviceStatement = serviceStatement;
+			this.statements = statements;
 			if (!Utils.isEmpty(accessRoles)) {
 				String[] r = accessRoles.split(",");
 				this.accessRoles = new HashSet<String>(Arrays.asList(r));
 			}
 		}
 
-		public ServiceEntry(String serviceId, String serviceStatement,
+		public ServiceEntry(String serviceId, String statements,
 		    Set<String> accessRoles) {
 			super();
 			this.serviceId = serviceId;
-			this.serviceStatement = serviceStatement;
+			this.statements = statements;
 			this.accessRoles = accessRoles;
 		}
 
@@ -1695,8 +1701,8 @@ public class RemoteQuery {
 			return serviceId;
 		}
 
-		public String getServiceStatement() {
-			return serviceStatement;
+		public String getStatements() {
+			return statements;
 		}
 
 		public Set<String> getAccessRole() {
@@ -1713,9 +1719,9 @@ public class RemoteQuery {
 
 		@Override
 		public String toString() {
-			return "ServiceEntry [serviceId=" + serviceId + ", serviceStatement="
-			    + serviceStatement + ", accessRoles=" + accessRoles
-			    + ", datasourceName=" + datasourceName + "]";
+			return "ServiceEntry [serviceId=" + serviceId + ", statements="
+			    + statements + ", accessRoles=" + accessRoles + ", datasourceName="
+			    + datasourceName + "]";
 		}
 
 		@Override
@@ -1945,10 +1951,9 @@ public class RemoteQuery {
 
 				rs = ps.executeQuery();
 				if (rs.next()) {
-					String serviceStatement = rs.getString(COL_SERVICE_STATEMENT);
+					String statements = rs.getString(COL_SERVICE_STATEMENT);
 					String accessRoles = rs.getString(COL_ACCESS_ROLES);
-					se = new RemoteQuery.ServiceEntry(serviceId, serviceStatement,
-					    accessRoles);
+					se = new RemoteQuery.ServiceEntry(serviceId, statements, accessRoles);
 					logger.info("Found " + se);
 					return se;
 				}
@@ -2970,6 +2975,14 @@ public class RemoteQuery {
 		public static <E> List<E> toList(String jsonString, Class<E> claxx) {
 			return Utils.asList(toArray(jsonString, claxx));
 		}
+	}
+
+	public static void shutdown() {
+		Utils.IsoDateTimeSecTL.remove();
+		Utils.IsoDateTimeTL.remove();
+		Utils.IsoDateTL.remove();
+		Utils.IsoTimeTL.remove();
+		Utils.IsoDateTimeFullTL.remove();
 	}
 
 }
