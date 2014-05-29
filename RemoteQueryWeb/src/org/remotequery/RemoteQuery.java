@@ -1207,6 +1207,22 @@ public class RemoteQuery {
 			return null;
 		}
 
+		// TODO junit
+		public Map<String, String> getMapSnapshot() {
+			Map<String, String> map = new HashMap<String, String>();
+			Set<Integer> keys = parametersTreeMap.keySet();
+
+			for (Integer key : keys) {
+				Map<String, String> parameters = getParameters(key);
+				for (Entry<String, String> e : parameters.entrySet()) {
+					if (!map.containsKey(key)) {
+						map.put(e.getKey(), e.getValue());
+					}
+				}
+			}
+			return map;
+		}
+
 		public String put(int level, String key, String value) {
 			Map<String, String> parameters = getParameters(level);
 			if (parameters == null) {
@@ -1269,6 +1285,11 @@ public class RemoteQuery {
 
 		public TreeMap<Integer, Map<String, String>> getParametersTreeMap() {
 			return parametersTreeMap;
+		}
+
+		public void setParametersTreeMap(
+		    TreeMap<Integer, Map<String, String>> parametersTreeMap) {
+			this.parametersTreeMap = parametersTreeMap;
 		}
 
 	}
@@ -2493,6 +2514,10 @@ public class RemoteQuery {
 		}
 
 		//
+		// Collection Utils
+		//
+
+		//
 		// IO UTILS
 		//
 
@@ -2740,6 +2765,37 @@ public class RemoteQuery {
 			return values;
 		}
 
+		public static <E> E newObject(Map<String, String> values, Class<E> claxx)
+		    throws Exception {
+			E e;
+			e = claxx.newInstance();
+			int colIndex = 0;
+			for (String propertyName : values.keySet()) {
+				if (isBlank(propertyName)) {
+					propertyName = "" + colIndex;
+				}
+				String[] res = createSetGetNames(propertyName);
+				Method m = null;
+				for (String setGetName : res) {
+					try {
+						m = claxx.getMethod("set" + setGetName, String.class);
+					} catch (Exception e1) {
+					}
+					if (m != null) {
+						break;
+					}
+				}
+				if (m != null) {
+					try {
+						m.invoke(e, values.get(propertyName));
+					} catch (Exception e1) {
+					}
+				}
+				colIndex++;
+			}
+			return e;
+		}
+
 		public static String getStringGetterMethodName(Method method) {
 
 			if (method.getParameterTypes().length != 0) {
@@ -2976,6 +3032,268 @@ public class RemoteQuery {
 			return Utils.asList(toArray(jsonString, claxx));
 		}
 	}
+
+	public static class ObjectStore<E> {
+		private static final Logger logger = Logger.getLogger(ObjectStore.class
+		    .getName());
+
+		private Class<E> resultClass;
+		private Set<String> roles;
+		private String userId;
+
+		public ObjectStore(Class<E> resultClass, String userId, Set<String> roles) {
+
+			this.resultClass = resultClass;
+			// this.basicParams = basicParams;
+			this.userId = userId;
+			if (roles != null) {
+				this.roles = roles;
+			} else {
+				this.roles = new HashSet<String>();
+			}
+		}
+
+		public E newInstance(Map<String, String> params) {
+			try {
+				return Utils.newObject(params, this.resultClass);
+			} catch (Exception e) {
+				logger.severe(e.getMessage());
+				return null;
+			}
+		}
+
+		public E newInstance(Request request) {
+			return newInstance(request.getMapSnapshot());
+		}
+
+		private Result _process(String serviceId,
+		    TreeMap<Integer, Map<String, String>> params) {
+			Request request = new Request();
+			request.setUserId(userId);
+			request.setRoles(roles);
+			request.setServiceId(serviceId);
+			if (params != null) {
+				request.setParametersTreeMap(params);
+			}
+
+			MainQuery mq = new MainQuery();
+			return mq.run(request);
+		}
+
+		public List<E> search(String serviceId,
+		    TreeMap<Integer, Map<String, String>> params) {
+			Result pr = _process(serviceId, params);
+			List<E> result = null;
+			if (pr != null) {
+				result = pr.asList(resultClass);
+			}
+			return result;
+		}
+
+		public List<E> search(String serviceId, Map<String, String> params) {
+			return search(serviceId, wrap(params));
+		}
+
+		public List<E> search(String serviceId, E object) throws Exception {
+			if (object == null) {
+				return search(serviceId);
+			}
+			Map<String, String> params = Utils.asMap(object);
+
+			return search(serviceId, wrap(params));
+		}
+
+		TreeMap<Integer, Map<String, String>> wrap(Map<String, String> params) {
+			TreeMap<Integer, Map<String, String>> tm = new TreeMap<Integer, Map<String, String>>();
+			tm.put(0, params);
+			return tm;
+		}
+
+		public List<E> search(String serviceId) {
+			return search(serviceId, (TreeMap<Integer, Map<String, String>>) null);
+		}
+
+		public E get(String serviceId, TreeMap<Integer, Map<String, String>> tm) {
+			List<E> result = this.search(serviceId, tm);
+			return !Utils.isEmpty(result) ? result.get(0) : null;
+		}
+
+		public E get(String serviceId, Map<String, String> parameters) {
+			return get(serviceId, wrap(parameters));
+		}
+
+		public E get(String serviceId, E object) throws Exception {
+			List<E> result = this.search(serviceId, object);
+			return !Utils.isEmpty(result) ? result.get(0) : null;
+		}
+
+		public E get(String serviceId) {
+			return get(serviceId, new HashMap<String, String>());
+		}
+
+		public Result update(String serviceId, Map<String, String> parameters) {
+			return _process(serviceId, wrap(parameters));
+		}
+
+		public Result update(String serviceId, E object) throws Exception {
+			Map<String, String> params = Utils.asMap(object);
+
+			return _process(serviceId, wrap(params));
+		}
+
+		// public void update(String serviceId, E object,
+		// Map<String, String> additionalParams) throws Exception {
+		// DataService ds = DataService.getInstance();
+		// ds.process(serviceId,
+		// applyBasicParams(ObjectUtils.asMap(object), additionalParams));
+		// }
+
+		public Result update(String serviceId) {
+			return _process(serviceId, null);
+		}
+
+		public Set<String> getRoles() {
+			return roles;
+		}
+
+		public void setRoles(Set<String> roles) {
+			this.roles = roles;
+		}
+
+		// public static Map<String, String> applyBasicParams(
+		// Map<String, String> params, Map<String, String> basicParams) {
+		// if (MapUtils.isNotEmpty(basicParams)) {
+		// for (String key : basicParams.keySet()) {
+		// params.put(key, basicParams.get(key));
+		// }
+		// }
+		// return params;
+		//
+		// }
+
+	}
+
+	// public class ObjectUtils extends org.apache.commons.lang.ObjectUtils {
+	//
+	// private static Log logger = LogFactory.getLog(ObjectUtils.class);
+	//
+	// public static boolean areNotEquals(Object o1, Object o2) {
+	// return !areEquals(o1, o2);
+	// }
+	//
+	// public static boolean areEquals(Object o1, Object o2) {
+	// return o1 == o2 || (o1 != null && o1.equals(o2));
+	// }
+	//
+	// public static Object toObject(byte[] objectBytes) throws Exception {
+	// ByteArrayInputStream bin = new ByteArrayInputStream(objectBytes);
+	// ObjectInputStream oin = new ObjectInputStream(bin);
+	// Object object = oin.readObject();
+	// oin.close();
+	// return object;
+	// }
+	//
+	// public static byte[] toByteArray(Object object) throws Exception {
+	// ByteArrayOutputStream bout = new ByteArrayOutputStream();
+	// ObjectOutputStream oout = new ObjectOutputStream(bout);
+	// oout.writeObject(object);
+	// oout.close();
+	// return bout.toByteArray();
+	// }
+	//
+	// @SuppressWarnings("resource")
+	// public static Object readObjectFromFile(File file)
+	// throws FileNotFoundException, IOException, ClassNotFoundException {
+	// ObjectInputStream oin = null;
+	// FileInputStream in = new FileInputStream(file);
+	// oin = new ObjectInputStream(in);
+	// Object o = oin.readObject();
+	// return o;
+	// }
+	//
+	// public static Object readObjectFromFile(String fileName)
+	// throws FileNotFoundException, IOException, ClassNotFoundException {
+	// return readObjectFromFile(new File(fileName));
+	// }
+	//
+	// public static void writeObjectToFile(String fileName, Serializable object)
+	// throws FileNotFoundException, IOException, ClassNotFoundException {
+	// writeObjectToFile(new File(fileName), object);
+	// }
+	//
+	// @SuppressWarnings("resource")
+	// public static void writeObjectToFile(File file, Serializable object)
+	// throws FileNotFoundException, IOException {
+	// ObjectOutputStream oout = null;
+	// FileOutputStream out = new FileOutputStream(file);
+	// oout = new ObjectOutputStream(out);
+	// oout.writeObject(object);
+	// }
+	//
+	// public static boolean isNull(Object o) {
+	// return o == null;
+	// }
+	//
+	// public static boolean isNotNull(Object o) {
+	// return !isNull(o);
+	// }
+	//
+	// public static Object toExpectedType(String value, Class<?> expectedType)
+	// throws ParseException {
+	// if (expectedType.equals(Date.class)) {
+	// Date date = null;
+	// date = DateUtils.toDate(value);
+	// return date;
+	// }
+	// if (expectedType.equals(Double.class)) {
+	// return new Double(value);
+	// }
+	// if (expectedType.equals(Long.class)) {
+	// return new Long(value);
+	// }
+	// if (expectedType.equals(Integer.class)) {
+	// return new Integer(value);
+	// }
+	// return value;
+	// }
+	//
+	// public static String getClassName(Object object) {
+	// if (object == null) {
+	// return "null";
+	// } else {
+	// return object.getClass().getSimpleName();
+	// }
+	// }
+	//
+	// public static String toString2(Object object) {
+	// return ReflectionToStringBuilder.toString(object,
+	// ToStringStyle.NO_FIELD_NAMES_STYLE, false);
+	// }
+	//
+
+	//
+	//
+	// @SuppressWarnings("unchecked")
+	// public static <E> Map<String, E> asMap(String keyProperty, List<E> list) {
+	// if (CollectionUtils.isEmpty(list)) {
+	// return MapUtils.EMPTY_MAP;
+	// }
+	// Class<E> claxx = (Class<E>) list.get(0).getClass();
+	// Map<String, E> map = new HashMap<String, E>();
+	// try {
+	// String methodName = "get" + keyProperty.substring(0, 1).toUpperCase()
+	// + keyProperty.substring(1);
+	// Method m = claxx.getMethod(methodName);
+	// for (E e : list) {
+	// map.put(m.invoke(e).toString(), e);
+	// }
+	// } catch (Exception e) {
+	// logger.error(e, e);
+	// }
+	// return map;
+	// }
+	//
+	// }
 
 	public static void shutdown() {
 		Utils.IsoDateTimeSecTL.remove();

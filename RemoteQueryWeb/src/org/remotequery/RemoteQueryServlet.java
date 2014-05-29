@@ -259,8 +259,8 @@ public class RemoteQueryServlet extends HttpServlet {
 
 			if (!Utils.isBlank(accessServiceId)) {
 				request.setServiceId(accessServiceId);
-				MainQuery process = new MainQuery();
-				Result r = process.run(request);
+				MainQuery query = new MainQuery();
+				Result r = query.run(request);
 				String exception = r == null ? null : r.getException();
 				if (Utils.isBlank(exception)) {
 					Map<String, String> map = request.getParameters(SESSION);
