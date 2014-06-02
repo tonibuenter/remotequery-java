@@ -1376,16 +1376,6 @@ public class RemoteQuery {
 			totalCount = Math.max(from + size, totalCount);
 		}
 
-		public void addNameValue(String name, String value) {
-			header.add(name);
-			table.add(Arrays.asList(value));
-		}
-
-		public void addNameValue(Map<String, String> values) {
-			for (String key : values.keySet()) {
-				addNameValue(key, values.get(key));
-			}
-		}
 
 		public void addRow(String... row) {
 			table.add(Arrays.asList(row));
