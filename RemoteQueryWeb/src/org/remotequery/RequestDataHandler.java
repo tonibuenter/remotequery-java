@@ -73,7 +73,6 @@ public class RequestDataHandler implements IRequestDataHandler {
 						files.put(name, fileIdentificator);
 						IOUtils.closeQuietly(stream2);
 					} else {
-
 						logger.fine("Form field " + name + " with value " + value
 						    + " detected.");
 						int len = value != null ? value.length() : 0;

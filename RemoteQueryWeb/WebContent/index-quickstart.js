@@ -68,7 +68,6 @@ $(document)
             callAddressService('deleteAddress');
           });
 
- 
           function callAddressService(serviceId) {
             var parameters = getParameters();
             log('info', 'call ' + serviceId + '  with ' + parameters);
@@ -77,8 +76,8 @@ $(document)
               search$.click();
             });
           }
-          
-         function getParameters() {
+
+          function getParameters() {
             var parameters = {};
             fields$.each(function() {
               var v$ = $(this);
@@ -87,7 +86,7 @@ $(document)
             return parameters;
           }
 
-           function log(severity, text) {
+          function log(severity, text) {
             var log$ = $('#log');
             log$.append($('<div>', {
               'text' : text,
@@ -96,7 +95,7 @@ $(document)
           }
 
           function registerServices(doneCb) {
-            var idWhereClause = 'where FIRST_NAME = :firstName and LAST_NAME = :lastName and CITY = :city';
+            var s, idWhereClause = 'where FIRST_NAME = :firstName and LAST_NAME = :lastName and CITY = :city';
 
             var serviceEntries = [
                 {
@@ -117,8 +116,9 @@ $(document)
                   'statements' : 'delete from ADDRESS ' + idWhereClause
                 } ];
 
+            s = JSON.stringify(serviceEntries);
             rQ.call(rQ.names.RegisterService, {
-              'serviceEntries' : JSON.stringify(serviceEntries)
+              'serviceEntries' : s
             }, function() {
               doneCb();
             });

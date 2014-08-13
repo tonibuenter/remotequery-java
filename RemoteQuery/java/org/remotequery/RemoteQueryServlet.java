@@ -201,9 +201,18 @@ public class RemoteQueryServlet extends HttpServlet {
 			Map<String, List<String>> param = requestData.getParameters();
 			for (Entry<String, List<String>> entry : param.entrySet()) {
 				String name = entry.getKey();
-				String value = Utils.joinTokens(entry.getValue());
-				request.put(REQUEST, name, value);
-				logger.fine("request data: " + name + ":" + value);
+				List<String> values = entry.getValue();
+				String value = null;
+				if (values != null) {
+					if (values.size() > 1) {
+						value = Utils.joinTokens(values);
+					} else {
+						value = values.get(0);
+					}
+					request.put(REQUEST, name, value);
+					logger.fine("request data: " + name + ":" + value);
+				}
+
 			}
 
 			//
@@ -345,8 +354,7 @@ public class RemoteQueryServlet extends HttpServlet {
 
 		public String getParameter(String name) {
 			List<String> values = parameters.get(name);
-			return values != null && values.size() > 0 ? Utils.joinTokens(values)
-			    : null;
+			return values != null && values.size() > 0 ? values.get(0) : null;
 		}
 
 		public List<String> getParameterValues(String name) {
@@ -369,9 +377,12 @@ public class RemoteQueryServlet extends HttpServlet {
 		while (e.hasMoreElements()) {
 			String name = (String) e.nextElement();
 			String[] values = httpRequest.getParameterValues(name);
-			String value = Utils.joinTokens(values);
-			rd.add(name, value);
-			logger.fine("http request parameter: " + name + ":" + value);
+			for (int i = 0; i < values.length; i++) {
+				String value = values[i];
+				rd.add(name, value);
+				logger.fine("http request parameter: " + name + ":" + value);
+			}
+
 		}
 		return rd;
 	}
