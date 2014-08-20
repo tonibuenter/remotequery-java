@@ -56,11 +56,7 @@ public class RemoteQueryServlet extends HttpServlet {
 	 */
 	public static final class WebConstants {
 
-		//
-		/**
-		 * "ANONYMOUS" is the default user name.
-		 */
-		public final static String ANONYMOUS = "ANONYMOUS";
+		
 		/**
 		 * "$WEBROOT" is the name to which the web root directory is bound to
 		 * (relevant only for web application).
@@ -128,7 +124,7 @@ public class RemoteQueryServlet extends HttpServlet {
 		logger.fine("start " + servletName + ".doGet");
 
 		String userId = httpRequest.getUserPrincipal() != null ? httpRequest
-		    .getUserPrincipal().getName() : WebConstants.ANONYMOUS;
+		    .getUserPrincipal().getName() : RemoteQuery.ANONYMOUS;
 		HttpSession session = httpRequest.getSession();
 
 		// String rootPath = session.getServletContext().getRealPath("/");

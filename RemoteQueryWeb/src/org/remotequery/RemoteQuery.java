@@ -42,8 +42,6 @@ import java.util.logging.Logger;
 
 import javax.sql.DataSource;
 
-import org.remotequery.RemoteQueryServlet.WebConstants;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -75,6 +73,8 @@ public class RemoteQuery {
 
 	public static final char DEFAULT_DEL = ',';
 	public static final char DEFAULT_ESC = '\\';
+
+	public static final String ANONYMOUS = "ANONYMOUS";
 
 	public static class MLT {
 		// code indication
@@ -260,8 +260,8 @@ public class RemoteQuery {
 			if (Utils.isEmpty(userId)) {
 				log.warn(
 				    "Request object has no userId set. Process continues with userId="
-				        + WebConstants.ANONYMOUS, logger);
-				request.setUserId(WebConstants.ANONYMOUS);
+				        + ANONYMOUS, logger);
+				request.setUserId(ANONYMOUS);
 				userId = request.getUserId();
 			}
 			// TODO better in the process object ?
@@ -1375,7 +1375,6 @@ public class RemoteQuery {
 			size = this.table.size();
 			totalCount = Math.max(from + size, totalCount);
 		}
-
 
 		public void addRow(String... row) {
 			table.add(Arrays.asList(row));
