@@ -572,10 +572,13 @@ public class RemoteQuery {
 			for (String attributeName : qap.parameters) {
 				String attributeValue = request.getValue(attributeName);
 				if (attributeValue == null) {
-					log.error("No value provided for parameter name:" + attributeName
-					    + " (serviceId:" + request.getServiceId() + ")", logger);
+					log.warn("processSql:No value provided for parameter name:"
+					    + attributeName + " (serviceId:" + request.getServiceId()
+					    + "). Will use empty string.", logger);
+					paramObjects.add("");
+				} else {
+					paramObjects.add(attributeValue);
 				}
-				paramObjects.add(attributeValue);
 			}
 			//
 			// DEFAULT PARAMETER
