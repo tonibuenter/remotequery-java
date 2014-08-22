@@ -32,397 +32,359 @@ import org.remotequery.RemoteQuery.Result;
 import org.remotequery.RemoteQuery.Utils;
 
 /**
- * The following init parameters are checked by the RemoteQueryServlet: "accessServiceId" and "requestDataHandler". The
- * "accessServiceId" defines a RemoteQuery (RQ) that will be called before the main RQ defined by the HTTP request
- * parameters. If there is a "accessServiceId" RQ and the call returns an Exception string the main RQ is not executed.
- * If the "accessServiceId" RQ return all SESSION level parameters of the RQ request are written back to the HTTP
- * session object.
+ * The following init parameters are checked by the RemoteQueryServlet:
+ * "accessServiceId" and "requestDataHandler". The "accessServiceId" defines a
+ * RemoteQuery (RQ) that will be called before the main RQ defined by the HTTP
+ * request parameters. If there is a "accessServiceId" RQ and the call returns
+ * an Exception string the main RQ is not executed. If the "accessServiceId" RQ
+ * return all SESSION level parameters of the RQ request are written back to the
+ * HTTP session object.
  */
-public class RemoteQueryServlet extends HttpServlet
-{
-    /**
+public class RemoteQueryServlet extends HttpServlet {
+	/**
      * 
      */
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    /**
-     * Class containing constants for the web programming with RemoteQuery.
-     * 
-     * @author tonibuenter
-     */
-    public static final class WebConstants
-    {
+	/**
+	 * Class containing constants for the web programming with RemoteQuery.
+	 * 
+	 * @author tonibuenter
+	 */
+	public static final class WebConstants {
 
-        /**
-         * "$WEBROOT" is the name to which the web root directory is bound to (relevant only for web application).
-         */
-        public static final String $WEBROOT = "$WEBROOT";
-        /**
-         * "$DATE" is the inital parameter name which will have an iso formated date string of the time the request is
-         * created.
-         */
-        public static final String $DATE = "$DATE";
-        // TODO not used ... public static final String $REQUESTID = "$REQUESTID";
-        /**
-         * Initial level parameter name for the serviceId value (relevant only for web application).
-         */
-        public static final String $SERVICEID = "$SERVICEID";
+		/**
+		 * "$WEBROOT" is the name to which the web root directory is bound to
+		 * (relevant only for web application).
+		 */
+		public static final String $WEBROOT = "$WEBROOT";
+		/**
+		 * "$DATE" is the inital parameter name which will have an iso formated date
+		 * string of the time the request is created.
+		 */
+		public static final String $DATE = "$DATE";
+		// TODO not used ... public static final String $REQUESTID = "$REQUESTID";
+		/**
+		 * Initial level parameter name for the serviceId value (relevant only for
+		 * web application).
+		 */
+		public static final String $SERVICEID = "$SERVICEID";
 
-        public static final String $TIMESTAMP = "$TIMESTAMP";
+		public static final String $TIMESTAMP = "$TIMESTAMP";
 
-        public static final String $CURRENT_TIME_MILLIS = "$CURRENT_TIME_MILLIS";
+		public static final String $CURRENT_TIME_MILLIS = "$CURRENT_TIME_MILLIS";
 
-        public static final String $USERID = "$USERID";
+		public static final String $USERID = "$USERID";
 
-        public static final String dataurl_ = "dataurl_";
-        public static final int MAX_FIELD_LENGTH = 50 * 1024 * 1024;
+		public static final String dataurl_ = "dataurl_";
+		public static final int MAX_FIELD_LENGTH = 50 * 1024 * 1024;
 
-    }
+	}
 
-    //
-    //
-    //
-    private String servletName = "";
-    private String webRoot = "";
-    private String accessServiceId = "";
-    private String requestDataHandler = "";
+	//
+	//
+	//
+	private String servletName = "";
+	private String webRoot = "";
+	private String accessServiceId = "";
+	private String requestDataHandler = "";
 
-    //
-    private static final Logger logger = Logger.getLogger(RemoteQueryServlet.class.getName());
+	//
+	private static final Logger logger = Logger
+	    .getLogger(RemoteQueryServlet.class.getName());
 
-    @Override
-    public void init(ServletConfig config) throws ServletException
-    {
-        super.init(config);
-        logger.info("RemoteQueryServlet starting ...");
-        config.getServletContext().getAttributeNames();
+	@Override
+	public void init(ServletConfig config) throws ServletException {
+		super.init(config);
+		logger.info("RemoteQueryServlet starting ...");
+		config.getServletContext().getAttributeNames();
 
-        //
-        servletName = config.getServletName();
-        //
-        webRoot = this.getServletContext().getRealPath("/");
-        //
-        accessServiceId = config.getInitParameter("accessServiceId");
-        //
-        requestDataHandler = config.getInitParameter("requestDataHandler");
+		//
+		servletName = config.getServletName();
+		//
+		webRoot = this.getServletContext().getRealPath("/");
+		//
+		accessServiceId = config.getInitParameter("accessServiceId");
+		//
+		requestDataHandler = config.getInitParameter("requestDataHandler");
 
-    }
+	}
 
-    @Override
-    public void doPost(HttpServletRequest httpRequest, HttpServletResponse response) throws ServletException,
-            IOException
-    {
-        doGet(httpRequest, response);
-    }
+	@Override
+	public void doPost(HttpServletRequest httpRequest,
+	    HttpServletResponse response) throws ServletException, IOException {
+		doGet(httpRequest, response);
+	}
 
-    @Override
-    public void doGet(final HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws ServletException,
-            IOException
-    {
-        logger.fine("start " + servletName + ".doGet");
+	@Override
+	public void doGet(final HttpServletRequest httpRequest,
+	    HttpServletResponse httpResponse) throws ServletException, IOException {
+		logger.fine("start " + servletName + ".doGet");
 
-        String userId = httpRequest.getUserPrincipal() != null ? httpRequest.getUserPrincipal().getName()
-                : RemoteQuery.ANONYMOUS;
-        HttpSession session = httpRequest.getSession();
+		String userId = httpRequest.getUserPrincipal() != null ? httpRequest
+		    .getUserPrincipal().getName() : RemoteQuery.ANONYMOUS;
+		HttpSession session = httpRequest.getSession();
 
-        // String rootPath = session.getServletContext().getRealPath("/");
+		// String rootPath = session.getServletContext().getRealPath("/");
 
-        String requestUri = httpRequest.getRequestURI();
-        logger.fine("Request URI " + requestUri);
-        String[] parts = requestUri.split("/");
+		String requestUri = httpRequest.getRequestURI();
+		logger.fine("Request URI " + requestUri);
+		String[] parts = requestUri.split("/");
 
-        if (parts.length == 0)
-        {
-            logger.severe("requestUri is empty: " + requestUri);
-            return;
-        }
-        String serviceId = parts[parts.length - 1];
+		if (parts.length == 0) {
+			logger.severe("requestUri is empty: " + requestUri);
+			return;
+		}
+		String serviceId = parts[parts.length - 1];
 
-        logger.fine("serviceId: " + serviceId);
+		logger.fine("serviceId: " + serviceId);
 
-        //
-        //
-        //
+		//
+		//
+		//
 
-        try
-        {
-            ProcessLog pLog = ProcessLog.Current();
-            if (Utils.isBlank(serviceId))
-            {
-                logger.severe("serviceId is blank! requestUri: " + requestUri);
-                return;
-            }
-            Request request = new Request(REQUEST);
+		try {
+			ProcessLog pLog = ProcessLog.Current();
+			if (Utils.isBlank(serviceId)) {
+				logger.severe("serviceId is blank! requestUri: " + requestUri);
+				return;
+			}
+			Request request = new Request(REQUEST);
 
-            //
-            // USER ID (independent from $USERID !)
-            //
-            request.setUserId(userId);
+			//
+			// USER ID (independent from $USERID !)
+			//
+			request.setUserId(userId);
 
-            //
-            //
-            // INITIAL PARAMETERS
-            //
-            //
+			//
+			//
+			// INITIAL PARAMETERS
+			//
+			//
 
-            long currentTimeMillis = System.currentTimeMillis();
+			long currentTimeMillis = System.currentTimeMillis();
 
-            request.put(INITIAL, WebConstants.$WEBROOT, webRoot);
+			request.put(INITIAL, WebConstants.$WEBROOT, webRoot);
 
-            request.put(INITIAL, WebConstants.$SERVICEID, serviceId);
+			request.put(INITIAL, WebConstants.$SERVICEID, serviceId);
 
-            request.put(INITIAL, WebConstants.$USERID, userId);
+			request.put(INITIAL, WebConstants.$USERID, userId);
 
-            request.put(INITIAL, WebConstants.$CURRENT_TIME_MILLIS, "" + currentTimeMillis);
+			request.put(INITIAL, WebConstants.$CURRENT_TIME_MILLIS, ""
+			    + currentTimeMillis);
 
-            request.put(INITIAL, WebConstants.$TIMESTAMP, Utils.toIsoDateTimeSec(currentTimeMillis));
+			request.put(INITIAL, WebConstants.$TIMESTAMP,
+			    Utils.toIsoDateTimeSec(currentTimeMillis));
 
-            request.put(INITIAL, WebConstants.$DATE, Utils.toIsoDate(currentTimeMillis));
+			request.put(INITIAL, WebConstants.$DATE,
+			    Utils.toIsoDate(currentTimeMillis));
 
-            //
-            // REQUEST DATA
-            //
+			//
+			// REQUEST DATA
+			//
 
-            RequestData requestData = null;
-            if (!Utils.isBlank(requestDataHandler))
-            {
-                try
-                {
-                    IRequestDataHandler rdh = (IRequestDataHandler) Class.forName(requestDataHandler).newInstance();
-                    requestData = rdh.process(httpRequest);
-                }
-                catch (Exception e1)
-                {
-                    logger.warning("Exception in IRequestDataHandler creation: " + e1.getMessage()
-                            + " Fallback to default IRequestDataHandler!");
-                }
-            }
-            if (requestData == null)
-            {
-                logger.fine("Use default IRequestDataHandler.");
-                requestData = getRequestData(httpRequest);
-            }
+			RequestData requestData = null;
+			if (!Utils.isBlank(requestDataHandler)) {
+				try {
+					IRequestDataHandler rdh = (IRequestDataHandler) Class.forName(
+					    requestDataHandler).newInstance();
+					requestData = rdh.process(httpRequest);
+				} catch (Exception e1) {
+					logger.warning("Exception in IRequestDataHandler creation: "
+					    + e1.getMessage() + " Fallback to default IRequestDataHandler!");
+				}
+			}
+			if (requestData == null) {
+				logger.fine("Use default IRequestDataHandler.");
+				requestData = getRequestData(httpRequest);
+			}
 
-            Map<String, List<String>> param = requestData.getParameters();
-            for (Entry<String, List<String>> paramEntry : param.entrySet())
-            {
-                String name = paramEntry.getKey();
-                List<String> values = paramEntry.getValue();
-                String value = null;
-                if (values != null)
-                {
-                    if (values.size() > 1)
-                    {
-                        value = Utils.joinTokens(values);
-                        logger.fine("paramEntry (multi value joined!): " + name + ":" + value);
-                    }
-                    else
-                    {
-                        value = values.get(0);
-                        logger.fine("paramEntry: " + name + ":" + value);
-                    }
-                    request.put(REQUEST, name, value);
-                }
-            }
+			Map<String, List<String>> param = requestData.getParameters();
+			for (Entry<String, List<String>> paramEntry : param.entrySet()) {
+				String name = paramEntry.getKey();
+				List<String> values = paramEntry.getValue();
+				String value = null;
+				if (values != null) {
+					if (values.size() > 1) {
+						value = Utils.joinTokens(values);
+						logger.fine("paramEntry (multi value joined!): " + name + ":"
+						    + value);
+					} else {
+						value = values.get(0);
+						logger.fine("paramEntry: " + name + ":" + value);
+					}
+					request.put(REQUEST, name, value);
+				}
+			}
 
-            //
-            //
-            // REQUEST HEADERS
-            //
+			//
+			//
+			// REQUEST HEADERS
+			//
 
-            @SuppressWarnings("rawtypes")
-            Enumeration e = httpRequest.getHeaderNames();
-            while (e.hasMoreElements())
-            {
-                String name = (String) e.nextElement();
-                String value = httpRequest.getHeader(name);
-                request.put(HEADER, name, value);
-                logger.fine("http header: " + name + ":" + value);
-            }
+			@SuppressWarnings("rawtypes")
+			Enumeration e = httpRequest.getHeaderNames();
+			while (e.hasMoreElements()) {
+				String name = (String) e.nextElement();
+				String value = httpRequest.getHeader(name);
+				request.put(HEADER, name, value);
+				logger.fine("http header: " + name + ":" + value);
+			}
 
-            //
-            //
-            // SESSION ATTRIBUTES
-            //
-            //
+			//
+			//
+			// SESSION ATTRIBUTES
+			//
+			//
 
-            e = session.getAttributeNames();
-            while (e.hasMoreElements())
-            {
-                String name = (String) e.nextElement();
-                Object value = session.getAttribute(name);
-                if (value instanceof String)
-                {
-                    request.put(SESSION, name, (String) value);
-                    logger.fine("http session parameter: " + name + ":" + value);
-                }
-                else
-                {
-                    logger.fine("http session parameter: " + name + ". Skipped! Value is not a string.");
-                }
+			e = session.getAttributeNames();
+			while (e.hasMoreElements()) {
+				String name = (String) e.nextElement();
+				Object value = session.getAttribute(name);
+				if (value instanceof String) {
+					request.put(SESSION, name, (String) value);
+					logger.fine("http session parameter: " + name + ":" + value);
+				} else {
+					logger.fine("http session parameter: " + name
+					    + ". Skipped! Value is not a string.");
+				}
 
-            }
+			}
 
-            request.setTransientAttribute("httpRequest", httpRequest);
-            request.setTransientAttribute("requestData", requestData);
+			request.setTransientAttribute("httpRequest", httpRequest);
+			request.setTransientAttribute("requestData", requestData);
 
-            //
-            // Check for accessServiceId and run it
-            //
+			//
+			// Check for accessServiceId and run it
+			//
 
-            //
-            // When accessServiceId is available the corresponding RQ is executed with the accessServiceId. If the
-            // result of the RQ run is null or the exception of the run is null
-            //
+			//
+			// When accessServiceId is available the corresponding RQ is executed with
+			// the accessServiceId. If the
+			// result of the RQ run is null or the exception of the run is null
+			//
 
-            if (!Utils.isBlank(accessServiceId))
-            {
-                request.setServiceId(accessServiceId);
-                MainQuery accessRq = new MainQuery();
-                Result r = accessRq.run(request);
-                String exception =
-                // r == null ? null :
-                r.getException();
-                if (Utils.isBlank(exception))
-                {
-                    Map<String, String> map = request.getParameters(SESSION);
-                    for (Entry<String, String> entry : map.entrySet())
-                    {
-                        session.setAttribute(entry.getKey(), entry.getValue());
-                    }
-                }
-                else
-                {
-                    returnAsJsonString(JsonUtils.exception(exception), httpResponse);
-                    return;
-                }
-            }
-            else
-            {
-                logger.fine("No accessServiceId defined. No accessService will be processing.");
-            }
+			if (!Utils.isBlank(accessServiceId)) {
+				request.setServiceId(accessServiceId);
+				MainQuery accessRq = new MainQuery();
+				Result r = accessRq.run(request);
+				String exception =
+				// r == null ? null :
+				r.getException();
+				if (Utils.isBlank(exception)) {
+					Map<String, String> map = request.getParameters(SESSION);
+					for (Entry<String, String> entry : map.entrySet()) {
+						session.setAttribute(entry.getKey(), entry.getValue());
+					}
+				} else {
+					returnAsJsonString(JsonUtils.exception(exception), httpResponse);
+					return;
+				}
+			} else {
+				logger
+				    .fine("No accessServiceId defined. No accessService will be processing.");
+			}
 
-            //
-            // Prepare main RQ
-            //
+			//
+			// Prepare main RQ
+			//
 
-            request.setServiceId(serviceId);
-            // reset userId
-            userId = request.getUserId();
-            request.put(INITIAL, WebConstants.$USERID, userId);
+			request.setServiceId(serviceId);
+			// reset userId
+			userId = request.getUserId();
+			request.put(INITIAL, WebConstants.$USERID, userId);
 
-            //
-            //
-            //
+			//
+			//
+			//
 
-            long startTime = System.currentTimeMillis();
-            MainQuery mainRq = new MainQuery();
-            Result result = mainRq.run(request);
-            pLog.system("Request time used (ms):" + (System.currentTimeMillis() - startTime), logger);
-            if (result != null)
-            {
-                String s = JsonUtils.toJson(result);
-                returnAsJsonString(s, httpResponse);
-            }
-            else
-            {
-                returnAsJsonString(JsonUtils.toJson("empty"), httpResponse);
-            }
-        }
-        catch (Exception e)
-        {
-            logger.severe(Utils.getStackTrace(e));
-        }
-        finally
-        {
-            ProcessLog.RemoveCurrent();
-        }
-    }
+			long startTime = System.currentTimeMillis();
+			MainQuery mainRq = new MainQuery();
+			Result result = mainRq.run(request);
+			pLog.system("Request time used (ms):"
+			    + (System.currentTimeMillis() - startTime), logger);
+			if (result != null) {
+				String s = JsonUtils.toJson(result);
+				returnAsJsonString(s, httpResponse);
+			} else {
+				returnAsJsonString(JsonUtils.toJson("empty"), httpResponse);
+			}
+		} catch (Exception e) {
+			logger.severe(Utils.getStackTrace(e));
+		} finally {
+			ProcessLog.RemoveCurrent();
+		}
+	}
 
-    public static void returnAsJsonString(String s, HttpServletResponse response)
-    {
-        try
-        {
-            byte[] document = s.getBytes(ENCODING);
-            response.setContentType("application/json");
-            response.setContentLength(document.length);
-            response.setCharacterEncoding(ENCODING);
+	public static void returnAsJsonString(String s, HttpServletResponse response) {
+		try {
+			byte[] document = s.getBytes(ENCODING);
+			response.setContentType("application/json");
+			response.setContentLength(document.length);
+			response.setCharacterEncoding(ENCODING);
 
-            OutputStream out = response.getOutputStream();
-            out.write(document);
-            out.flush();
-        }
-        catch (Exception e)
-        {
-            logger.severe(Utils.getStackTrace(e));
-        }
-    }
+			OutputStream out = response.getOutputStream();
+			out.write(document);
+			out.flush();
+		} catch (Exception e) {
+			logger.severe(Utils.getStackTrace(e));
+		}
+	}
 
-    public interface IRequestDataHandler
-    {
-        RequestData process(HttpServletRequest httpRequest) throws Exception;
-    }
+	public interface IRequestDataHandler {
+		RequestData process(HttpServletRequest httpRequest) throws Exception;
+	}
 
-    public static class RequestData implements Serializable
-    {
+	public static class RequestData implements Serializable {
 
-        private final Map<String, List<String>> parameters = new HashMap<String, List<String>>();
-        private final Map<String, String> fileInfo = new HashMap<String, String>();
-        /**
+		private final Map<String, List<String>> parameters = new HashMap<String, List<String>>();
+		private final Map<String, String> fileInfo = new HashMap<String, String>();
+		/**
      * 
      */
-        private static final long serialVersionUID = 1L;
+		private static final long serialVersionUID = 1L;
 
-        public void add(String name, String value)
-        {
-            List<String> values = parameters.get(name);
-            if (values == null)
-            {
-                values = new ArrayList<String>();
-                parameters.put(name, values);
-            }
-            values.add(value);
-        }
+		public void add(String name, String value) {
+			List<String> values = parameters.get(name);
+			if (values == null) {
+				values = new ArrayList<String>();
+				parameters.put(name, values);
+			}
+			values.add(value);
+		}
 
-        public String getParameter(String name)
-        {
-            List<String> values = parameters.get(name);
-            return values != null && values.size() > 0 ? values.get(0) : null;
-        }
+		public String getParameter(String name) {
+			List<String> values = parameters.get(name);
+			return values != null && values.size() > 0 ? values.get(0) : null;
+		}
 
-        public List<String> getParameterValues(String name)
-        {
-            return parameters.get(name);
-        }
+		public List<String> getParameterValues(String name) {
+			return parameters.get(name);
+		}
 
-        public Map<String, List<String>> getParameters()
-        {
-            return parameters;
-        }
+		public Map<String, List<String>> getParameters() {
+			return parameters;
+		}
 
-        public Map<String, String> getFileInfo()
-        {
-            return fileInfo;
-        }
-    }
+		public Map<String, String> getFileInfo() {
+			return fileInfo;
+		}
+	}
 
-    public static RequestData getRequestData(HttpServletRequest httpRequest)
-    {
-        RequestData rd = new RequestData();
-        @SuppressWarnings("rawtypes")
-        Enumeration e = httpRequest.getParameterNames();
-        while (e.hasMoreElements())
-        {
-            String name = (String) e.nextElement();
-            String[] values = httpRequest.getParameterValues(name);
-            for (String value : values)
-            {
-                rd.add(name, value);
-                logger.fine("http request parameter: " + name + ":" + value);
-            }
+	public static RequestData getRequestData(HttpServletRequest httpRequest) {
+		RequestData rd = new RequestData();
+		@SuppressWarnings("rawtypes")
+		Enumeration e = httpRequest.getParameterNames();
+		while (e.hasMoreElements()) {
+			String name = (String) e.nextElement();
+			String[] values = httpRequest.getParameterValues(name);
+			for (String value : values) {
+				rd.add(name, value);
+				logger.fine("http request parameter: " + name + ":" + value);
+			}
 
-        }
-        return rd;
-    }
+		}
+		return rd;
+	}
 
 }
