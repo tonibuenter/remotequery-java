@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=9; IE=8; IE=7; IE=EDGE">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta http-equiv="expires" content="0">
+<meta name="viewport" content="initial-scale=1, maximum-scale=1">
+
+<title>Index JQM 01</title>
+
+<style type="text/css">
+a[href="#"] {
+	font-stretch: 2px;
+	text-decoration: none;
+	padding: 2px;
+}
+</style>
+
+<!-- JQUERY JS -->
+<script type="text/javascript" src="libs/jquery-1.11.1.js"></script>
+
+<!-- JQUERY MOBILE -->
+<script type="text/javascript" src="libs/jquery.mobile-1.4.3/jquery.mobile-1.4.3.js"></script>
+<link rel="stylesheet"
+	href="libs/jquery.mobile-1.4.3/jquery.mobile-1.4.3.css">
+
+<!-- REMOTE QUERY JS -->
+<script type="text/javascript">
+  //
+  // global name for RemoteQuery call can be set like this (default is 'rQ')
+  //
+  window.REMOTE_QUERY_NAME = 'rQ';
+</script>
+<script src="remotequery-0.9.0.js"></script>
+
+
+
+<!-- APPLICATION JS CODE -->
+<script type="text/javascript" src="index-jqm-01.js"></script>
+</head>
+<body>
+
+	<h2>RemoteQuery Quickstart</h2>
+
+	<!-- 	SEARCH PART -->
+
+	<div class="search part">
+
+		<div>
+			<input id="searchString" placeholder="Search String"
+				style="width: 20em;"> <a href="#" id="search">search</a>
+		</div>
+
+		<div id="result"></div>
+
+	</div>
+
+
+	<!-- 	EDIT PART -->
+
+
+	<div id="editPanel" class="edit part">
+		<input name="firstName" placeholder="First Name"> <input
+			name="lastName" placeholder="Last Name"> <input name="street"
+			placeholder="Street"> <input name="city" placeholder="City">
+		<input name="zip" placeholder="Zip"> <input name="country"
+			placeholder="Country">
+		<div class="buttons">
+			<a href="#" id="insert">insert</a> <a href="#" id="update">update</a>
+			<a href="#" id="delete">delete</a>
+		</div>
+
+	</div>
+
+
+	<!-- 	LOG PART -->
+
+
+	<div class="log part">
+		<div id="#log"></div>
+		<div class="buttons">
+			<a href="#">clear log</a>
+		</div>
+	</div>
+</body>
+</html>
+
+
+
+
+
+
+
+

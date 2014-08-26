@@ -39,9 +39,7 @@ import org.remotequery.RemoteQuery.Utils;
  * an Exception string the main RQ is not executed. If the "accessServiceId" RQ
  * return all SESSION level parameters of the RQ request are written back to the
  * HTTP session object.
- * 
- * 
- * */
+ */
 public class RemoteQueryServlet extends HttpServlet {
 	/**
      * 
@@ -52,11 +50,9 @@ public class RemoteQueryServlet extends HttpServlet {
 	 * Class containing constants for the web programming with RemoteQuery.
 	 * 
 	 * @author tonibuenter
-	 * 
 	 */
 	public static final class WebConstants {
 
-		
 		/**
 		 * "$WEBROOT" is the name to which the web root directory is bound to
 		 * (relevant only for web application).
@@ -104,6 +100,8 @@ public class RemoteQueryServlet extends HttpServlet {
 		config.getServletContext().getAttributeNames();
 
 		//
+		servletName = config.getServletName();
+		//
 		webRoot = this.getServletContext().getRealPath("/");
 		//
 		accessServiceId = config.getInitParameter("accessServiceId");
@@ -130,18 +128,23 @@ public class RemoteQueryServlet extends HttpServlet {
 		// String rootPath = session.getServletContext().getRealPath("/");
 
 		String requestUri = httpRequest.getRequestURI();
-		logger.info("Request URI " + requestUri);
+		logger.fine("Request URI " + requestUri);
 		String[] parts = requestUri.split("/");
 
+		if (parts.length == 0) {
+			logger.severe("requestUri is empty: " + requestUri);
+			return;
+		}
 		String serviceId = parts[parts.length - 1];
 
-		logger.fine("serviceId " + serviceId);
+		logger.fine("serviceId: " + serviceId);
+
 		//
 		//
 		//
 
 		try {
-			ProcessLog rLog = ProcessLog.Current();
+			ProcessLog pLog = ProcessLog.Current();
 			if (Utils.isBlank(serviceId)) {
 				logger.severe("serviceId is blank! requestUri: " + requestUri);
 				return;
@@ -149,13 +152,13 @@ public class RemoteQueryServlet extends HttpServlet {
 			Request request = new Request(REQUEST);
 
 			//
-			// userId (independent from $USERID !
+			// USER ID (independent from $USERID !)
 			//
 			request.setUserId(userId);
 
 			//
 			//
-			// INITIAL parameter
+			// INITIAL PARAMETERS
 			//
 			//
 
@@ -187,28 +190,31 @@ public class RemoteQueryServlet extends HttpServlet {
 					    requestDataHandler).newInstance();
 					requestData = rdh.process(httpRequest);
 				} catch (Exception e1) {
-					logger.warning(e1.getMessage());
+					logger.warning("Exception in IRequestDataHandler creation: "
+					    + e1.getMessage() + " Fallback to default IRequestDataHandler!");
 				}
 			}
 			if (requestData == null) {
+				logger.fine("Use default IRequestDataHandler.");
 				requestData = getRequestData(httpRequest);
 			}
 
 			Map<String, List<String>> param = requestData.getParameters();
-			for (Entry<String, List<String>> entry : param.entrySet()) {
-				String name = entry.getKey();
-				List<String> values = entry.getValue();
+			for (Entry<String, List<String>> paramEntry : param.entrySet()) {
+				String name = paramEntry.getKey();
+				List<String> values = paramEntry.getValue();
 				String value = null;
 				if (values != null) {
 					if (values.size() > 1) {
 						value = Utils.joinTokens(values);
+						logger.fine("paramEntry (multi value joined!): " + name + ":"
+						    + value);
 					} else {
 						value = values.get(0);
+						logger.fine("paramEntry: " + name + ":" + value);
 					}
 					request.put(REQUEST, name, value);
-					logger.fine("request data: " + name + ":" + value);
 				}
-
 			}
 
 			//
@@ -218,19 +224,6 @@ public class RemoteQueryServlet extends HttpServlet {
 
 			@SuppressWarnings("rawtypes")
 			Enumeration e = httpRequest.getHeaderNames();
-			while (e.hasMoreElements()) {
-				String name = (String) e.nextElement();
-				String value = httpRequest.getHeader(name);
-				request.put(HEADER, name, value);
-				logger.fine("http header: " + name + ":" + value);
-			}
-
-			//
-			//
-			// REQUEST HEADERS
-			//
-
-			e = httpRequest.getHeaderNames();
 			while (e.hasMoreElements()) {
 				String name = (String) e.nextElement();
 				String value = httpRequest.getHeader(name);
@@ -251,6 +244,9 @@ public class RemoteQueryServlet extends HttpServlet {
 				if (value instanceof String) {
 					request.put(SESSION, name, (String) value);
 					logger.fine("http session parameter: " + name + ":" + value);
+				} else {
+					logger.fine("http session parameter: " + name
+					    + ". Skipped! Value is not a string.");
 				}
 
 			}
@@ -262,29 +258,37 @@ public class RemoteQueryServlet extends HttpServlet {
 			// Check for accessServiceId and run it
 			//
 
+			//
+			// When accessServiceId is available the corresponding RQ is executed with
+			// the accessServiceId. If the
+			// result of the RQ run is null or the exception of the run is null
+			//
+
 			if (!Utils.isBlank(accessServiceId)) {
 				request.setServiceId(accessServiceId);
-				MainQuery query = new MainQuery();
-				Result r = query.run(request);
-				String exception = r == null ? null : r.getException();
+				MainQuery accessRq = new MainQuery();
+				Result r = accessRq.run(request);
+				String exception =
+				// r == null ? null :
+				r.getException();
 				if (Utils.isBlank(exception)) {
 					Map<String, String> map = request.getParameters(SESSION);
 					for (Entry<String, String> entry : map.entrySet()) {
 						session.setAttribute(entry.getKey(), entry.getValue());
 					}
 				} else {
-					returnString(JsonUtils.exception(exception), httpResponse);
+					returnAsJsonString(JsonUtils.exception(exception), httpResponse);
 					return;
 				}
 			} else {
-				logger.fine("No accessServiceId defined. No accessService processing.");
+				logger
+				    .fine("No accessServiceId defined. No accessService will be processing.");
 			}
 
 			//
-			// prepare main RemoteQuery call
+			// Prepare main RQ
 			//
 
-			// reset serviceId
 			request.setServiceId(serviceId);
 			// reset userId
 			userId = request.getUserId();
@@ -293,16 +297,17 @@ public class RemoteQueryServlet extends HttpServlet {
 			//
 			//
 			//
+
 			long startTime = System.currentTimeMillis();
-			MainQuery process = new MainQuery();
-			Result result = process.run(request);
-			rLog.system("Request time used (ms):"
+			MainQuery mainRq = new MainQuery();
+			Result result = mainRq.run(request);
+			pLog.system("Request time used (ms):"
 			    + (System.currentTimeMillis() - startTime), logger);
 			if (result != null) {
 				String s = JsonUtils.toJson(result);
-				returnString(s, httpResponse);
+				returnAsJsonString(s, httpResponse);
 			} else {
-				returnString(JsonUtils.toJson("empty"), httpResponse);
+				returnAsJsonString(JsonUtils.toJson("empty"), httpResponse);
 			}
 		} catch (Exception e) {
 			logger.severe(Utils.getStackTrace(e));
@@ -311,7 +316,7 @@ public class RemoteQueryServlet extends HttpServlet {
 		}
 	}
 
-	public static void returnString(String s, HttpServletResponse response) {
+	public static void returnAsJsonString(String s, HttpServletResponse response) {
 		try {
 			byte[] document = s.getBytes(ENCODING);
 			response.setContentType("application/json");
@@ -332,8 +337,8 @@ public class RemoteQueryServlet extends HttpServlet {
 
 	public static class RequestData implements Serializable {
 
-		private Map<String, List<String>> parameters = new HashMap<String, List<String>>();
-		private Map<String, String> fileInfo = new HashMap<String, String>();
+		private final Map<String, List<String>> parameters = new HashMap<String, List<String>>();
+		private final Map<String, String> fileInfo = new HashMap<String, String>();
 		/**
      * 
      */
@@ -373,8 +378,7 @@ public class RemoteQueryServlet extends HttpServlet {
 		while (e.hasMoreElements()) {
 			String name = (String) e.nextElement();
 			String[] values = httpRequest.getParameterValues(name);
-			for (int i = 0; i < values.length; i++) {
-				String value = values[i];
+			for (String value : values) {
 				rd.add(name, value);
 				logger.fine("http request parameter: " + name + ":" + value);
 			}
