@@ -30,6 +30,7 @@ $(document)
             searchString = searchString + '%';
             result$.empty().text('-waiting for server reply ...-');
 
+            
             // call RemoteQuery ...
             rQ.call('selectAddresses', {
               'searchString' : searchString
@@ -94,6 +95,9 @@ $(document)
             }));
           }
 
+          /**
+           * @memberOf webapp
+           */
           function registerServices(doneCb) {
             var s, idWhereClause = 'where FIRST_NAME = :firstName and LAST_NAME = :lastName and CITY = :city';
 

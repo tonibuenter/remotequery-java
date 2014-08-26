@@ -38,7 +38,7 @@
       'cache' : false,
       'type' : 'POST',
       'success' : function() {
-        if (callback) {
+        if (callback !== undefined) {
           callback.apply(this, arguments);
         }
       }
