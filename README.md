@@ -32,7 +32,8 @@ Essential RQ components for Java
 Quick Start for a RQ-based web application with Java
 ----------------------------------------
 
-+ Download the content of **RemoteQueryWeb** (Eclipse Kepler Project)
++ Download the **RemoteQuery** (Download ZIP botton) and import the sub folder **RemoteQueryWeb** with Eclipse as existing projects.
++ You may possibly set the JDK in the project
 + Deploy the RemoteQueryWeb to Apache Tomcat or JEE server
 + ... all done ...
 
