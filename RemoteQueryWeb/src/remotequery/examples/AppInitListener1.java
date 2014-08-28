@@ -6,6 +6,7 @@ import java.util.logging.Logger;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
+import javax.sql.DataSource;
 
 import org.hsqldb.jdbc.JDBCPool;
 import org.remotequery.RemoteQuery.BuiltIns;
@@ -15,103 +16,151 @@ import org.remotequery.RemoteQuery.ServiceEntry;
 import org.remotequery.RemoteQuery.ServiceRepository;
 import org.remotequery.RemoteQuery.Utils;
 
+import com.mysql.jdbc.jdbc2.optional.MysqlConnectionPoolDataSource;
 
-public class AppInitListener1 implements ServletContextListener {
+public class AppInitListener1 implements ServletContextListener
+{
 
-	private JDBCPool dataSource = null;
+    private DataSource dataSource = null;
 
-	@SuppressWarnings("unused")
-	private static final long serialVersionUID = 1L;
+    public static boolean USE_JSON_SERVICE_REPOSITORY = false;
+    public static boolean USE_HSQLDB = true;
 
-	private static Logger logger = Logger.getLogger(AppInitListener1.class
-	    .getName());
+    @SuppressWarnings("unused")
+    private static final long serialVersionUID = 1L;
 
-	static {
-		System.out.println("loading " + AppInitListener1.class.getCanonicalName());
-	}
+    private static Logger logger = Logger.getLogger(AppInitListener1.class.getName());
 
-	public void contextInitialized(ServletContextEvent event) {
-		//
-		//
-		//
+    static
+    {
+        System.out.println("loading " + AppInitListener1.class.getCanonicalName());
+    }
 
-		ServletContext sc = event.getServletContext();
-		Connection connection = null;
-		try {
-			//
-			// webInfPath
-			//
-			String webInfPath = sc.getRealPath("/WEB-INF");
-			logger.info("webInfPath:" + webInfPath);
+    public void contextInitialized(ServletContextEvent event)
+    {
+        //
+        //
+        //
 
-			// init RemoteQuery Parts
+        ServletContext sc = event.getServletContext();
+        Connection connection = null;
+        try
+        {
+            //
+            // webInfPath
+            //
+            String webInfPath = sc.getRealPath("/WEB-INF");
+            logger.info("webInfPath:" + webInfPath);
 
-			//
-			// AppInit-A :: Init default DataSource
-			//
+            // init RemoteQuery Parts
 
-			String dbUrl = sc.getInitParameter("dbUrl");
-			dbUrl = Utils.isEmpty(dbUrl) ? "jdbc:hsqldb:file:~/RemoteQueryDB;shutdown=true"
-			    : dbUrl;
-			logger.info("Try to create connection to " + dbUrl);
-			dataSource = new JDBCPool();
-			dataSource.setDatabase(dbUrl);
-			dataSource.setUser("SA");
-			dataSource.setPassword("SA");
+            //
+            // AppInit-A :: Init default DataSource
+            //
 
-			// create and set as default dataSource
-			new DataSourceEntry(dataSource);
+            String dbUrl = sc.getInitParameter("dbUrl");
+            dbUrl = Utils.isEmpty(dbUrl) ? "jdbc:hsqldb:file:~/RemoteQueryDB;shutdown=true" : dbUrl;
+            logger.info("Try to create connection to " + dbUrl);
+            if (USE_HSQLDB)
+            {
+                dataSource = new JDBCPool();
+                ((JDBCPool) dataSource).setDatabase(dbUrl);
+                ((JDBCPool) dataSource).setUser("SA");
+                ((JDBCPool) dataSource).setPassword("SA");
+            }
+            else
+            {
+                dataSource = new MysqlConnectionPoolDataSource();
+                ((MysqlConnectionPoolDataSource) dataSource).setDatabaseName(dbUrl);
+                ((MysqlConnectionPoolDataSource) dataSource).setUser("...");
+                ((MysqlConnectionPoolDataSource) dataSource).setPassword("...");
+            }
 
-			//
-			// AppInit-B :: Init default ServiceRepository
-			//
+            // getting a connection initialisation of the services
+            connection = dataSource.getConnection();
 
-			// create and set as default serviceRepository
-			IServiceRepository repo = new ServiceRepository("[]");
+            // create and set as default dataSource
+            new DataSourceEntry(dataSource);
 
+            //
+            // AppInit-B :: Init default ServiceRepository
+            //
 
-			//
-			// AppInit-D :: Addl Built-In RegisterService service
-			//
+            IServiceRepository repo = null;
 
-			repo.add(new ServiceEntry("RegisterService", "java:"
-			    + BuiltIns.RegisterService.class.getName(), ""));
+            // create and set as default serviceRepository
+            if (USE_JSON_SERVICE_REPOSITORY)
+            {
+                // create a JSON ServiceRepository
+                repo = new ServiceRepository("[]");
+            }
+            else
+            {
+                // create a ServiceRepository in the Database
+                String createRemoteQueryServiceTableSql = "create table REMOTE_QUERY_SERVICE ("
+                        + "SERVICE_ID varchar(1024), " + "STATEMENTS varchar(1024), " + "ROLES varchar(1024), "
+                        + "DATASOURCE varchar(1024), " + " PRIMARY KEY(SERVICE_ID) " + ")";
+                String dropRemoteQueryServiceTableSql = "drop table REMOTE_QUERY_SERVICE";
+                Utils.runQuery(connection, dropRemoteQueryServiceTableSql);
+                Utils.runQuery(connection, createRemoteQueryServiceTableSql);
+                repo = new ServiceRepository(dataSource, "REMOTE_QUERY_SERVICE");
+            }
 
-			//
-			// AppInit-D :: Init DB and RemoteQueries (only for Development!)
-			//
+            //
+            // AppInit-D :: Addl Built-In RegisterService service
+            //
 
-			connection = dataSource.getConnection();
+            //
 
-			// create ServiceEntry for the create statements
-			String createAddressQuery = "create table ADDRESS ("
-			    + "FIRST_NAME varchar(1024), " + "LAST_NAME varchar(1024), "
-			    + "STREET varchar(1024), " + "CITY varchar(1024), "
-			    + "ZIP varchar(1024), " + "COUNTRY varchar(1024))";
-			logger.info("Try to create ADDRESS table ...");
-			Utils.runQuery(connection, createAddressQuery);
+            ServiceEntry se = new ServiceEntry("RegisterService", "java:" + BuiltIns.RegisterService.class.getName(),
+                    "");
 
-			//
-			//
-			//
+            repo.add(se);
+            se = new ServiceEntry("ListServices", "java:" + BuiltIns.ListServices.class.getName(), "");
 
-		} catch (Exception e) {
-			logger.severe(e.getLocalizedMessage());
-		} finally {
-			Utils.closeQuietly(connection);
-		}
-		logger.info(this.getClass().getName() + " contextInitialized done.");
-	}
+            //
 
-	public void contextDestroyed(ServletContextEvent sce) {
-		try {
-			if (dataSource != null) {
-				dataSource.close(0);
-			}
-		} catch (Exception e) {
-			logger.severe("DataSource close: " + e.getMessage());
-		}
-		logger.info(this.getClass().getName() + " contextDestroyed done.");
-	}
+            repo.add(se);
+            //
+            // AppInit-E :: Init DB and RemoteQueries (only for Development!)
+            //
+
+            // create ServiceEntry for the create statements
+            String createAddressQuery = "create table ADDRESS (" + "FI" + "RST_NAME varchar(1024), "
+                    + "LAST_NAME varchar(1024), " + "STREET varchar(1024), " + "CITY varchar(1024), "
+                    + "ZIP varchar(1024), " + "COUNTRY varchar(1024))";
+            logger.info("Try to create ADDRESS table ...");
+            Utils.runQuery(connection, createAddressQuery);
+
+            //
+            //
+            //
+
+        }
+        catch (Exception e)
+        {
+            logger.severe(e.getLocalizedMessage());
+        }
+        finally
+        {
+            Utils.closeQuietly(connection);
+        }
+        logger.info(this.getClass().getName() + " contextInitialized done.");
+    }
+
+    public void contextDestroyed(ServletContextEvent sce)
+    {
+        try
+        {
+            if (dataSource != null)
+            {
+                // depending on DataSource class : dataSource.close()
+            }
+        }
+        catch (Exception e)
+        {
+            logger.severe("DataSource close: " + e.getMessage());
+        }
+        logger.info(this.getClass().getName() + " contextDestroyed done.");
+    }
 }
-
