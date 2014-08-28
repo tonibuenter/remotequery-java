@@ -44,8 +44,8 @@ a[href="#"] {
 	<div class="search part">
 
 		<div>
-			<input id="searchString" placeholder="Search String"
-				style="width: 20em;"> <a href="#" id="search">search</a>
+			<input id="searchString" placeholder="Search String" style="width: 20em;"> <a href="#"
+				id="search">search</a>
 		</div>
 
 		<div id="result"></div>
@@ -57,14 +57,12 @@ a[href="#"] {
 
 
 	<div id="editPanel" class="edit part">
-		<input name="firstName" placeholder="First Name"> <input
-			name="lastName" placeholder="Last Name"> <input name="street"
-			placeholder="Street"> <input name="city" placeholder="City">
-		<input name="zip" placeholder="Zip"> <input name="country"
-			placeholder="Country">
+		<input name="firstName" placeholder="First Name"> <input name="lastName"
+			placeholder="Last Name"> <input name="street" placeholder="Street"> <input
+			name="city" placeholder="City"> <input name="zip" placeholder="Zip"> <input
+			name="country" placeholder="Country">
 		<div class="buttons">
-			<a href="#" id="insert">insert</a> <a href="#" id="update">update</a>
-			<a href="#" id="delete">delete</a>
+			<a href="#" id="insert">insert</a> <a href="#" id="update">update</a> <a href="#" id="delete">delete</a>
 		</div>
 
 	</div>
@@ -72,13 +70,25 @@ a[href="#"] {
 
 	<!-- 	LOG PART -->
 
+	<hr>
 
 	<div class="log part">
-		<div id="#log"></div>
 		<div class="buttons">
-			<a href="#">clear log</a>
+			<button id="clearLog">clear log</button>
+
+			<button id="showServices">show services</button>
 		</div>
+
+
+		<div id="log"></div>
 	</div>
+
+
+
+
+
+
+
 </body>
 </html>
 
