@@ -55,9 +55,11 @@ import com.google.gson.reflect.TypeToken;
  * set-application, ...
  * 
  * @author tonibuenter
- * 
  */
 public class RemoteQuery {
+
+	private static final Logger rqLogger = Logger.getLogger(RemoteQuery.class
+	    .getName());
 
 	/**
 	 * "DEFAULT_DATASOURCE" is the default data source name.
@@ -75,6 +77,14 @@ public class RemoteQuery {
 	public static final char DEFAULT_ESC = '\\';
 
 	public static final String ANONYMOUS = "ANONYMOUS";
+
+	public static String COL_STATEMENTS = "STATEMENTS";
+	public static String COL_ROLES = "ROLES";
+	public static String COL_SERVICE_ID = "SERVICE_ID";
+	/**
+	 * Version 2.0
+	 */
+	public static String COL_DATASOURCE = "DATASOURCE";
 
 	public static class MLT {
 		// code indication
@@ -96,13 +106,13 @@ public class RemoteQuery {
 	public static class Params {
 		public static String serviceId = "serviceId";
 		public static String statements = "statements";
-		public static String accessRoles = "accessRoles";
+		public static String roles = "roles";
 	}
 
 	public static class DBColumns {
 		public static String serviceId = "serviceId";
 		public static String statements = "statements";
-		public static String accessRoles = "accessRoles";
+		public static String roles = "roles";
 	}
 
 	public static class LevelConstants {
@@ -137,7 +147,6 @@ public class RemoteQuery {
 	 * object.
 	 * 
 	 * @author tonibuenter
-	 * 
 	 */
 	public static class DataSourceEntry {
 
@@ -167,7 +176,6 @@ public class RemoteQuery {
 	 * Singleton for keeping the data source objects.
 	 * 
 	 * @author tonibuenter
-	 * 
 	 */
 	public static class DataSources {
 
@@ -177,7 +185,7 @@ public class RemoteQuery {
 			return instance == null ? instance = new DataSources() : instance;
 		}
 
-		private Map<String, DataSource> dss = new HashMap<String, DataSource>();
+		private final Map<String, DataSource> dss = new HashMap<String, DataSource>();
 
 		public DataSource get() {
 			return dss.get(DEFAULT_DATASOURCE_NAME);
@@ -211,13 +219,14 @@ public class RemoteQuery {
 	 * base service repository.
 	 * 
 	 * @author tonibuenter
-	 * 
 	 */
 	public static interface IServiceRepository {
 
 		ServiceEntry get(String serviceId) throws Exception;
 
-		void add(ServiceEntry serviceEntry);
+		List<ServiceEntry> list() throws Exception;
+
+		void add(ServiceEntry serviceEntry) throws Exception;
 
 	}
 
@@ -226,7 +235,6 @@ public class RemoteQuery {
 	 * request. It takes care of the service statement parsing and processing.
 	 * 
 	 * @author tonibuenter
-	 * 
 	 */
 	public static class MainQuery implements IQuery {
 
@@ -241,7 +249,7 @@ public class RemoteQuery {
 		private static final Logger logger = Logger.getLogger(MainQuery.class
 		    .getName());
 
-		private Map<String, Serializable> processStore = new HashMap<String, Serializable>();
+		private final Map<String, Serializable> processStore = new HashMap<String, Serializable>();
 
 		public void put(String key, Serializable value) {
 			processStore.put(key, value);
@@ -277,12 +285,12 @@ public class RemoteQuery {
 				// CHECK ACCESS
 				//
 				boolean hasAccess = false;
-				Set<String> accessRoles = serviceEntry.getAccessRole();
-				if (Utils.isEmpty(accessRoles)) {
+				Set<String> roles = serviceEntry.getRoleSet();
+				if (Utils.isEmpty(roles)) {
 					hasAccess = true;
 				} else {
-					for (String accessRole : accessRoles) {
-						if (request.getRoles().contains(accessRole)) {
+					for (String role : roles) {
+						if (request.getRoles().contains(role)) {
 							hasAccess = true;
 							break;
 						}
@@ -293,7 +301,7 @@ public class RemoteQuery {
 					    logger);
 				} else {
 					log.warn("No access to " + serviceId + " for " + userId + " (roles: "
-					    + accessRoles + ")", logger);
+					    + roles + ")", logger);
 					return new Result(log);
 				}
 				//
@@ -673,7 +681,7 @@ public class RemoteQuery {
 
 					if (started) {
 						if (Character.isJavaIdentifierPart(c)) {
-							currentParam.append((char) c);
+							currentParam.append(c);
 							continue;
 						} else {
 							started = false;
@@ -723,7 +731,6 @@ public class RemoteQuery {
 	 * tasks such as : register a service,
 	 * 
 	 * @author tonibuenter
-	 * 
 	 */
 	public static class BuiltIns {
 
@@ -738,23 +745,54 @@ public class RemoteQuery {
 			public Result run(Request request) {
 				ProcessLog pLog = ProcessLog.Current();
 				String serviceEntriesJson = request.getValue("serviceEntries");
-				if (!Utils.isBlank(serviceEntriesJson)) {
-					List<ServiceEntry> serviceEntries = JsonUtils.toList(
-					    serviceEntriesJson, ServiceEntry.class);
-					IServiceRepository sr = ServiceRepository.getInstance();
-					for (ServiceEntry serviceEntry : serviceEntries) {
-						sr.add(serviceEntry);
+				IServiceRepository sr = ServiceRepository.getInstance();
+				try {
+					if (!Utils.isBlank(serviceEntriesJson)) {
+						List<ServiceEntry> serviceEntries = JsonUtils.toList(
+						    serviceEntriesJson, ServiceEntry.class);
+						for (ServiceEntry serviceEntry : serviceEntries) {
+							sr.add(serviceEntry);
+						}
+					} else {
+						String serviceId = request.getValue(Params.serviceId);
+						String statements = request.getValue(Params.statements);
+						String roles = request.getValue(Params.roles);
+						sr.add(new ServiceEntry(serviceId, statements, roles));
 					}
-				} else {
-					String serviceId = request.getValue(Params.serviceId);
-					String statements = request.getValue(Params.statements);
-					String accessRoles = request.getValue(Params.accessRoles);
-					IServiceRepository sr = ServiceRepository.getInstance();
-					sr.add(new ServiceEntry(serviceId, statements, accessRoles));
+				} catch (Exception e) {
+					pLog.error(e, rqLogger);
 				}
 				return new Result(pLog);
 			}
 
+		}
+
+		public static class ListServices implements IQuery {
+
+			/**
+             * 
+             */
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public Result run(Request request) {
+
+				ProcessLog pLog = ProcessLog.Current();
+				IServiceRepository sr = ServiceRepository.getInstance();
+				Result r = new Result(COL_SERVICE_ID, COL_STATEMENTS, COL_ROLES,
+				    COL_DATASOURCE);
+				try {
+					List<ServiceEntry> list = sr.list();
+					for (ServiceEntry se : list) {
+						r.addRow(se.getServiceId(), se.getStatements(),
+						    Utils.joinTokens(se.getRoleSet()), se.getDatasourceName());
+					}
+				} catch (Exception e) {
+					pLog.error(e, rqLogger);
+				}
+				r.setProcessLog(pLog);
+				return r;
+			}
 		}
 	}
 
@@ -763,7 +801,6 @@ public class RemoteQuery {
 	 * request resolution.
 	 * 
 	 * @author tonibuenter
-	 * 
 	 */
 	public static class ProcessLog implements Serializable {
 
@@ -786,11 +823,11 @@ public class RemoteQuery {
 
 			private static final long serialVersionUID = 1L;
 
-			private String msg;
+			private final String msg;
 			private int msgCode;
-			private long time;
+			private final long time;
 
-			private String state;
+			private final String state;
 
 			public LogEntry(int msgCode, String msg, String state, long time,
 			    String... data) {
@@ -859,25 +896,33 @@ public class RemoteQuery {
 
 			@Override
 			public boolean equals(Object obj) {
-				if (this == obj)
+				if (this == obj) {
 					return true;
-				if (obj == null)
+				}
+				if (obj == null) {
 					return false;
-				if (getClass() != obj.getClass())
+				}
+				if (getClass() != obj.getClass()) {
 					return false;
+				}
 				LogEntry other = (LogEntry) obj;
 				if (msg == null) {
-					if (other.msg != null)
+					if (other.msg != null) {
 						return false;
-				} else if (!msg.equals(other.msg))
+					}
+				} else if (!msg.equals(other.msg)) {
 					return false;
+				}
 				if (state == null) {
-					if (other.state != null)
+					if (other.state != null) {
 						return false;
-				} else if (!state.equals(other.state))
+					}
+				} else if (!state.equals(other.state)) {
 					return false;
-				if (time != other.time)
+				}
+				if (time != other.time) {
 					return false;
+				}
 				return true;
 			}
 
@@ -909,8 +954,8 @@ public class RemoteQuery {
 		//
 
 		private String state = OK;
-		private List<LogEntry> logEntries = new ArrayList<LogEntry>();
-		private Map<String, String> attributes = new HashMap<String, String>();
+		private final List<LogEntry> logEntries = new ArrayList<LogEntry>();
+		private final Map<String, String> attributes = new HashMap<String, String>();
 
 		private Long lastUsedTime;
 		private String userId;
@@ -987,7 +1032,7 @@ public class RemoteQuery {
 		}
 
 		public void _writeLog(String line, Level level, Logger... loggers) {
-			for (Logger logger : loggers)
+			for (Logger logger : loggers) {
 				if (level == Level.WARNING) {
 					logger.warning(line);
 				} else if (level == Level.SEVERE) {
@@ -995,6 +1040,7 @@ public class RemoteQuery {
 				} else {
 					logger.info(line);
 				}
+			}
 		}
 
 		private void add(int msgCode, String line, String level) {
@@ -1097,39 +1143,20 @@ public class RemoteQuery {
 	}
 
 	/**
-	 * <h2>Request for service process</h2>
-	 * 
-	 * A request object is similar to a HTTP request. Both have parameters string
-	 * and file base. Parameter exist on different scopes or as we call them here
-	 * 'levels'.
-	 * 
-	 * <h3>Parameters Levels</h3>
-	 * 
-	 * <h4>Initial Parameters</h4>
-	 * 
-	 * These are parameters set during the creation of the request, usually the
-	 * can not be overriden later (during processing of the request)
-	 * 
-	 * <h4>Request Parameters</h4>
-	 * 
-	 * Request parameters such as Http Request
-	 * 
-	 * 
-	 * Parameters <h4>Inter Request</h4>
-	 * 
-	 * A set of parameters for inter request communication.
-	 * 
-	 * <h4>Session Parameters</h4>
-	 * 
-	 * Session parameters are similar to request attributes Session : parameters
-	 * from HttpSession Application : parameters from the ServletContext often
-	 * called Application Context
-	 * 
-	 * $Parameter: the $Paramters like $USERID, $USERTID (an optional technical
-	 * user id), $SERVICEID, $SESSIONID, $C
+	 * <h2>Request for service process</h2> A request object is similar to a HTTP
+	 * request. Both have parameters string and file base. Parameter exist on
+	 * different scopes or as we call them here 'levels'. <h3>Parameters Levels</h3>
+	 * <h4>Initial Parameters</h4> These are parameters set during the creation of
+	 * the request, usually the can not be overriden later (during processing of
+	 * the request) <h4>Request Parameters</h4> Request parameters such as Http
+	 * Request Parameters <h4>Inter Request</h4> A set of parameters for inter
+	 * request communication. <h4>Session Parameters</h4> Session parameters are
+	 * similar to request attributes Session : parameters from HttpSession
+	 * Application : parameters from the ServletContext often called Application
+	 * Context $Parameter: the $Paramters like $USERID, $USERTID (an optional
+	 * technical user id), $SERVICEID, $SESSIONID, $C
 	 * 
 	 * @author tonibuenter
-	 * 
 	 */
 	public static class Request implements Serializable {
 
@@ -1150,10 +1177,11 @@ public class RemoteQuery {
 		private transient Map<String, Object> transientAttributes = new HashMap<String, Object>();
 
 		@SuppressWarnings("unchecked")
-		private Map<String, Serializable>[] fileList = new Map[4];
+		private final Map<String, Serializable>[] fileList = new Map[4];
 		{
-			for (int i = 0; i < 4; i++)
+			for (int i = 0; i < 4; i++) {
 				fileList[i] = new HashMap<String, Serializable>();
+			}
 		}
 
 		public Request() {
@@ -1675,7 +1703,6 @@ public class RemoteQuery {
 	 * statements, data source name and access.
 	 * 
 	 * @author tonibuenter
-	 * 
 	 */
 	public static class ServiceEntry implements Serializable {
 
@@ -1686,28 +1713,27 @@ public class RemoteQuery {
      */
 		private static final long serialVersionUID = 1L;
 
-		private String serviceId;
-		private String statements;
-		private Set<String> accessRoles;
+		private final String serviceId;
+		private final String statements;
+		private Set<String> roles;
 
 		private String datasourceName = DEFAULT_DATASOURCE_NAME;
 
-		public ServiceEntry(String serviceId, String statements, String accessRoles) {
+		public ServiceEntry(String serviceId, String statements, String roles) {
 			super();
 			this.serviceId = serviceId;
 			this.statements = statements;
-			if (!Utils.isEmpty(accessRoles)) {
-				String[] r = accessRoles.split(",");
-				this.accessRoles = new HashSet<String>(Arrays.asList(r));
+			if (!Utils.isEmpty(roles)) {
+				String[] r = roles.split(",");
+				this.roles = new HashSet<String>(Arrays.asList(r));
 			}
 		}
 
-		public ServiceEntry(String serviceId, String statements,
-		    Set<String> accessRoles) {
+		public ServiceEntry(String serviceId, String statements, Set<String> roles) {
 			super();
 			this.serviceId = serviceId;
 			this.statements = statements;
-			this.accessRoles = accessRoles;
+			this.roles = roles;
 		}
 
 		public String getServiceId() {
@@ -1718,8 +1744,12 @@ public class RemoteQuery {
 			return statements;
 		}
 
-		public Set<String> getAccessRole() {
-			return this.accessRoles;
+		public Set<String> getRoleSet() {
+			return this.roles;
+		}
+
+		public String getRoles() {
+			return Utils.joinTokens(roles);
 		}
 
 		public String getDatasourceName() {
@@ -1733,7 +1763,7 @@ public class RemoteQuery {
 		@Override
 		public String toString() {
 			return "ServiceEntry [serviceId=" + serviceId + ", statements="
-			    + statements + ", accessRoles=" + accessRoles + ", datasourceName="
+			    + statements + ", roles=" + roles + ", datasourceName="
 			    + datasourceName + "]";
 		}
 
@@ -1748,18 +1778,23 @@ public class RemoteQuery {
 
 		@Override
 		public boolean equals(Object obj) {
-			if (this == obj)
+			if (this == obj) {
 				return true;
-			if (obj == null)
+			}
+			if (obj == null) {
 				return false;
-			if (getClass() != obj.getClass())
+			}
+			if (getClass() != obj.getClass()) {
 				return false;
+			}
 			ServiceEntry other = (ServiceEntry) obj;
 			if (serviceId == null) {
-				if (other.serviceId != null)
+				if (other.serviceId != null) {
 					return false;
-			} else if (!serviceId.equals(other.serviceId))
+				}
+			} else if (!serviceId.equals(other.serviceId)) {
 				return false;
+			}
 			return true;
 		}
 
@@ -1789,6 +1824,18 @@ public class RemoteQuery {
 		private ServiceRepositorySql sql;
 		private ServiceRepositoryJson json;
 
+		private IServiceRepository sr() {
+			if (sql != null) {
+				return sql;
+			} else if (json != null) {
+				return json;
+			} else {
+				throw new RuntimeException(
+				    "No service repository initialized. Currently 'sql' and 'json' service repositories are available.");
+			}
+
+		}
+
 		/**
 		 * Creates a ServiceRepository and assign the static instance with it.
 		 * 
@@ -1816,40 +1863,23 @@ public class RemoteQuery {
 
 		@Override
 		public ServiceEntry get(String serviceId) throws SQLException, Exception {
-			ServiceEntry se = null;
-			if (sql != null) {
-				se = sql.get(serviceId);
-			} else if (json != null) {
-				se = json.get(serviceId);
-			} else {
-				throw new RuntimeException(
-				    "No service repository initialized. Currently 'sql' and 'json' service repositories are available.");
-			}
-			return se;
+			IServiceRepository sr = sr();
+			return sr.get(serviceId);
 		}
 
 		@Override
-		public void add(ServiceEntry serviceEntry) {
-			if (sql != null) {
-				sql.add(serviceEntry);
-			} else if (json != null) {
-				json.add(serviceEntry);
-			} else {
-				throw new RuntimeException(
-				    "No service repository initialized. Currently 'sql' and 'json' service repositories are available.");
-			}
+		public void add(ServiceEntry serviceEntry) throws Exception {
+			IServiceRepository sr = sr();
+			sr.add(serviceEntry);
+		}
+
+		@Override
+		public List<ServiceEntry> list() throws Exception {
+			return sr().list();
 		}
 	}
 
 	public static class ServiceRepositoryJson implements IServiceRepository {
-
-		public static String COL_SERVICE_STATEMENT = "SERVICE_STATEMENT";
-		public static String COL_ACCESS_ROLES = "ACCESS_ROLES";
-		public static String COL_SERVICE_ID = "SERVICE_ID";
-		/**
-		 * Version 2.0
-		 */
-		public static String COL_DATASOURCE_NAME = "DATASOURCE_NAME";
 
 		private static final Logger logger = Logger
 		    .getLogger(ServiceRepositoryJson.class.getName());
@@ -1921,22 +1951,19 @@ public class RemoteQuery {
 			}
 			entries.add(serviceEntry);
 		}
+
+		@Override
+		public List<ServiceEntry> list() {
+			return this.entries;
+		}
 	}
 
 	public static class ServiceRepositorySql implements IServiceRepository {
 
-		public static String COL_SERVICE_STATEMENT = "SERVICE_STATEMENT";
-		public static String COL_ACCESS_ROLES = "ACCESS_ROLES";
-		public static String COL_SERVICE_ID = "SERVICE_ID";
-		/**
-		 * Version 2.0
-		 */
-		public static String COL_DATASOURCE_NAME = "DATASOURCE_NAME";
-
 		private static final Logger logger = Logger
 		    .getLogger(ServiceRepositorySql.class.getName());
 
-		private DataSource ds;
+		private final DataSource ds;
 		private String tableName;
 		private String selectQuery;
 
@@ -1950,32 +1977,51 @@ public class RemoteQuery {
 		}
 
 		public ServiceEntry get(String serviceId) throws SQLException {
+			String sql = selectQuery != null ? selectQuery : "select "
+			    + COL_SERVICE_ID + ", " + COL_STATEMENTS + ", " + COL_ROLES
+			    + " from " + tableName + " where " + COL_SERVICE_ID + " = ?";
+			List<ServiceEntry> r = _get(sql, serviceId);
+			return Utils.isEmpty(r) ? null : r.get(0);
+		}
+
+		@Override
+		public List<ServiceEntry> list() throws Exception {
+			String sql = "select " + COL_SERVICE_ID + ", " + COL_STATEMENTS + ", "
+			    + COL_ROLES + ", " + COL_DATASOURCE + " from " + tableName;
+			List<ServiceEntry> r = _get(sql);
+			return r;
+		}
+
+		private List<ServiceEntry> _get(String sql, String... parameters)
+		    throws SQLException {
 			Connection con = null;
 			PreparedStatement ps = null;
 			ResultSet rs = null;
 			ServiceEntry se = null;
+			List<ServiceEntry> result = new ArrayList<ServiceEntry>();
 			try {
 				con = getConnection();
-				String sql = selectQuery != null ? selectQuery : "select "
-				    + COL_SERVICE_STATEMENT + ", " + COL_ACCESS_ROLES + " from "
-				    + tableName + " where " + COL_SERVICE_ID + " = ?";
+
 				ps = con.prepareStatement(sql);
-				ps.setString(1, serviceId);
+				for (int i = 0; i < parameters.length; i++) {
+					ps.setString(i + 1, parameters[i]);
+				}
 
 				rs = ps.executeQuery();
-				if (rs.next()) {
-					String statements = rs.getString(COL_SERVICE_STATEMENT);
-					String accessRoles = rs.getString(COL_ACCESS_ROLES);
-					se = new RemoteQuery.ServiceEntry(serviceId, statements, accessRoles);
+				while (rs.next()) {
+					String serviceId = rs.getString(COL_SERVICE_ID);
+					String statements = rs.getString(COL_STATEMENTS);
+					String roles = rs.getString(COL_ROLES);
+					se = new RemoteQuery.ServiceEntry(serviceId, statements, roles);
 					logger.info("Found " + se);
-					return se;
+					result.add(se);
 				}
 			} finally {
 				Utils.closeQuietly(rs);
 				Utils.closeQuietly(ps);
 				returnConnection(con);
 			}
-			return null;
+			return result;
 		}
 
 		private Connection getConnection() throws SQLException {
@@ -1993,17 +2039,28 @@ public class RemoteQuery {
 		}
 
 		@Override
-		public void add(ServiceEntry serviceEntry) {
-			// TODO Auto-generated method stub
+		public void add(ServiceEntry se) throws Exception {
+			Connection con = null;
+			try {
+				String sql = "insert into " + tableName + " (" + COL_SERVICE_ID + ", "
+				    + COL_STATEMENTS + ", " + COL_ROLES + ", " + COL_DATASOURCE
+				    + ") values (?,?,?,?)";
+				con = getConnection();
+				Utils.runQuery(con, sql, se.getServiceId(), se.getStatements(),
+				    se.getRoles(), se.getDatasourceName());
+			} finally {
+				returnConnection(con);
+			}
 
 		}
+
 	}
 
 	static class StringTokenizer2 {
 
 		private int index = 0;
 		private String[] tokens = null;
-		private StringBuffer buf;
+		private final StringBuffer buf;
 		private boolean ignoreWhiteSpace = true;
 
 		public StringTokenizer2(String string, char del, char esc) {
@@ -2100,8 +2157,9 @@ public class RemoteQuery {
 				}
 				buff.append(delim);
 			}
-			if (buff.length() > 0)
+			if (buff.length() > 0) {
 				buff.setLength(buff.length() - 1);
+			}
 			return buff.toString();
 		}
 
@@ -2398,7 +2456,10 @@ public class RemoteQuery {
 		}
 
 		public static String joinTokens(Collection<String> list) {
-			// TODO apply del and esc !!!
+			if (isEmpty(list)) {
+				return "";
+			}
+
 			String res = "";
 			int i = 0;
 			for (String s : list) {
@@ -2420,8 +2481,7 @@ public class RemoteQuery {
 		public static String escape(String in, char del, char esc) {
 			char[] chars = in.toCharArray();
 			String res = "";
-			for (int i = 0; i < chars.length; i++) {
-				char c = chars[i];
+			for (char c : chars) {
 				if (c == del || c == esc) {
 					res += esc;
 				}
@@ -2486,8 +2546,8 @@ public class RemoteQuery {
 		public static Set<String> asSet(String... values) {
 			Set<String> set = new HashSet<String>();
 			if (values != null) {
-				for (int i = 0; i < values.length; i++) {
-					set.add(values[i]);
+				for (String value : values) {
+					set.add(value);
 				}
 			}
 			return set;
@@ -2983,7 +3043,7 @@ public class RemoteQuery {
 
 		public static Object toListMap(String jsonString) {
 			JsonParser p = new JsonParser();
-			JsonElement je = (JsonObject) p.parse(jsonString);
+			JsonElement je = p.parse(jsonString);
 			return _toListMapE(je);
 		}
 
@@ -3006,7 +3066,7 @@ public class RemoteQuery {
 			JsonParser p = new JsonParser();
 			E[] array = null;
 			Gson g = new Gson();
-			JsonElement je = (JsonElement) p.parse(jsonString);
+			JsonElement je = p.parse(jsonString);
 			if (je.isJsonArray()) {
 				JsonArray a = je.getAsJsonArray();
 				array = (E[]) Array.newInstance(claxx, a.size());
@@ -3029,9 +3089,9 @@ public class RemoteQuery {
 		private static final Logger logger = Logger.getLogger(ObjectStore.class
 		    .getName());
 
-		private Class<E> resultClass;
+		private final Class<E> resultClass;
 		private Set<String> roles;
-		private String userId;
+		private final String userId;
 
 		public ObjectStore(Class<E> resultClass, String userId, Set<String> roles) {
 
@@ -3152,140 +3212,7 @@ public class RemoteQuery {
 			this.roles = roles;
 		}
 
-		// public static Map<String, String> applyBasicParams(
-		// Map<String, String> params, Map<String, String> basicParams) {
-		// if (MapUtils.isNotEmpty(basicParams)) {
-		// for (String key : basicParams.keySet()) {
-		// params.put(key, basicParams.get(key));
-		// }
-		// }
-		// return params;
-		//
-		// }
-
 	}
-
-	// public class ObjectUtils extends org.apache.commons.lang.ObjectUtils {
-	//
-	// private static Log logger = LogFactory.getLog(ObjectUtils.class);
-	//
-	// public static boolean areNotEquals(Object o1, Object o2) {
-	// return !areEquals(o1, o2);
-	// }
-	//
-	// public static boolean areEquals(Object o1, Object o2) {
-	// return o1 == o2 || (o1 != null && o1.equals(o2));
-	// }
-	//
-	// public static Object toObject(byte[] objectBytes) throws Exception {
-	// ByteArrayInputStream bin = new ByteArrayInputStream(objectBytes);
-	// ObjectInputStream oin = new ObjectInputStream(bin);
-	// Object object = oin.readObject();
-	// oin.close();
-	// return object;
-	// }
-	//
-	// public static byte[] toByteArray(Object object) throws Exception {
-	// ByteArrayOutputStream bout = new ByteArrayOutputStream();
-	// ObjectOutputStream oout = new ObjectOutputStream(bout);
-	// oout.writeObject(object);
-	// oout.close();
-	// return bout.toByteArray();
-	// }
-	//
-	// @SuppressWarnings("resource")
-	// public static Object readObjectFromFile(File file)
-	// throws FileNotFoundException, IOException, ClassNotFoundException {
-	// ObjectInputStream oin = null;
-	// FileInputStream in = new FileInputStream(file);
-	// oin = new ObjectInputStream(in);
-	// Object o = oin.readObject();
-	// return o;
-	// }
-	//
-	// public static Object readObjectFromFile(String fileName)
-	// throws FileNotFoundException, IOException, ClassNotFoundException {
-	// return readObjectFromFile(new File(fileName));
-	// }
-	//
-	// public static void writeObjectToFile(String fileName, Serializable object)
-	// throws FileNotFoundException, IOException, ClassNotFoundException {
-	// writeObjectToFile(new File(fileName), object);
-	// }
-	//
-	// @SuppressWarnings("resource")
-	// public static void writeObjectToFile(File file, Serializable object)
-	// throws FileNotFoundException, IOException {
-	// ObjectOutputStream oout = null;
-	// FileOutputStream out = new FileOutputStream(file);
-	// oout = new ObjectOutputStream(out);
-	// oout.writeObject(object);
-	// }
-	//
-	// public static boolean isNull(Object o) {
-	// return o == null;
-	// }
-	//
-	// public static boolean isNotNull(Object o) {
-	// return !isNull(o);
-	// }
-	//
-	// public static Object toExpectedType(String value, Class<?> expectedType)
-	// throws ParseException {
-	// if (expectedType.equals(Date.class)) {
-	// Date date = null;
-	// date = DateUtils.toDate(value);
-	// return date;
-	// }
-	// if (expectedType.equals(Double.class)) {
-	// return new Double(value);
-	// }
-	// if (expectedType.equals(Long.class)) {
-	// return new Long(value);
-	// }
-	// if (expectedType.equals(Integer.class)) {
-	// return new Integer(value);
-	// }
-	// return value;
-	// }
-	//
-	// public static String getClassName(Object object) {
-	// if (object == null) {
-	// return "null";
-	// } else {
-	// return object.getClass().getSimpleName();
-	// }
-	// }
-	//
-	// public static String toString2(Object object) {
-	// return ReflectionToStringBuilder.toString(object,
-	// ToStringStyle.NO_FIELD_NAMES_STYLE, false);
-	// }
-	//
-
-	//
-	//
-	// @SuppressWarnings("unchecked")
-	// public static <E> Map<String, E> asMap(String keyProperty, List<E> list) {
-	// if (CollectionUtils.isEmpty(list)) {
-	// return MapUtils.EMPTY_MAP;
-	// }
-	// Class<E> claxx = (Class<E>) list.get(0).getClass();
-	// Map<String, E> map = new HashMap<String, E>();
-	// try {
-	// String methodName = "get" + keyProperty.substring(0, 1).toUpperCase()
-	// + keyProperty.substring(1);
-	// Method m = claxx.getMethod(methodName);
-	// for (E e : list) {
-	// map.put(m.invoke(e).toString(), e);
-	// }
-	// } catch (Exception e) {
-	// logger.error(e, e);
-	// }
-	// return map;
-	// }
-	//
-	// }
 
 	public static void shutdown() {
 		Utils.IsoDateTimeSecTL.remove();
