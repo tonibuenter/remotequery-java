@@ -7,7 +7,11 @@ $(document)
           var insert$ = $('#insert');
           var update$ = $('#update');
           var delete$ = $('#delete');
+
           var fields$ = $('#editPanel').find('input');
+
+          $('#clearLog').click(clearLog);
+          $('#showServices').click(showServices);
 
           log('warn', 'Starting sending service entries to server ...');
 
@@ -30,7 +34,6 @@ $(document)
             searchString = searchString + '%';
             result$.empty().text('-waiting for server reply ...-');
 
-            
             // call RemoteQuery ...
             rQ.call('selectAddresses', {
               'searchString' : searchString
@@ -73,7 +76,7 @@ $(document)
             var parameters = getParameters();
             log('info', 'call ' + serviceId + '  with ' + parameters);
             rQ.call(serviceId, parameters, function(resultData) {
-              log('info', serviceId + ' done ...')
+              log('info', serviceId + ' done ...');
               search$.click();
             });
           }
@@ -93,6 +96,23 @@ $(document)
               'text' : text,
               'class' : severity
             }));
+          }
+
+          function clearLog() {
+            $('#log').empty();
+          }
+          function showServices() {
+            rQ.call('ListServices', function(result) {
+              if (result.table, result.table.length) {
+                $.each(result.table, function(i, row) {
+                  var s = '';
+                  $.each(row, function(i, e) {
+                    s += result.header[i] + '=' + e + ' :: ';
+                  });
+                  log('info', s);
+                });
+              }
+            });
           }
 
           /**
