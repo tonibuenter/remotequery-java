@@ -17,7 +17,8 @@
     },
     'names' : {
       'RegisterService' : 'RegisterService'
-    }
+    },
+    'toList' : toList
   };
 
   function callRq(serviceId, arg1, arg2) {
@@ -44,7 +45,21 @@
       }
     });
   }
-  
-  
+
+  function toList(serviceData) {
+    var list;
+    list = [];
+    if (_.isObject(serviceData) && _.isArray(serviceData.table)) {
+      $.each(serviceData.table, function(rowIndex, row) {
+        var obj = {};
+        list.push(obj);
+        $.each(serviceData.header, function(colIndex, head) {
+          obj[head] = row[colIndex];
+        });
+      });
+      list.header = serviceData.header;
+    }
+    return list;
+  }
 
 })(this);
