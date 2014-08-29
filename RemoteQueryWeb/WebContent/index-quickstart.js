@@ -39,6 +39,7 @@ $(document)
               'searchString' : searchString
             }, function(data) {
               var table$, tr$;
+              // var list = rQ.toList(data);
               var header = data.header;
               var table = data.table;
               result$.empty();
