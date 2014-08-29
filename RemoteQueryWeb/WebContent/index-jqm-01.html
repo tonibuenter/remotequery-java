@@ -26,6 +26,9 @@ a[href="#"] {
 <script type="text/javascript" src="libs/jquery.mobile-1.4.3/jquery.mobile-1.4.3.js"></script>
 <link rel="stylesheet"
 	href="libs/jquery.mobile-1.4.3/jquery.mobile-1.4.3.css">
+<link rel="stylesheet" href="libs/jquery.mobile-1.4.3/jquery.mobile.icons-1.4.3.css">
+
+
 
 <!-- REMOTE QUERY JS -->
 <script type="text/javascript">
@@ -37,54 +40,23 @@ a[href="#"] {
 <script src="remotequery-0.9.0.js"></script>
 
 
+<!-- COMMON JS -->
+<script src="app-base.js"></script>
+<script src="app-ui.js"></script>
+<script src="app-ui.jqm.js"></script>
+
+
+
 
 <!-- APPLICATION JS CODE -->
 <script type="text/javascript" src="index-jqm-01.js"></script>
 </head>
 <body>
 
-	<h2>RemoteQuery Quickstart</h2>
 
-	<!-- 	SEARCH PART -->
-
-	<div class="search part">
-
-		<div>
-			<input id="searchString" placeholder="Search String"
-				style="width: 20em;"> <a href="#" id="search">search</a>
-		</div>
-
-		<div id="result"></div>
-
-	</div>
+  <!-- Content built dynamically -->
 
 
-	<!-- 	EDIT PART -->
-
-
-	<div id="editPanel" class="edit part">
-		<input name="firstName" placeholder="First Name"> <input
-			name="lastName" placeholder="Last Name"> <input name="street"
-			placeholder="Street"> <input name="city" placeholder="City">
-		<input name="zip" placeholder="Zip"> <input name="country"
-			placeholder="Country">
-		<div class="buttons">
-			<a href="#" id="insert">insert</a> <a href="#" id="update">update</a>
-			<a href="#" id="delete">delete</a>
-		</div>
-
-	</div>
-
-
-	<!-- 	LOG PART -->
-
-
-	<div class="log part">
-		<div id="#log"></div>
-		<div class="buttons">
-			<a href="#">clear log</a>
-		</div>
-	</div>
 </body>
 </html>
 
