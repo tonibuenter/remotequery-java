@@ -304,8 +304,6 @@ public class RemoteQueryServlet extends HttpServlet {
 			pLog.system("Request time used (ms):"
 			    + (System.currentTimeMillis() - startTime), logger);
 			
-			
-
 			//
 			// Writing session parameters to HttpSession
 			//

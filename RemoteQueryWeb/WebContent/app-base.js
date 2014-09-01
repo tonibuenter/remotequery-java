@@ -6,6 +6,10 @@ var APP_base = APP_base || {};
 
 (function() {
 
-  
-  
+  var counter = 100;
+
+  function newId() {
+    return counter++;
+  }
+  APP_base.newId = newId;
 })();
