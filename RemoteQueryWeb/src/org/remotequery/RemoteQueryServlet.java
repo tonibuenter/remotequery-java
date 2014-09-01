@@ -303,6 +303,22 @@ public class RemoteQueryServlet extends HttpServlet {
 			Result result = mainRq.run(request);
 			pLog.system("Request time used (ms):"
 			    + (System.currentTimeMillis() - startTime), logger);
+			
+			
+
+			//
+			// Writing session parameters to HttpSession
+			//
+
+			Map<String, String> newSessionMap = request.getParameters(SESSION);
+			for (Entry<String, String> sessionEntry : newSessionMap.entrySet()) {
+				session.setAttribute(sessionEntry.getKey(), sessionEntry.getValue());
+			}
+			
+			//
+			// Writing result to HttpResponse
+			//
+			
 			if (result != null) {
 				String s = JsonUtils.toJson(result);
 				returnAsJsonString(s, httpResponse);

@@ -18,11 +18,15 @@
 		<listener-class>remotequery.examples.AppInitListener1</listener-class>
 	</listener>
 
-  <!-- RemoteQueryServlet -->
+	<!-- RemoteQueryServlet -->
 
 	<servlet>
 		<servlet-name>RemoteQueryServlet</servlet-name>
 		<servlet-class>org.remotequery.RemoteQueryServlet</servlet-class>
+		<init-param>
+			<param-name>accessServiceId</param-name>
+			<param-value>WebAuthentication</param-value>
+		</init-param>
 		<load-on-startup>1001</load-on-startup>
 	</servlet>
 
@@ -34,5 +38,5 @@
 	<welcome-file-list>
 		<welcome-file>index.html</welcome-file>
 	</welcome-file-list>
-	
+
 </web-app>

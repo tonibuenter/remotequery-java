@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.Serializable;
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.reflect.Array;
@@ -2675,6 +2676,62 @@ public class RemoteQuery {
 				Utils.closeQuietly(ps);
 			}
 			return new Integer(-1);
+		}
+
+		// TODO not yet done
+		public static void processRqQueryText(String rqServices) {
+
+			Map<String, String> parameters = new HashMap<String, String>();
+			String query = "";
+			BufferedReader in = new BufferedReader(new StringReader(rqServices));
+			String line = null;
+			boolean startParameter = false;
+			boolean startQuery = false;
+			try {
+				while ((line = in.readLine()) != null) {
+					line = line.trim();
+					if (line.length() == 0) {
+						continue;
+					}
+
+					// comment
+					if (line.startsWith("--")) {
+						if (!startParameter) {
+							//
+							// execute collected
+							//
+							if (startQuery) {
+								parameters.put("SERVICE_STMT", query);
+								// saveServicequery(parameters);
+								startQuery = false;
+
+							}
+							startParameter = true;
+
+							parameters = new HashMap<String, String>();
+						}
+						// processParameter(parameters, line.substring(2));
+						continue;
+					}
+					startParameter = false;
+					if (!startQuery) {
+						startQuery = true;
+						query = line + '\n';
+					} else {
+						query += line + '\n';
+					}
+
+				}
+				if (startQuery) {
+					parameters.put("SERVICE_STMT", query);
+					// saveServicequery(parameters);
+					startQuery = false;
+
+				}
+			} catch (IOException e) {
+				logger.severe(e.getMessage());
+			}
+
 		}
 
 		public static String sqlValueToString(Object value, int sqlType)

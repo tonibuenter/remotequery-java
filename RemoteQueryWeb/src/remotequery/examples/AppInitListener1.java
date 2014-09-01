@@ -1,6 +1,10 @@
 package remotequery.examples;
 
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
 import java.sql.Connection;
+import java.util.Arrays;
 import java.util.logging.Logger;
 
 import javax.servlet.ServletContext;
@@ -8,7 +12,9 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.sql.DataSource;
 
+import org.apache.commons.io.FileUtils;
 import org.hsqldb.jdbc.JDBCPool;
+import org.remotequery.RemoteQuery;
 import org.remotequery.RemoteQuery.BuiltIns;
 import org.remotequery.RemoteQuery.DataSourceEntry;
 import org.remotequery.RemoteQuery.IServiceRepository;
@@ -24,6 +30,8 @@ public class AppInitListener1 implements ServletContextListener {
 
 	public static boolean USE_JSON_SERVICE_REPOSITORY = false;
 	public static boolean USE_HSQLDB = true;
+	public static String accessServiceId = "WebAuthentication";
+	public static String accessServiceClass = "remotequery.examples.WebAuthentication";
 
 	@SuppressWarnings("unused")
 	private static final long serialVersionUID = 1L;
@@ -90,8 +98,8 @@ public class AppInitListener1 implements ServletContextListener {
 			} else {
 				// create a ServiceRepository in the Database
 				String createRemoteQueryServiceTableSql = "create table REMOTE_QUERY_SERVICE ("
-				    + "SERVICE_ID varchar(1024), "
-				    + "STATEMENTS varchar(1024), "
+				    + "SERVICE_ID varchar(700), "
+				    + "STATEMENTS text, "
 				    + "ROLES varchar(1024), "
 				    + "DATASOURCE varchar(1024), "
 				    + " PRIMARY KEY(SERVICE_ID) " + ")";
@@ -150,5 +158,26 @@ public class AppInitListener1 implements ServletContextListener {
 			logger.severe("DataSource close: " + e.getMessage());
 		}
 		logger.info(this.getClass().getName() + " contextDestroyed done.");
+	}
+
+	private void loadRqSqlFiles(File rqSqlFIle) throws IOException {
+		//
+		// *.rq.sql
+		//
+
+		File[] sq_sqlFiles = rqSqlFIle.listFiles(new FilenameFilter() {
+			@Override
+			public boolean accept(File arg0, String arg1) {
+				String filename = arg1.toLowerCase();
+				return filename.endsWith("rq.sql");
+			}
+		});
+
+		Arrays.sort(sq_sqlFiles);
+
+		for (File sqlFile : sq_sqlFiles) {
+			String rqStatements = FileUtils.readFileToString(sqlFile);
+			RemoteQuery.Utils.processRqQueryText(rqStatements);
+		}
 	}
 }
