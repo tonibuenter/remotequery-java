@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.logging.Logger;
 
@@ -43,6 +44,8 @@ public class AppInitListener1 implements ServletContextListener {
 		System.out.println("loading " + AppInitListener1.class.getCanonicalName());
 	}
 
+	private Closeable closeable;
+
 	public void contextInitialized(ServletContextEvent event) {
 		//
 		//
@@ -72,11 +75,22 @@ public class AppInitListener1 implements ServletContextListener {
 				((JDBCPool) dataSource).setDatabase(dbUrl);
 				((JDBCPool) dataSource).setUser("SA");
 				((JDBCPool) dataSource).setPassword("SA");
+				closeable = new Closeable() {
+					public void close() throws Exception {
+						((JDBCPool) dataSource).close(2);
+					}
+				};
 			} else {
 				dataSource = new MysqlConnectionPoolDataSource();
-				((MysqlConnectionPoolDataSource) dataSource).setDatabaseName(dbUrl);
+				((MysqlConnectionPoolDataSource) dataSource).setUrl(dbUrl);
 				((MysqlConnectionPoolDataSource) dataSource).setUser("...");
 				((MysqlConnectionPoolDataSource) dataSource).setPassword("...");
+				closeable = new Closeable() {
+					public void close() throws Exception {
+						((MysqlConnectionPoolDataSource) dataSource).getPooledConnection().close();
+					
+					}
+				};
 			}
 
 			// getting a connection initialisation of the services
@@ -151,11 +165,11 @@ public class AppInitListener1 implements ServletContextListener {
 
 	public void contextDestroyed(ServletContextEvent sce) {
 		try {
-			if (dataSource != null) {
-				// depending on DataSource class : dataSource.close()
+			if (closeable != null) {
+				closeable.close();
 			}
 		} catch (Exception e) {
-			logger.severe("DataSource close: " + e.getMessage());
+			logger.severe("closeable close: " + e.getMessage());
 		}
 		logger.info(this.getClass().getName() + " contextDestroyed done.");
 	}
@@ -180,4 +194,8 @@ public class AppInitListener1 implements ServletContextListener {
 			RemoteQuery.Utils.processRqQueryText(rqStatements);
 		}
 	}
+}
+
+interface Closeable {
+	void close() throws Exception;
 }
