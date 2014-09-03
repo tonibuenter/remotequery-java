@@ -13,2994 +13,3240 @@ using System.Xml;
 using Org.JGround.Util;
 using Org.JGround.Web;
 
-namespace Org.Remotequery
+namespace org.remotequery
 {
+ public class RemoteQuery {
+
+	private static final Logger rqLogger = Logger.getLogger(RemoteQuery.class
+	    .getName());
+
+	/**
+	 * "DEFAULT_DATASOURCE" is the default data source name.
+	 */
+	public static String DEFAULT_DATASOURCE_NAME = "DEFAULT_DATASOURCE";
+
+	/**
+	 * UTF-8 is the default encoding.
+	 */
+	public static String ENCODING = "UTF-8";
+
+	public static int MAX_RECURSION = 20;
+
+	public static final char DEFAULT_DEL = ',';
+	public static final char DEFAULT_ESC = '\\';
+
+	public static final String ANONYMOUS = "ANONYMOUS";
+
+	public static String COL_STATEMENTS = "STATEMENTS";
+	public static String COL_ROLES = "ROLES";
+	public static String COL_SERVICE_ID = "SERVICE_ID";
+	/**
+	 * Version 2.0
+	 */
+	public static String COL_DATASOURCE = "DATASOURCE";
+
+	public static class MLT {
+		// code indication
+		public static final String java = "java";
+		public static final String sql = "sql";
+		// combination
+		public static final String serviceId = "serviceId";
+		public static final String include = "include";
+		// parameter manipulation
+		public static final String set = "set";
+		public static final String set_if_empty = "set-if-empty";
+		public static final String set_if_null = "set-if-null";
+		public static final String set_null = "set-null";
+		//
+		public static final String tx_begin = "tx-begin";
+		public static final String tx_commit = "tx-commit";
+	}
+
+	public static class Params {
+		public static String serviceId = "serviceId";
+		public static String statements = "statements";
+		public static String roles = "roles";
+	}
+
+	public static class DBColumns {
+		public static String serviceId = "serviceId";
+		public static String statements = "statements";
+		public static String roles = "roles";
+	}
+
+	public static class LevelConstants {
+		public static final int INITIAL = 0;
+		public static final int REQUEST = 10;
+		public static final int HEADER = 20;
+		public static final int INTER_REQUEST = 30;
+		public static final int SESSION = 40;
+		public static final int APPLICATION = 50;
+	}
+
+	private static Map<String, Integer> LevelConstantNames = new HashMap<String, Integer>();
+	static {
+		LevelConstantNames.put("INITIAL", new Integer(LevelConstants.INITIAL));
+		LevelConstantNames.put("REQUEST", new Integer(LevelConstants.REQUEST));
+		LevelConstantNames.put("HEADER", new Integer(LevelConstants.HEADER));
+		LevelConstantNames.put("INTER_REQUEST", new Integer(
+		    LevelConstants.INTER_REQUEST));
+		LevelConstantNames.put("SESSION", new Integer(LevelConstants.SESSION));
+		LevelConstantNames.put("APPLICATION", new Integer(
+		    LevelConstants.APPLICATION));
+	}
+	//
+	//
+	//
+
+	public static char STATEMENT_DELIMITER = ';';
+	public static char STATEMENT_ESCAPE = '\\';
+
+	/**
+	 * The DataSourceEntry class main responsibility is to provide a data source
+	 * object.
+	 * 
+	 * @author tonibuenter
+	 */
+	public static class DataSourceEntry {
+
+		/**
+		 * Provide a data source object for the default data source name.
+		 * 
+		 * @param ds
+		 */
+		public DataSourceEntry(DataSource ds) {
+			DataSources.getInstance().put(ds);
+		}
 
+		/**
+		 * Provide a data source object for the dataSourceName.
+		 * 
+		 * @param ds
+		 * @param dataSourceName
+		 */
 
- public class RemoteQueryServlet : IHttpHandler, IRequiresSessionState
-    {
-
-        //
-        // CLASS LEVEL
-        //
-        private static Logger logger = Logger.GetLogger(typeof(RemoteQueryServlet));
-
-        //
-        // OBJECT LEVEL
-        //
-        private Dictionary<String, Object> attributes = new Dictionary<String, Object>();
-        // private SessionFactory sessionFactory;
-        // private Dictionary logout_urls = new Dictionary();
-        private Dictionary<String, String> error_urls = new Dictionary<String, String>();
-
-        public void ProcessRequest(HttpContext context)
-        {
-            HttpRequest request = context.Request;
-            HttpResponse response = context.Response;
-
-            response.ContentType = "text/html";
-            response.ContentEncoding = Encoding.UTF8;
-
-            HttpCookieCollection cookies = request.Cookies;
-            logger.Debug("Nr of cookies: ", cookies.Count);
-            //foreach (HttpCookie cookie in cookies) {
-            //    logger.Debug("Path: " + cookie.Path + " Name: " + cookie.Name + " Value: " + cookie.Value);
-            //}
-
-            HWTEvent hevent = new HWTEvent(context);
-
-            try
-            {
-                lock (Locker.MUTEX)
-                {
-                    String frameid = hevent.getFrameId();
-                    logger.Debug("frameid", frameid);
-                    HWTFrameFactory factory = null;
-                    factory = HWTEventDispatcherInitializier.GetInstance(context).GetFactory(frameid);
-                    if (factory == null)
-                    {
-                        logger.Warn("no factory found for : " + frameid);
-                        return;
-                    }
-                    logger.Debug("factory", factory);
-                    HFrame frame = factory.GetHFrame(hevent);
-                    logger.Debug("frame", frame);
-                    if (frame == null)
-                    {
-                        logger.Warn("no frame found for : " + frameid);
-                    }
-                    else
-                    {
-                        frame.ProcessEvent(hevent);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                logger.Error(e);
-                throw e;
-            }
-        }
-
-        public void SetAttribute(String key, Object value)
-        {
-            attributes.Put(key, value);
-        }
-
-        public Object GetAttribute(String key)
-        {
-            return attributes.Get(key);
-        }
-
-        public bool IsReusable
-        {
-            get { return false; }
-        }
-
-    }
-
-
-    public interface IPreListener
-    {
-        void PreArrived(HEvent hevent);
-    }
-
-
-    public class ButtonGroup : IPreListener
-    {
-
-        protected String groupName;
-        protected Dictionary<String, RadioButton> radioButtons;
-        protected IEventSource hsource;
-
-        public ButtonGroup(IEventSource hsource)
-        {
-            radioButtons = new Dictionary<String, RadioButton>();
-            SetEventSource(hsource);
-            this.hsource = hsource;
-        }
-
-        public virtual void PreArrived(HEvent hevent)
-        {
-            if (hevent.GetValues() == null || hevent.GetValues().Length == 0)
-            {
-                return;
-            }
-            String selected = hevent.GetValues()[0];
-            foreach (RadioButton radioButton in radioButtons.Values)
-            {
-                radioButton.setSelected(radioButton == radioButtons.Get(selected));
-            }
-        }
-
-        protected void SetEventSource(IEventSource es)
-        {
-            groupName = es.RegisterUpdate(this);
-        }
-
-        public void Add(RadioButton radioBt)
-        {
-            String name = radioBt.GetInitName();
-            radioBt.setGroupName(groupName);
-            radioButtons.Put(name, radioBt);
-        }
-
-    }
-
-    public class DefaultListModel<E> : IListModel<E>
-    {
-
-        private List<E> list;
-
-        public DefaultListModel()
-        {
-            list = new List<E>();
-        }
-
-        public void AddElement(E element)
-        {
-            list.Add(element);
-        }
-
-        public DefaultListModel(List<E> list)
-        {
-            this.list = list;
-        }
-
-        public void setElements(List<E> list)
-        {
-            this.list = list;
-        }
-
-        public int GetRowCount()
-        {
-            return list.Count;
-        }
-
-        public E GetValueAt(int row)
-        {
-            return list.Get(row);
-        }
-    }
-    public class DefaultTableCellRenderer<E> : ICellRenderer<E>
-    {
-
-        private TD cell = new TD();
-
-        public TD GetCell(HTable<E> table, Object value, bool isSelected, bool hasFocus, int row, int col)
-        {
-            cell.SetText(value.ToString());
-            return cell;
-        }
-
-    }
-
-    public class DefaultTableModel<E>
-
-: ITableModel<E>
-    {
-
-        private E[][] values;
-
-        public DefaultTableModel()
-        {
-        }
-
-        /**
-         * Constructor for DefaultTableModel.
-         * 
-         * @param arg0
-         * @param arg1
-         */
-        public DefaultTableModel(E[][] values)
-        {
-            this.values = values;
-        }
-
-        public E GetValueAt(int row)
-        {
-            return values[row][0];
-        }
-
-        public int GetColumnCount()
-        {
-            if (values != null && values.Length > 0 && values[0] != null)
-            {
-                return values[0].Length;
-            }
-            return 0;
-        }
-
-        public int GetRowCount()
-        {
-            if (values != null)
-            {
-                return values.Length;
-            }
-            return 0;
-        }
-
-        public E GetValueAt(int row, int col)
-        {
-            // TODO Auto-generated method stub
-            return values[row][col];
-        }
-
-    }
-
-    public class DefaultTableRowRenderer<E> : ITableRowRenderer<E>
-    {
-
-        private DefaultRow render_tr = null;
-        private ICellRenderer<E> cellRenderer = new DefaultTableCellRenderer<E>();
-        private Dictionary<int, ICellRenderer<E>> rendererPerColumn = new Dictionary<int, ICellRenderer<E>>();
-
-        public DefaultTableRowRenderer()
-        {
-            render_tr = new DefaultRow(this);
-        }
-        public ICellRenderer<E> getTableCellRenderer()
-        {
-            return cellRenderer;
-        }
-
-        public void SetCellRenderer(ICellRenderer<E> cellRenderer)
-        {
-            this.cellRenderer = cellRenderer;
-        }
-
-        public void SetCellRenderer(int column, ICellRenderer<E> cellRenderer)
-        {
-            rendererPerColumn.Put(column, cellRenderer);
-        }
-
-        public HComponent GetTableRowRendererComponent(HTable<E> table, bool isSelected,
-                bool hasFocus, int row)
-        {
-
-            render_tr.setRow(table, row);
-            return render_tr;
-        }
-
-        class DefaultRow : TR
-        {
-            private DefaultTableRowRenderer<E> rend;
-            private HTable<E> table;
-            private int row;
-
-            public DefaultRow(DefaultTableRowRenderer<E> rend)
-            {
-                this.rend = rend;
-            }
-            public override int Count()
-            {
-                return table.getModel().GetColumnCount();
-            }
-
-            public void setRow(HTable<E> table, int row)
-            {
-                this.table = table;
-                this.row = row;
-            }
-
-            public override HComponent Get(int col)
-            {
-                ICellRenderer<E> renderer = this.rend.rendererPerColumn
-                        .Get(col);
-                renderer = renderer == null ? this.rend.cellRenderer : renderer;
-                return renderer.GetCell(table, table.getModel().GetValueAt(row,
-                        col), false, false, row, col);
-            }
-        }
-    }
-
-
-
-
-    public class DefaultTextRenderer<E> : ITextRenderer<E>
-    {
-        public String GetRendererString(E obj, bool isSelected)
-        {
-            return ObjectUtils.ToString(obj);
-        }
-
-    }
-
-    public abstract class HAbstractButton : HTag, IPreListener
-    {
-
-        // CLASS LEVEL
-        private static Logger logger = Logger.GetLogger(typeof(HAbstractButton));
-
-        protected String initName;
-        protected String subId = "";
-
-        private List<IHListener> listeners = new List<IHListener>();
-
-        private HAttribute nameAttribute = new HAttribute(HDTD.AttName.NAME, "");
-
-        public HAbstractButton(String tag)
-            : base(tag)
-        {
-            SetAttribute(nameAttribute);
-        }
-
-        public virtual void AddHListener(IHListener al)
-        {
-            if (!listeners.Contains(al))
-            {
-                listeners.Add(al);
-            }
-        }
-
-        public override void PreArrived(HEvent hevent)
-        {
-
-            if (hevent.GetSource() != this)
-            {
-                logger.Error("Source != this - this is un - expected");
-                return;
-            }
-            SetSubId(hevent.GetSubEventId());
-            foreach (IHListener listener in listeners)
-            {
-                listener.Arrived(hevent);
-            }
-        }
-
-        protected virtual void SetEventSource(IEventSource es)
-        {
-            initName = es.RegisterAction(this);
-            nameAttribute.SetValue(initName + "_" + subId);
-        }
-
-        public virtual String GetInitName()
-        {
-            return initName;
-        }
-
-        public virtual void SetSubId(String subId)
-        {
-            this.subId = subId;
-            nameAttribute.SetValue(initName + "_" + subId);
-        }
-
-        public virtual String GetSubId()
-        {
-            return this.subId;
-        }
-    }
-
-    public class HButton : HAbstractButton
-    {
-
-        public HButton(IEventSource hsource)
-            : this(hsource, INPUT.HType.SUBMIT)
-        {
-
-        }
-
-        public HButton(IEventSource hsource, String label)
-            : base(HDTD.Element.INPUT)
-        {
-
-            SetAttribute(HDTD.AttName.TYPE, INPUT.HType.SUBMIT);
-            SetAttribute(HDTD.AttName.VALUE, label);
-            SetEventSource(hsource);
-        }
-
-    }
-    public class HCheckBox : CHECKBOX, IPreListener
-    {
-
-        private String[] values;
-        public String updateName;
-        private IEventSource eventSource;
-
-        public HCheckBox(IEventSource hsource)
-            : this(hsource, false, "", "")
-        {
-
-        }
-
-        public HCheckBox(IEventSource hsource, bool chcked)
-            : this(hsource, chcked, "", "")
-        {
-
-        }
-
-        public HCheckBox(
-            IEventSource hsource,
-            bool chcked,
-            String value,
-            String text)
-            : base("")
-        {
-            SetEventSource(hsource);
-            SetChecked(chcked);
-            SetValue(value);
-            SetText(text);
-        }
-
-        //public bool isSelected() {
-        //    return this.IsChecked();
-        //}
-
-        //public void setSelected(bool selected) {
-        //    SetChecked(selected);
-        //}
-
-        public override void SetValue(String value)
-        {
-            SetAttribute(HDTD.AttName.VALUE, value);
-        }
-
-        public String[] getValues()
-        {
-            return values;
-        }
-
-        public override String getValue()
-        {
-            if (values != null && values.Length > 0)
-                return values[0];
-            return null;
-        }
-
-        public override void PreArrived(HEvent hevent)
-        {
-            this.values = hevent.GetValues();
-            SetChecked(true);
-        }
-
-        protected void SetEventSource(IEventSource eventSource)
-        {
-            this.eventSource = eventSource;
-            this.updateName = eventSource.RegisterUpdate(this);
-            SetAttribute(HDTD.AttName.NAME, updateName);
-        }
-
-        public override void PrintTo(TextWriter pr)
-        {
-            this.eventSource.FirePrintEvent(this);
-            base.PrintTo(pr);
-        }
-
-        public String getUpdateName()
-        {
-            return updateName;
-        }
-    }
-
-    public interface HDispatcher
-    {
-        void dispatch(HWTEvent hevent);
-    }
-    public class EventObject
-    {
-
-        private object source;
-        public EventObject(object source)
-        {
-            this.source = source;
-        }
-        public virtual object GetSource()
-        {
-            return source;
-        }
-    }
-
-
-    public interface IEventSource
-    {
-        String RegisterAction(IPreListener listener);
-        String RegisterUpdate(IPreListener listener);
-        String RegisterFile(IPreListener listener);
-        void RegisterSubmit(IPreListener listener);
-        void FirePrintEvent(HCheckBox listener);
-    }
-
-    public class HWTEvent
-    {
-
-        private static Logger logger = Logger.GetLogger(typeof(HWTEvent));
-        //
-        //
-        //
-        private HttpContext context;
-
-
-        //  private TextWriter w;
-        private String frameId;
-        //   private String encodedUrl;
-        private IPrincipal user;
-        private HttpFileCollection uploadedFileCollection;
-        private String encodedUrl;
-
-        public HWTEvent(HttpContext context)
-        {
-            this.context = context;
-            this.user = context.User;
-            String requestpath = context.Request.Url.AbsoluteUri;
-            int start = requestpath.LastIndexOf("/") + 1;
-            int end = requestpath.LastIndexOf("?");
-            if (end < start)
-            {
-                frameId = requestpath.Substring(start);
-            }
-            else
-            {
-                int length = end - start;
-                frameId = requestpath.Substring(start, length);
-            }
-            uploadedFileCollection = context.Request.Files;
-            encodedUrl = frameId;// response.encodeURL(contextPath + request.getServletPath() + "/" + frameId);
-        }
-
-        public IPrincipal GetUser()
-        {
-            return context.User;
-        }
-
-        public String GetSessionId()
-        {
-            return context.Session.SessionID;
-        }
-
-        public HttpSessionState GetSession()
-        {
-            return context.Session;
-        }
-
-        public void SetInSession(String key, Object value)
-        {
-            GetSession()[key] = value;
-        }
-
-        public Object GetFromSession(String key)
-        {
-            try
-            {
-                return GetSession()[key];
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        internal HttpFileCollection getUploadedFileCollection()
-        {
-            return this.uploadedFileCollection;
-        }
-
-        public String getFrameId()
-        {
-            return frameId;
-        }
-
-        public String GetParameter(String name)
-        {
-            return context.Request.Params[name];
-        }
-
-        public String[] GetParameterNames()
-        {
-            return context.Request.Params.AllKeys;
-        }
-
-        public String[] GetParameterValues(String name)
-        {
-            return context.Request.Params.GetValues(name);
-        }
-
-        public TextWriter getWriter()
-        {
-            return context.Response.Output;
-        }
-
-
-        internal String getEncodedUrl()
-        {
-            return encodedUrl;
-        }
-
-        public HttpContext GetContext()
-        {
-            return context;
-        }
-
-    }
-
-    public class HEvent : EventObject
-    {
-
-        public static readonly int NOTYPE_EVENT = 0;
-        public static readonly int ACTION_EVENT = 1;
-        public static readonly int UPDATE_EVENT = 2;
-        public static readonly int UPLOAD_EVENT = 3;
-        public static readonly int SUBMIT_EVENT = 4;
-
-        protected String subEventId;
-        protected String[] values;
-        protected String fileName;
-        protected String tempSavedFileName;
-        protected String remoteName, remoteType;
-        protected int eventType;
-        protected HWTEvent hwtEvent;
-
-        public HEvent(object source)
-            : base(source)
-        {
-        }
-
-        public HEvent(HWTEvent hwtEvent, String[] values, object source, String subEventId,
-                int eventType)
-            : base(source)
-        {
-            this.hwtEvent = hwtEvent;
-            this.subEventId = subEventId;
-            this.values = values;
-            this.eventType = eventType;
-        }
-
-        public HEvent(HWTEvent hwtEvent, String[] values, Object source, String subEventId, String tempSavedFileName, String fileName,
-                String remoteName, String remoteType)
-            : this(hwtEvent, values, source, subEventId, UPLOAD_EVENT)
-        {
-            this.fileName = fileName;
-            this.tempSavedFileName = tempSavedFileName;
-            this.remoteName = remoteName;
-            this.remoteType = remoteType;
-        }
-
-        /**
-         * Returns the subEventId.
-         * 
-         * @return String
-         */
-        public String GetSubEventId()
-        {
-            return subEventId;
-        }
-
-        /**
-         * Returns the values.
-         * 
-         * @return String[]
-         */
-        public String[] GetValues()
-        {
-            return values;
-        }
-
-        /**
-         * Returns the file name. (name and extension)
-         * 
-         * @return File
-         */
-        public String GetFileName()
-        {
-            return fileName;
-        }
-
-        /**
-         * Returns temporary saved file.
-         * 
-         * @return File
-         */
-        public String GetTempSavedFileName()
-        {
-            return this.tempSavedFileName;
-        }
-
-        /**
-         * Returns the remoteName.
-         * 
-         * @return String
-         */
-        public String GetRemoteName()
-        {
-            return remoteName;
-        }
-
-        /**
-         * Returns the remoteType.
-         * 
-         * @return String
-         */
-        public String GetRemoteType()
-        {
-            return remoteType;
-        }
-
-        /**
-         * Returns the eventType.
-         * 
-         * @return int
-         */
-        public int getEventType()
-        {
-            return eventType;
-        }
-
-        public override String ToString()
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append("source:     " + GetSource());
-            sb.Append("subEventId: " + this.subEventId);
-            sb.Append("values:     " + values);
-            return sb.ToString();
-        }
-
-        public String getUserid()
-        {
-            try
-            {
-                return hwtEvent.GetUser().Identity.Name;
-            }
-            catch (Exception)
-            {
-                return "anonymous";
-            }
-        }
-
-        public bool isUserInRole(String role)
-        {
-            try
-            {
-                return hwtEvent.GetUser().IsInRole(role);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-    }
-
-
-
-    public class HFileInput : INPUT, IPreListener
-    {
-
-        protected String nameAtt;
-
-        private String fileName;
-        private String tempSavedFileName;
-        private String remoteName;
-        private String remoteType;
-
-        public HFileInput(IEventSource hsource)
-            : this(hsource, INPUT.HType.FILE)
-        {
-
-        }
-
-        public HFileInput(IEventSource hsource, String label)
-            : base(HDTD.Element.INPUT)
-        {
-
-            SetAttribute(HDTD.AttName.TYPE, INPUT.HType.FILE);
-            SetAttribute(HDTD.AttName.VALUE, label);
-            nameAtt = hsource.RegisterFile(this);
-            hsource.RegisterUpdate(this);
-            SetAttribute(HDTD.AttName.NAME, nameAtt);
-        }
-
-        public override void PreArrived(HEvent hevent)
-        {
-            if (hevent.GetFileName() != null)
-            {
-                this.fileName = hevent.GetFileName();
-                this.tempSavedFileName = hevent.GetTempSavedFileName();
-                this.remoteName = hevent.GetRemoteName();
-                this.remoteType = hevent.GetRemoteType();
-            }
-            String[] values = hevent.GetValues();
-            if (ArrayUtils.IsEmpty(values))
-            {
-                return;
-            }
-            SetText(values[0]);
-        }
-
-        public String GetFileName()
-        {
-            return fileName;
-        }
-
-        public String GetTempSavedFileName()
-        {
-            return tempSavedFileName;
-        }
-
-        public String GetRemoteFileName()
-        {
-            return remoteName;
-        }
-
-        public String getRemoteFileType()
-        {
-            return remoteType;
-        }
-
-        public void Clear()
-        {
-            this.fileName = null;
-            this.tempSavedFileName = null;
-            this.remoteName = null;
-            this.remoteType = null;
-        }
-
-    }
-
-
-
-    public class HUploadifyInput : INPUT, IPreListener
-    {
-
-        protected String nameAtt;
-        protected INewFileListener listener;
-
-
-        public HUploadifyInput(IEventSource hsource)
-            : this(hsource, INPUT.HType.FILE)
-        {
-
-        }
-
-        public HUploadifyInput(IEventSource hsource, String label)
-            : base(HDTD.Element.INPUT)
-        {
-
-            SetAttribute(HDTD.AttName.TYPE, INPUT.HType.FILE);
-            SetAttribute(HDTD.AttName.VALUE, label);
-            SetAttribute(HDTD.AttName.CLASS, "UPLOADIFY");
-            SetAttribute(HDTD.AttName.MULTIPLE, "true");
-            nameAtt = hsource.RegisterFile(this);
-            hsource.RegisterUpdate(this);
-            SetAttribute(HDTD.AttName.NAME, nameAtt);
-            // WORKAROUND
-            SetAttribute(HDTD.AttName.ID, nameAtt);
-        }
-
-        public override void PreArrived(HEvent hevent)
-        {
-            if (listener != null && hevent.GetFileName() != null)
-            {
-                UploadifyFile uf = new UploadifyFile();
-                uf.fileName = hevent.GetFileName();
-                uf.tempSavedFileName = hevent.GetTempSavedFileName();
-                uf.remoteName = hevent.GetRemoteName();
-                uf.remoteType = hevent.GetRemoteType();
-                listener.Arrived(uf);
-            }
-            String[] values = hevent.GetValues();
-            if (ArrayUtils.IsEmpty(values))
-            {
-                return;
-            }
-            SetText(values[0]);
-        }
-
-        public void SetINewFileListener(INewFileListener listener) { this.listener = listener; }
-
-
-        public void Clear()
-        {
-        }
-
-    }
-
-
-
-    public class HFlowPanel : TABLE
-    {
-
-        private bool debug = false;
-
-        private TR currentTr;
-        private bool newRow;
-        private String align;
-        private TABLE subtable;
-
-        public static readonly String CENTER = HDTD.AttValue.CENTER;
-        public static readonly String LEFT = HDTD.AttValue.LEFT;
-        public static readonly String RIGHT = HDTD.AttValue.RIGHT;
-
-        public HFlowPanel() : this(CENTER, 2) { }
-
-        public HFlowPanel(String horizontalAlign, int padding)
-        {
-            this.align = horizontalAlign;
-            SetAttribute(HDTD.AttName.WIDTH, "100%");
-            SetAttribute(HDTD.AttName.CELLSPACING, 0);
-            SetAttribute(HDTD.AttName.CELLPADDING, 0);
-            if (debug)
-            {
-                SetAttribute(HDTD.AttName.BORDER, "1");
-            }
-            SetAttribute(HDTD.AttName.NOWRAP, null);
-
-            subtable = new TABLE();
-            subtable.SetAttribute(HDTD.AttName.WIDTH, "2%");
-            subtable.SetAttribute(HDTD.AttName.CELLSPACING, 0);
-            subtable.SetAttribute(HDTD.AttName.CELLPADDING, padding);
-            if (debug)
-            {
-                subtable.SetAttribute(HDTD.AttName.BORDER, "1");
-            }
-
-            TR tr = new TR();
-            TD td = new TD();
-            td.SetAttribute(HDTD.AttName.ALIGN, this.align);
-
-            td.Add(subtable);
-            tr.Add(td);
-            Add(tr);
-
-            newRow = true;
-
-        }
-
-        public HComponent addComponent(HComponent comp)
-        {
-            TD td = new TD();
-            td.SetAttribute(HDTD.AttName.ALIGN, align);
-            td.Add(comp);
-            td.SetAttribute(HDTD.AttName.NOWRAP, HDTD.AttValue.TRUE);
-            if (newRow)
-            {
-                currentTr = new TR();
-                subtable.Add(currentTr);
-                newRow = false;
-            }
-            currentTr.Add(td);
-            return comp;
-        }
-
-        /**
-         * Switch to a next row.
-         */
-        public void nextRow()
-        {
-            newRow = true;
-        }
-
-    }
-    public class HFrame : HTML, IEventSource
-    {
-
-        //
-        // CLASS LEVEL
-        //
-
-        private static Logger logger = Logger.GetLogger(typeof(HFrame));
-        public static readonly String LINKACTION = "linkaction";
-        //public static readonly String FOCUSELEMENT = "focuselement";
-        public static readonly String MULTIPART = "multipart/form-data";
-        public static readonly String REGULAR = "application/x-www-form-urlencoded";
-
-        //
-        // INSTANCE LEVEL
-        //
-
-        private int counter = 1000;
-
-        private String actionUrl = "";
-
-        private HWTEventDispatcher disp;
-
-        private HEAD head;
-        private BODY body;
-        private DIV busyDiv;
-        private FORM form;
-        private DIV mainContainer;
-
-        protected HAttribute actionAtt;
-        protected HAttribute sessionidAtt;
-        protected HAttribute useridAtt;
-        protected String formName;
-        private String icon_directory = "";
-        private String userid;
-        private bool newlyCreated = false;
-        private bool logoutSelected = false;
-        private HWTEvent hwtEvent;
-        private HttpServerUtility httpServerUtility;
-
-
-        public HFrame(HWTEvent hwtEvent)
-            : this(hwtEvent, "HWT (c) OOIT.com AG")
-        {
-        }
-
-        public HFrame(HWTEvent hwtEvent, String title)
-        {
-            httpServerUtility = hwtEvent.GetContext().Server;
-            head = new HEAD(title);
-            HTag meta = new HTag(HDTD.Element.META);
-            meta.SetAttribute("http-equiv", "content-type");
-            meta.SetAttribute("content", "text/html; charset=" + Encoding.UTF8.EncodingName);
-            head.Add(meta);
-            head.AddCss("../uploadify/uploadify.css");
-
-            // JavaScript
-            // <script type="text/javascript"	src="../jqueryjquery-1.8.2.js"></script>
-            // <script type="text/javascript" src="uploadify/jquery.uploadify.js"></script>
-            head.AddJavaScript("../js/jquery/jquery-1.8.2.js");
-            head.AddJavaScript("../uploadify/jquery.uploadify.js");
-            head.AddJavaScript("../js/hframe.js");
-
-            body = new BODY();
-            SetHEAD(head);
-            SetBODY(body);
-
-            actionAtt = new HAttribute(HDTD.AttName.ACTION, "");
-            sessionidAtt = new HAttribute(HDTD.AttName.VALUE, "");
-            useridAtt = new HAttribute(HDTD.AttName.VALUE, "");
-
-            form = new FORM(FORM.POST, "", WebUtils.MULTIPART_FORM_DATA);
-            body.Add(form);
-            //
-            // Invisible Button for SUBMIT events
-            //
-            HButton invisible = new HButton(this, "");
-            invisible.SetAttribute(HDTD.AttName.STYLE, "display:none");
-            form.Add(invisible);
-            //
-            // FOCUS INFORMATION
-            //
-            //INPUT focusFildHf = new INPUT(INPUT.HIDDEN, FOCUSELEMENT);
-            //form.Add(focusFildHf);
-
-            // INPUT sessionidHf = new INPUT(INPUT.HIDDEN, HConstants.SESSIONID);
-            // INPUT useridHf = new INPUT(INPUT.HIDDEN, HConstants.USERID);
-            INPUT linkActionHf = new INPUT(INPUT.HIDDEN, LINKACTION);
-            form.Add(linkActionHf);
-
-            // sessionidHf.SetAttribute(this.getSessionIdAtt());
-            // useridHf.SetAttribute(this.getUserIdAtt());
-
-            form.SetAttribute(actionAtt);
-            form.Add(mainContainer = new DIV());
-            SetFormName("form");
-            //
-
-            busyDiv = new DIV("Request in Progress. Bitte Warten!)");
-            busyDiv.SetAttribute(HDTD.AttName.ID, "busyDiv");
-            body.Add(busyDiv);
-        }
-
-        public void SetFocusElement(HTag element)
-        {
-            if (element.HasAttribute(HDTD.AttName.NAME))
-            {
-                String focusElementName = element.GetAttributeValue(HDTD.AttName.NAME);
-                //logger.Debug("FOCUSELEMENT: " + focusElementName);
-                // TODO
-                if (StringUtils.IsNotEmpty(focusElementName))
-                {
-                    HAttribute att = body.GetAttribute(HDTD.AttName.ONLOAD);
-                    if (att != null)
-                    {
-                        logger.Debug("replace ONLOAD Attribute, current: " + att.GetValue());
-                    }
-                    String newValue = "javascript:document.forms[0]."
-                         + focusElementName + ".focus()";
-                    body.SetAttribute(HDTD.AttName.ONLOAD, newValue);
-                    logger.Debug("replace ONLOAD Attribute, new    : " + newValue);
-                }
-            }
-            else
-            {
-                logger.Warn("Could not set focus for element: " + element);
-            }
-        }
-
-        private void RemoveFocusElement()
-        {
-            body.RemoveAttribute(HDTD.AttName.ONLOAD);
-        }
-
-
-        public HttpServerUtility GetHttpServerUtility()
-        {
-            return this.httpServerUtility;
-        }
-
-        public HWTEvent GetHWTEvent()
-        {
-            return this.hwtEvent;
-        }
-
-        public void ProcessEventSingleThreaded(HWTEvent hwtEvent)
-        {
-            lock (Locker.MUTEX)
-            {
-                ProcessEvent(hwtEvent);
-            }
-        }
-
-        public void ProcessEvent(HWTEvent hwtEvent)
-        {
-            DateTimeUtils.StartTime("HFrame.ProcessEvent");
-            this.hwtEvent = hwtEvent;
-            httpServerUtility = hwtEvent.GetContext().Server;
-            BeforeProcess(hwtEvent);
-            // TODO SetActionUrl(hwtEvent.getFrameId());
-            RemoveFocusElement();
-            SetActionUrl(hwtEvent.getEncodedUrl());
-            Dispatch(hwtEvent);
-            logger.Debug("dispatch DONE");
-            if (logoutSelected)
-            {
-                hwtEvent.GetSession().Clear();
-                hwtEvent.GetSession().Abandon();
-                logger.Info("Session invalidated ", hwtEvent.GetSessionId());
-            }
-            // 
-            // Print Page
-            //
-            TextWriter w = hwtEvent.getWriter();
-            BeforePrint(hwtEvent);
-
-            logger.Debug("start print");
-            this.PrintTo(w);
-            logger.Debug("end print");
-            w.Flush();
-            AfterPrint(hwtEvent);
-            httpServerUtility = null;
-            this.hwtEvent = null;
-            DateTimeUtils.LogTime("HFrame.ProcessEvent");
-        }
-
-        private long TimeSnap(ref DateTime now)
-        {
-            long diff = DateTime.Now.Millisecond - now.Millisecond;
-            now = DateTime.Now;
-            return diff;
-        }
-
-        public virtual void BeforeProcess(HWTEvent hwtEvent)
-        {
-        }
-
-        public virtual void BeforePrint(HWTEvent hwtEvent)
-        {
-        }
-
-        public virtual void AfterPrint(HWTEvent hwtEvent)
-        {
-        }
-
-        /**
-         * Add h-components to the body part of the frame.
-         * 
-         * @param component
-         *            h-component to Add.
-         */
-
-        protected void SetMainComponents(bool isModal, params HComponent[] hcomponents)
-        {
-            if (isModal)
-            {
-                mainContainer.SetStyleClass(HStyles.MODAL_WINDOW);
-            }
-            else
-            {
-                mainContainer.SetStyleClass("");
-            }
-            mainContainer.Set(hcomponents);
-        }
-
-
-        public void SetTitle(String title)
-        {
-            head.SetTitle(title);
-        }
-
-        /**
-         * Register a h-dispatcher as a Form or a Link public String
-         * register(HDispatcher dispatcher) { String actionid = createName();
-         * dispatchers.Put(actionid, dispatcher); return actionid; }
-         * 
-         */
-
-        /**
-         * Get session id attribute.
-         * 
-         * @return session id attribute.
-         */
-        internal HAttribute GetSessionIdAtt()
-        {
-            return sessionidAtt;
-        }
-
-        /**
-         * Get user id attribute.
-         * 
-         * @return user id attribute.
-         */
-        internal HAttribute GetUserIdAtt()
-        {
-            return useridAtt;
-        }
-
-        public HWTEventDispatcher GetDispatcher()
-        {
-            return disp;
-        }
-
-        private String CreateName()
-        {
-            return "HF" + (counter++);
-        }
-
-        internal void SetSessionId(String sessionid)
-        {
-            sessionid = sessionid == null ? "" : sessionid;
-            sessionidAtt.SetValue(sessionid);
-            logger.Debug("Sessionid = " + sessionid);
-        }
-
-        internal void SetUserid(String userid)
-        {
-            this.userid = userid == null ? "" : userid;
-            useridAtt.SetValue(userid);
-        }
-
-        public String GetUserid()
-        {
-            return userid ?? "";
-        }
-
-        internal void SetIconDirectory(String icon_directory)
-        {
-            this.icon_directory = icon_directory;
-        }
-
-        public String GetIconDirectory()
-        {
-            return this.icon_directory;
-        }
-
-        public String GetFormName()
-        {
-            return formName == null ? "form" : formName;
-        }
-
-        protected void SetFormName(String formName)
-        {
-            form.SetAttribute(HDTD.AttName.NAME, formName);
-            this.formName = formName;
-        }
-
-        public String GetActionUrl()
-        {
-            return actionUrl;
-        }
-
-        public HAttribute GetActionUrlAtt()
-        {
-            return actionAtt;
-        }
-
-        internal void SetActionUrl(String actionUrl)
-        {
-            actionAtt.SetValue(actionUrl);
-            this.actionUrl = actionUrl;
-        }
-
-        public void Release()
-        {
-            disp = null;
-            logger.Debug("UNLOAD: " + this.GetType().ToString());
-        }
-
-        // Line in of HFormPanel
-
-        private Dictionary<String, IPreListener> updateListeners = new Dictionary<String, IPreListener>();
-        private Dictionary<String, HCheckBox> checkBoxPrinted = new Dictionary<String, HCheckBox>();
-        private Dictionary<String, IPreListener> actionListeners = new Dictionary<String, IPreListener>();
-        private HashSet<IPreListener> SubmitListeners = new HashSet<IPreListener>();
-        private Dictionary<String, IPreListener> fileListeners = new Dictionary<String, IPreListener>();
-
-        //protected void setCodeType(String type) {
-        //    form.SetAttribute(HDTD.AttName.ENCTYPE, type);
-        //}
-
-        private void Dispatch(HWTEvent hwtEvent)
-        {
-            if (this.newlyCreated)
-            {
-                logger.Debug("frame is newly created: no dispatch is executed!");
-                return;
-            }
-            logger.Debug("start dispatch ", this);
-            //
-            //
-            //
-            if (logger.IsDebug())
-            {
-                logger.Debug("PRINT All VALUES");
-                String[] paramNames = hwtEvent.GetParameterNames();
-                foreach (String _name in paramNames)
-                {
-                    logger.Debug("p-name: " + _name + "=" + ArrayUtils.Join(hwtEvent.GetParameterValues(_name), ","));
-                }
-                logger.Debug("All VALUES END");
-            }
-            //
-            // reset check boxes which have be written w before
-            //
-            foreach (HCheckBox cx in checkBoxPrinted.Values)
-            {
-                cx.SetChecked(false);
-            }
-            checkBoxPrinted.Clear();
-            //
-            // update listeners
-            //
-            String[] parameterNames = hwtEvent.GetParameterNames();
-            foreach (String _name in parameterNames)
-            {
-                String[] ids = GetIds(_name);
-                String id = ids[0];
-                String subid = ids[1];
-                IPreListener listener = (IPreListener)updateListeners.Get(id);
-                if (listener != null)
-                {
-                    HEvent hevent = new HEvent(hwtEvent, hwtEvent.GetParameterValues(id), listener,
-                            subid, HEvent.UPDATE_EVENT);
-                    listener.PreArrived(hevent);
-                }
-            }
-            HttpFileCollection files = hwtEvent.getUploadedFileCollection();
-            foreach (String _name in files.AllKeys)
-            {
-                HttpPostedFile postedFile = files[_name];
-                IPreListener listener = fileListeners.Get(_name);
-                if (listener != null)
-                {
-                    String fileName = Path.GetFileName(postedFile.FileName);
-                    String tmpSavedFileName = Path.Combine(this.TempDir, "uf" + DateTime.Now.Ticks);
-                    try
-                    {
-                        postedFile.SaveAs(tmpSavedFileName);
-                        HEvent hevent = new HEvent(hwtEvent, null, listener, "NA", tmpSavedFileName, fileName, _name,
-                                  postedFile.ContentType);
-                        listener.PreArrived(hevent);
-                    }
-                    catch (Exception e)
-                    {
-                        logger.Error("Tried to save file in tmp dir " + this.TempDir, "exception: ", e);
-                    }
-                }
-            }
-            String[] names = hwtEvent.GetParameterNames();
-            foreach (String _name in names)
-            {
-                String[] ids = GetIds(_name);
-                String id = ids[0];
-                String subid = ids[1];
-                IPreListener listener = actionListeners.Get(id);
-                if (listener != null)
-                {
-                    HEvent hevent = new HEvent(hwtEvent, hwtEvent.GetParameterValues(id), listener,
-                            subid, HEvent.ACTION_EVENT);
-                    listener.PreArrived(hevent);
-                }
-            }
-            //
-            // Links (HLink)
-            //
-            String name = hwtEvent.GetParameter(LINKACTION);
-            if (name != null)
-            {
-                String[] ids = GetIds(name);
-                String id = ids[0];
-                String subid = ids[1];
-                IPreListener listener = actionListeners.Get(id);
-                if (listener != null)
-                {
-                    HEvent hevent = new HEvent(hwtEvent, hwtEvent.GetParameterValues(name), listener,
-                            subid, HEvent.ACTION_EVENT);
-                    listener.PreArrived(hevent);
-                }
-            }
-            foreach (IPreListener listener in SubmitListeners)
-            {
-                listener.PreArrived(new HEvent(hwtEvent, hwtEvent.GetParameterValues(name), listener, "",
-                        HEvent.SUBMIT_EVENT));
-            }
-            SubmitListeners.Clear();
-        }
-
-        public String TempDir
-        {
-            set;
-            get;
-        }
-
-
-        private String[] GetIds(String value)
-        {
-            String id = value;
-            String subid = "";
-            int delimit_position = id.IndexOf("_");
-            if (delimit_position > 0)
-            {
-                logger.Debug(id);
-                subid = id.Substring(delimit_position + 1);
-                id = id.Substring(0, delimit_position);
-            }
-            return new String[] { id, subid };
-        }
-
-        public String RegisterFile(IPreListener listener)
-        {
-            String name = this.CreateName();
-            fileListeners.Put(name, listener);
-            updateListeners.Put(name, listener);
-            return name;
-        }
-
-        public String RegisterAction(IPreListener listener)
-        {
-            String name = this.CreateName();
-            actionListeners.Put(name, listener);
-            return name;
-        }
-
-        public String RegisterUpdate(IPreListener listener)
-        {
-            String name = this.CreateName();
-            updateListeners.Put(name, listener);
-            return name;
-        }
-
-        public void FirePrintEvent(HCheckBox checkBox)
-        {
-            this.checkBoxPrinted.Put(checkBox.getUpdateName(), checkBox);
-        }
-
-        public void RegisterSubmit(IPreListener listener)
-        {
-            this.SubmitListeners.Add(listener);
-        }
-
-        public void SetNewlyCreated(bool newlyCreated)
-        {
-            this.newlyCreated = newlyCreated;
-        }
-
-        public bool IsLogoutSelected()
-        {
-            return logoutSelected;
-        }
-
-        public void SetLogoutSelected(bool logoutSelected)
-        {
-            this.logoutSelected = logoutSelected;
-        }
-
-    }
-
-
-    public class HIcon : IMG
-    {
-
-        private HFrame hframe;
-
-        public HIcon(HFrame hframe, String iconFileName)
-            : this(hframe, iconFileName, "icon") { }
-
-        public HIcon(HFrame hframe, String iconFileName, String styleClass)
-        {
-            this.SetStyleClass(styleClass);
-            this.hframe = hframe;
-            setIcon(iconFileName);
-        }
-
-        public HIcon(HFrame hframe, String iconFileName, String[][] attValueList)
-            : base(attValueList)
-        {
-            this.hframe = hframe;
-            setIcon(iconFileName);
-        }
-
-
-        public void setIcon(String iconFileName)
-        {
-            SetAttribute(new IconSrcAttribute(hframe, iconFileName));
-        }
-
-    }
-    public class HLabel : SPAN
-    {
-
-        public HLabel()
-        {
-        }
-
-        public HLabel(String text)
-        {
-            SetStyleClass(HStyles.HLABEL);
-            SetText(text);
-        }
-
-        public HLabel(String text, String styleClass)
-            : this(text)
-        {
-            this.SetStyleClass(styleClass);
-        }
-
-    }
-
-    public class HLink : HAbstractButton
-    {
-
-        protected HIcon icon;
-        protected HFrame hframe;
-        protected HAttribute onClickAttribute = new HAttribute(HDTD.AttName.ONCLICK, "");
-
-        public HLink(HLink link)
-            : base(HDTD.Element.A)
-        {
-            SetAttribute(onClickAttribute);
-            this.hframe = link.hframe;
-            SetSubId(link.subId);
-            this.initName = link.initName;
-            this.SetText(link.GetText());
-            this.SetAttribute(HDTD.AttName.HREF, "");
-            this.SetSubId(subId);
-            SetStyleClass(HStyles.HLINK);
-        }
-
-
-
-        public HLink(HFrame hframe, String text)
-            : this(hframe)
-        {
-            this.SetText(text);
-        }
-
-        public HLink(HFrame hframe, HIcon icon)
-            : this(hframe)
-        {
-            this.SetIcon(icon);
-        }
-
-        public HLink(HFrame hframe)
-            : this(hframe, "", "")
-        {
-        }
-
-
-        public override void SetSubId(String subId)
-        {
-            base.SetSubId(subId);
-            updateOnclickAttribute();
-        }
-
-        public HLink(HFrame hframe, String text, String subId)
-            : base(HDTD.Element.A)
-        {
-            SetAttribute(onClickAttribute);
-            this.hframe = hframe;
-            SetEventSource(hframe);
-            this.SetAttribute(HDTD.AttName.HREF, "");
-            this.SetText(text);
-            this.SetSubId(subId);
-            SetStyleClass(HStyles.HLINK);
-        }
-
-        private void updateOnclickAttribute()
-        {
-            String busyFun = "APP_instance.showBusy();";
-            onClickAttribute.SetValue(busyFun + hframe.GetFormName() + "." + HFrame.LINKACTION + ".name='"
-                + GetInitName() + "_" + GetSubId() + "';" + hframe.GetFormName()
-                + ".submit();return false");
-        }
-
-        /**
-         * Setting the icon with file name, which is specified by the
-         * hframe-icon-directory element in the hframe xml specifcation
-         * (hwindows.xml).
-         * 
-         * @param iconFileName
-         *            the file name.
-         */
-        public void SetIcon(HIcon icon)
-        {
-            this.icon = icon;
-            RemoveAll();
-            Add(icon);
-        }
-
-        protected override void CloseAngleBracket(TextWriter w)
-        {
-            w.Write('>');
-        }
-
-
-    }
-    public class HList<E> : HTag, IPreListener
-    {
-
-        private static Logger logger = Logger.GetLogger(typeof(HList<Object>));
-
-        private IList<E> model;
-        private List<E> selectSet = new List<E>();
-
-        private HTag option_notselected = new HTag(HDTD.Element.OPTION);
-        private HTag option_selected = new HTag(HDTD.Element.OPTION);
-        private ITextRenderer<E> textRenderer = new DefaultTextRenderer<E>();
-
-        public HList(IEventSource hsource) : this(hsource, null, false, 1) { }
-
-        public HList(IEventSource hsource, IList<E> model) : this(hsource, model, false, 1) { }
-
-        public HList(IEventSource hsource, IList<E> model, bool multiSelection, int size)
-            : base(HDTD.Element.SELECT)
-        {
-            this.model = model;
-            if (model == null)
-                this.model = new List<E>();
-            if (size > 1)
-                SetAttribute(HDTD.AttName.SIZE, "" + size);
-            if (size > 1 && multiSelection)
-                SetAttribute(HDTD.AttName.MULTIPLE);
-            option_selected.SetAttribute(HDTD.AttName.SELECTED);
-            SetEventSource(hsource);
-        }
-
-        public override int Count()
-        {
-            return model != null ? model.Count : 0;
-        }
-
-        public override HComponent Get(int i)
-        {
-            E _object = model[i];
-            if (_object != null)
-            {
-                if (selectSet.Contains(_object))
-                {
-                    option_selected.SetAttribute(HDTD.AttName.VALUE, "" + i);
-                    option_selected.SetText(textRenderer.GetRendererString(model[i], true));
-                    return option_selected;
-                }
-                else
-                {
-                    option_notselected.SetAttribute(HDTD.AttName.VALUE, "" + i);
-                    option_notselected.SetText(textRenderer.GetRendererString(model[i], false));
-                    return option_notselected;
-                }
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        public void SetSelectionType(bool multipleSelection)
-        {
-            if (multipleSelection)
-                SetAttribute(HDTD.AttName.MULTIPLE);
-            else
-                RemoveAttribute(HDTD.AttName.MULTIPLE);
-        }
-
-        public void SetSelectedIndex(int index)
-        {
-            E o1 = model[index];
-            selectSet.AddUnique(o1);
-        }
-
-        public void SetSelected(params E[] objs)
-        {
-            selectSet.Clear();
-            if (ArrayUtils.IsNotEmpty(objs))
-            {
-                foreach (E obj in objs)
-                {
-                    if (obj != null && model.Contains(obj))
-                    {
-                        selectSet.AddUnique(obj);
-                    }
-                }
-            }
-        }
-
-        public void SetSelectedIndices(int[] indices)
-        {
-            selectSet.Clear();
-            for (int i = 0; i < indices.Length; i++)
-            {
-                SetSelectedIndex(indices[i]);
-            }
-        }
-
-        public void SetModel(IList<E> model)
-        {
-            this.model = model;
-        }
-
-        public IEnumerable<E> GetModel()
-        {
-            return model;
-        }
-
-        /**
-         * @return selected indices (never null)
-         */
-        public IList<E> GetSelected()
-        {
-            return selectSet;
-        }
-
-        /*
-         * public Object[] getSelectedValues() { return new Object[0]; }
-         */
-        public override void PreArrived(HEvent hevent)
-        {
-            // selectSet.Clear();
-            String[] values = hevent.GetValues();
-            int[] sindex = new int[values.Length];
-            for (int i = 0; i < values.Length; i++)
-            {
-                try
-                {
-                    int index = Int32.Parse(values[i].Trim());
-                    sindex[i] = index;
-                }
-                catch (Exception npe)
-                {
-                    logger.Error(npe.ToString());
-                }
-            }
-            SetSelectedIndices(sindex);
-        }
-
-        public void Arrived(FileInfo file, String remoteName, String remoteType) { }
-
-        protected void SetEventSource(IEventSource es)
-        {
-            String name = es.RegisterUpdate(this);
-            SetAttribute(HDTD.AttName.NAME, name);
-        }
-
-        public override HComponent GetHText()
-        {
-            return new HText("not yet implemented");
-        }
-
-        public ITextRenderer<E> getTextRenderer()
-        {
-            return textRenderer;
-        }
-
-        public void SetTextRenderer(ITextRenderer<E> textRenderer)
-        {
-            this.textRenderer = textRenderer;
-        }
-
-
-
-    }
-    public interface IHListener
-    {
-        void Arrived(HEvent hevent);
-    }
-
-    public interface INewFileListener
-    {
-        void Arrived(UploadifyFile file);
-    }
-
-    public class HRadioButton
-        : RADIO
-        , IPreListener, RadioButton
-    {
-
-        protected String[] values;
-        protected String initName;
-
-        public HRadioButton(IEventSource hsource) : this(hsource, false, "") { }
-
-        public HRadioButton(IEventSource hsource, bool selected) : this(hsource, selected, "") { }
-
-        public HRadioButton(IEventSource hsource, bool selected, String text)
-            : base("")
-        {
-            SetEventSource(hsource);
-            SetText(text);
-            setSelected(selected);
-        }
-
-        public bool isSelected()
-        {
-            return this.isChecked();
-        }
-
-        public override String getValue()
-        {
-            if (values != null && values.Length > 0)
-                return values[0];
-            return null;
-        }
-
-        public void setSelected(bool selected)
-        {
-            setChecked(selected);
-        }
-
-        public override void PreArrived(HEvent hevent)
-        {
-            this.values = hevent.GetValues();
-            setChecked(true);
-        }
-
-        private void SetEventSource(IEventSource es)
-        {
-            initName = es.RegisterUpdate(this);
-            SetAttribute(HDTD.AttName.NAME, initName);
-        }
-
-        public String GetInitName()
-        {
-            return initName;
-        }
-
-        public void setGroupName(String groupName)
-        {
-            this.SetAttribute(HDTD.AttName.VALUE, initName);
-            this.SetAttribute(HDTD.AttName.NAME, groupName);
-        }
-
-    }
-
-
-    public class HSimpleAttributeValuePanel : TABLE
-    {
-
-        public HSimpleAttributeValuePanel()
-            : this(0, 2, 0)
-        {
-            SetAttribute(HDTD.AttName.WIDTH, "10%");
-        }
-
-        public HSimpleAttributeValuePanel(int border, int cellpadding,
-                int cellspacing)
-            : base(border, cellpadding, cellspacing) { }
-
-        public void Add(String label, HComponent component)
-        {
-            TR tr = new TR();
-            TD td = new TD(new DIV(new HLabel(label),
-                    HStyles.HSimpleAttributeValuePanel_LABEL_DIV));
-            td.SetAttribute(HDTD.AttName.VALIGN, HDTD.AttValue.TOP);
-            td.SetAttribute(HDTD.AttName.NOWRAP, HDTD.AttValue.TRUE);
-            tr.Add(td);
-            td = new TD(new DIV(component,
-                    HStyles.HSimpleAttributeValuePanel_VALUE_DIV));
-            td.SetAttribute(HDTD.AttName.VALIGN, HDTD.AttValue.TOP);
-            tr.Add(td);
-            this.Add(tr);
-        }
-
-        public void Add(HComponent labelComponent, HComponent component)
-        {
-            TR tr = new TR();
-            TD td = new TD(new DIV(labelComponent, HStyles.HSimpleAttributeValuePanel_LABEL_DIV));
-            td.SetAttribute(HDTD.AttName.VALIGN, HDTD.AttValue.TOP);
-            td.SetAttribute(HDTD.AttName.NOWRAP, HDTD.AttValue.TRUE);
-            tr.Add(td);
-            td = new TD(new DIV(component,
-                    HStyles.HSimpleAttributeValuePanel_VALUE_DIV));
-            td.SetAttribute(HDTD.AttName.VALIGN, HDTD.AttValue.TOP);
-            tr.Add(td);
-            this.Add(tr);
-        }
-    }
-
-
-    public class HTabbedPane : DIV, IHListener
-    {
-
-        private List<HComponent> tabComponents = new List<HComponent>();
-        private HFrame frame;
-        private int selectedIndex = 0;
-        private DIV tabsDIV = new DIV();
-        private DIV mainDIV = new DIV();
-        private List<DIV> tabs = new List<DIV>();
-        private List<SPAN> tabTexts = new List<SPAN>();
-        private List<HLink> tabLinks = new List<HLink>();
-        private bool hasTabs = false;
-
-        public HTabbedPane(HFrame frame)
-        {
-            this.frame = frame;
-            //
-            SetStyleClass(HStyles.HTABBEDPANE);
-            tabsDIV.SetStyleClass(HStyles.HTABBEDPANE_TABS);
-            mainDIV.SetStyleClass(HStyles.HTABBEDPANE_MAIN);
-        }
-
-        public override int Count()
-        {
-            return hasTabs ? 2 : 1;
-        }
-
-        public override HComponent Get(int index)
-        {
-            return hasTabs ? (index == 0 ? (HComponent)tabsDIV : (HComponent)mainDIV) : (HComponent)mainDIV;
-        }
-
-
-        public void AddTab(HComponent component, String tabText)
-        {
-            tabComponents.Add(component);
-            // create Link
-            HLink link = new HLink(frame);
-            link.SetText(tabText);
-            link.AddHListener(this);
-            //
-            tabLinks.Add(link);
-            tabTexts.Add(new SPAN(tabText, HStyles.HTABBEDPANE_TX));
-            DIV div = new DIV(link);
-            tabs.Add(div);
-
-            tabsDIV.Add(div);
-            if (StringUtils.IsNotEmpty(tabText) || tabs.Count > 1)
-            {
-                hasTabs = true;
-            }
-            ShowTab(selectedIndex);
-        }
-
-        public void ShowTab(int index)
-        {
-            mainDIV.Set(tabComponents.Get(index));
-            selectedIndex = index;
-            for (int i = 0; i < tabs.Count; i++)
-            {
-                DIV tab = tabs.Get(i);
-                if (i != selectedIndex)
-                {
-                    tab.Set(tabLinks.Get(i));
-                    tab.SetStyleClass(HStyles.HTABBEDPANE_TAB);
-                }
-                else
-                {
-                    tab.Set(tabTexts.Get(i));
-                    tab.SetStyleClass(HStyles.HTABBEDPANE_TAB_SELECTED);
-                }
-            }
-        }
-
-        public int GetSelectedTab()
-        {
-            return selectedIndex;
-        }
-
-        public HComponent GetCurrentTab()
-        {
-            return this.tabComponents.Get(this.selectedIndex);
-        }
-
-        public void Arrived(HEvent ae)
-        {
-            for (int i = 0; i < tabLinks.Count; i++)
-            {
-                if (tabLinks.Get(i) == ae.GetSource())
-                {
-                    ShowTab(i);
-                    return;
-                }
-            }
-        }
-
-
-    }
-
-    public class HTable<E> : TABLE
-    {
-
-        private ITableModel<E> model;
-        private ITableRowRenderer<E> renderer;
-
-        public HTable() : this(new DefaultTableModel<E>()) { }
-
-        public HTable(ITableModel<E> model)
-        {
-            this.model = model;
-            SetAttribute(HDTD.AttName.CELLSPACING, 0);
-            SetAttribute(HDTD.AttName.CELLPADDING, 6);
-            SetAttribute(HDTD.AttName.BORDER, 1);
-            SetAttribute(HDTD.AttName.WIDTH, "100%");
-            SetStyleClass(HStyles.HTABLE);
-
-        }
-
-        public void setModel(ITableModel<E> model)
-        {
-            this.model = model;
-        }
-
-        public ITableModel<E> getModel()
-        {
-            return model;
-        }
-
-        public void setRowRenderer(ITableRowRenderer<E> renderer)
-        {
-            this.renderer = renderer;
-        }
-
-        public void setCellRenderer(ICellRenderer<E> cellrenderer)
-        {
-            if (renderer == null)
-            {
-                renderer = new DefaultTableRowRenderer<E>();
-            }
-            renderer.SetCellRenderer(cellrenderer);
-        }
-
-        public void setCellRenderer(int column, ICellRenderer<E> cellrenderer)
-        {
-            if (renderer == null)
-            {
-                renderer = new DefaultTableRowRenderer<E>();
-            }
-            renderer.SetCellRenderer(column, cellrenderer);
-        }
-
-        public ITableRowRenderer<E> getRowRenderer()
-        {
-            return renderer;
-        }
-
-        public override int Count()
-        {
-            if (model == null)
-                return 0;
-            return model.GetRowCount();
-        }
-
-        public override HComponent Get(int row)
-        {
-            if (renderer == null)
-            {
-                renderer = new DefaultTableRowRenderer<E>();
-            }
-            HComponent c = (HComponent)renderer.GetTableRowRendererComponent(this, false, false, row);
-            return c;
-        }
-
-    }
-
-    public class HTextArea : TEXTAREA, IPreListener
-    {
-
-        protected String mainId;
-        protected String subId;
-
-        public HTextArea(IEventSource hsource)
-            : this(hsource, 20, 5, true, "") { }
-
-        public HTextArea(IEventSource hsource, int cols, int rows)
-            : this(hsource, cols, rows, true, "")
-        {
-
-        }
-
-        public HTextArea(IEventSource hsource, int cols, int rows, bool wrap,
-                String text)
-            : base("", cols, rows, wrap)
-        {
-
-            SetText(text);
-            SetEventSource(hsource);
-            SetStyleClass(HStyles.HTEXTAREA);
-        }
-
-        public override void PreArrived(HEvent hevent)
-        {
-            String[] values = hevent.GetValues();
-            if (values == null || values.Length == 0)
-            {
-                SetText("");
-            }
-            SetText(values[0]);
-        }
-
-        protected void SetEventSource(IEventSource es)
-        {
-            mainId = es.RegisterUpdate(this);
-            SetAttribute(HDTD.AttName.NAME, mainId);
-        }
-
-        public void SetSubId(String subId)
-        {
-            SetAttribute(HDTD.AttName.NAME, mainId + "_" + subId);
-        }
-
-    }
-
-
-    public class HTextField : INPUT, IPreListener
-    {
-
-        protected String mainId;
-        protected String subId;
-
-        public HTextField(IEventSource hsource)
-            : this(hsource, "")
-        {
-        }
-
-        public HTextField(IEventSource hsource, int size)
-            : this(hsource, "", size, 0)
-        {
-
-        }
-
-        public HTextField(IEventSource hsource, String text)
-            : this(hsource, text, 0, 0)
-        {
-
-        }
-
-        public HTextField(IEventSource hsource, int size, int maxlength)
-            : this(hsource, "", size, maxlength)
-        {
-
-        }
-
-        public HTextField(IEventSource hsource, String text, int size, int maxlength)
-            : base(INPUT.TEXT, "")
-        {
-
-            SetEventSource(hsource);
-            htext = new HText();
-            SetText(text);
-            if (size > 0)
-            {
-                SetAttribute(HDTD.AttValue.SIZE, size);
-            }
-            if (maxlength > 0)
-            {
-                SetAttribute(HDTD.AttValue.MAXLENGTH, maxlength);
-            }
-            SetStyleClass(HStyles.HTEXTFIELD);
-        }
-
-        public override HContainer SetText(String text)
-        {
-            SetAttribute(HDTD.AttName.VALUE, text);
-            htext.SetText(text);
-            return this;
-        }
-
-        public override String GetText()
-        {
-            return GetAttributeValue(HDTD.AttName.VALUE);
-        }
-
-        public override void PreArrived(HEvent hevent)
-        {
-            String[] values = hevent.GetValues();
-            if (ArrayUtils.IsEmpty(values))
-            {
-                return;
-            }
-            SetText(values[0]);
-        }
-
-        protected void SetEventSource(IEventSource es)
-        {
-            mainId = es.RegisterUpdate(this);
-            SetAttribute(HDTD.AttName.NAME, mainId);
-            //SetAttribute(HDTD.AttName.ONFOCUS, "javascript:" + HFrame.FOCUSELEMENT + ".value=this.name");
-        }
-
-        public void SetSubId(String subId)
-        {
-            SetAttribute(HDTD.AttName.NAME, mainId + "_" + subId);
-        }
-
-        public override HComponent GetHText()
-        {
-            return htext;
-        }
-
-        public void SetType(short inputType)
-        {
-
-        }
-    }
-
-    public class HWTEventDispatcher : IHttpHandler, IRequiresSessionState
-    {
-
-        //
-        // CLASS LEVEL
-        //
-        private static Logger logger = Logger.GetLogger(typeof(HWTEventDispatcher));
-
-        //
-        // OBJECT LEVEL
-        //
-        private Dictionary<String, Object> attributes = new Dictionary<String, Object>();
-        // private SessionFactory sessionFactory;
-        // private Dictionary logout_urls = new Dictionary();
-        private Dictionary<String, String> error_urls = new Dictionary<String, String>();
-
-        public void ProcessRequest(HttpContext context)
-        {
-            HttpRequest request = context.Request;
-            HttpResponse response = context.Response;
-
-            response.ContentType = "text/html";
-            response.ContentEncoding = Encoding.UTF8;
-
-            HttpCookieCollection cookies = request.Cookies;
-            logger.Debug("Nr of cookies: ", cookies.Count);
-            //foreach (HttpCookie cookie in cookies) {
-            //    logger.Debug("Path: " + cookie.Path + " Name: " + cookie.Name + " Value: " + cookie.Value);
-            //}
-
-            HWTEvent hevent = new HWTEvent(context);
-
-            try
-            {
-                lock (Locker.MUTEX)
-                {
-                    String frameid = hevent.getFrameId();
-                    logger.Debug("frameid", frameid);
-                    HWTFrameFactory factory = null;
-                    factory = HWTEventDispatcherInitializier.GetInstance(context).GetFactory(frameid);
-                    if (factory == null)
-                    {
-                        logger.Warn("no factory found for : " + frameid);
-                        return;
-                    }
-                    logger.Debug("factory", factory);
-                    HFrame frame = factory.GetHFrame(hevent);
-                    logger.Debug("frame", frame);
-                    if (frame == null)
-                    {
-                        logger.Warn("no frame found for : " + frameid);
-                    }
-                    else
-                    {
-                        frame.ProcessEvent(hevent);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                logger.Error(e);
-                throw e;
-            }
-        }
-
-        public void SetAttribute(String key, Object value)
-        {
-            attributes.Put(key, value);
-        }
-
-        public Object GetAttribute(String key)
-        {
-            return attributes.Get(key);
-        }
-
-        public bool IsReusable
-        {
-            get { return false; }
-        }
-
-    }
-
-    public class HWTEventDispatcherInitializier
-    {
-        //
-        // CLASS LEVEL
-        //
-        private static Logger logger = Logger.GetLogger(typeof(HWTEventDispatcherInitializier));
-        private static HWTEventDispatcherInitializier instance;
-        private static Object locker = new Object();
-        public static readonly String HWT_DIR = "~/App_Data/HWT-INF/hwt.xml";
-        public static readonly String HWT_CSS = "../css/hwt.css";
-        public static readonly String HWTPRINT_CSS = "../css/hwt-print.css";
-
-
-        private Dictionary<String, HWTFrameFactory> hframeFactories = new Dictionary<String, HWTFrameFactory>();
-
-        public static HWTEventDispatcherInitializier GetInstance(HttpContext context)
-        {
-            return instance == null ? instance = new HWTEventDispatcherInitializier(context) : instance;
-        }
-
-        private HWTEventDispatcherInitializier(HttpContext context)
-        {
-            ReadDescriptor(context);
-        }
-
-        public HWTFrameFactory GetFactory(String frameId)
-        {
-            return hframeFactories.Get(frameId);
-        }
-
-        /**
-    * Reading the HWT descriptor file.
-    */
-        private void ReadDescriptor(HttpContext context)
-        {
-            logger.Debug("start : readDescriptor");
-            String hwtXML = context.Server.MapPath(HWT_DIR);
-            FileInfo fileInfo = new FileInfo(hwtXML);
-            if (!fileInfo.Exists)
-            {
-                logger.Error(HWT_DIR + " file not found. Can not read hwt config!");
-                return;
-            }
-            XmlDocument doc = new XmlDocument();
-            doc.Load(hwtXML);
-            XmlElement root = doc.DocumentElement;
-            XmlNodeList list = root.GetElementsByTagName("hframe");
-            foreach (XmlElement hframe in list)
-            {
-                String hframe_name = hframe.GetTextByTagName("hframe-name").Trim();
-                String hframe_title = hframe.GetTextByTagName("hframe-title").Trim();
-                String hframe_class = hframe.GetTextByTagName("hframe-class").Trim();
-                String hframe_url = hframe.GetTextByTagName("hframe-url").Trim();
-                String hframe_error_url = hframe.GetTextByTagName("hframe-error-url").Trim();
-                String hframe_temp_directory = hframe.GetTextByTagName("hframe-temp-directory").Trim();
-                bool singleThreading = "single".Equals(hframe.GetTextByTagName("hframe-threading"));
-                HWTFrameFactory hframe_factory = new HWTFrameFactory(Type.GetType(hframe_class), hframe_name,
-                        hframe_title, hframe_url, hframe_temp_directory, singleThreading);
-                hframe_factory.SetStyleSheet(HWT_CSS);
-                hframe_factory.SetStyleSheetForPrint(HWTPRINT_CSS);
-                logger.Debug("HFrame factory added: " + hframe_name + " - " + hframe_url);
-                hframeFactories.Put(hframe_url, hframe_factory);
-                //error_urls.Put(hframe_url, hframe_error_url);
-                String hframe_icon_directory = hframe.GetTextByTagName("hframe-icon-directory");
-                hframe_factory.SetIconDirectory(hframe_icon_directory);
-            }
-        }
-
-        public static void Shutdown()
-        {
-            instance = null;
-        }
-    }
-
-    public class HWTFrameFactory
-    {
-        //
-        // CLASS LEVEL
-        //
-        private Logger logger = Logger.GetLogger(typeof(HWTFrameFactory));
-        //
-        // OBJECT LEVEL
-        //
-        protected String hframe_name;
-        protected String hframe_title;
-        protected Type hframe_class;
-        protected String hframe_url;
-        //
-        protected Dictionary<String, HFrame> frames;
-        protected long accesscounter;
-        protected long maxaccesscounter = 500;
-        protected String stylesheet = "";
-        protected String printStylesheet = "";
-        protected String icon_directory = "";
-        protected String temp_directory = "";
-        protected bool singleThreading = false;
-
-        public HWTFrameFactory(Type hframe_class,
-                String hframe_name, String hframe_title, String hframe_url, String temp_directory, bool singleThreading)
-        {
-            this.hframe_class = hframe_class;
-            this.hframe_name = hframe_name;
-            this.hframe_title = hframe_title;
-            this.hframe_url = hframe_url;
-            this.temp_directory = temp_directory;
-            this.singleThreading = singleThreading;
-            frames = new Dictionary<String, HFrame>();
-        }
-
-        public void SetStyleSheet(String stylesheet)
-        {
-            this.stylesheet = stylesheet;
-        }
-
-        public void SetStyleSheetForPrint(String printStylesheet)
-        {
-            this.printStylesheet = printStylesheet;
-        }
-
-        public void SetIconDirectory(String icon_directory)
-        {
-            this.icon_directory = icon_directory;
-        }
-
-        public String GetIconDirectory()
-        {
-            return icon_directory == null ? "" : icon_directory;
-        }
-
-        public HFrame GetHFrame(HWTEvent hwtEvent)
-        {
-            HttpSessionState httpSessionState = hwtEvent.GetSession();
-            String httpSessionID = httpSessionState.SessionID;
-            IPrincipal p = hwtEvent.GetUser();
-            HFrame hframe = (HFrame)frames.Get(httpSessionID);
-            if (hframe == null)
-            {
-                hframe = (HFrame)Activator.CreateInstance(hframe_class, hwtEvent);
-                hframe.SetTitle(hframe_title);
-                hframe.SetStyleSheet(this.stylesheet);
-                hframe.SetStyleSheetForPrint(this.printStylesheet);
-                hframe.SetIconDirectory(this.icon_directory);
-                hframe.SetActionUrl(hframe_url);
-                hframe.TempDir = temp_directory;
-                if (p != null)
-                {
-                    hframe.SetUserid(p.Identity.Name);
-                }
-                else
-                {
-                    hframe.SetUserid("anonymous");
-                }
-                hframe.SetSessionId(httpSessionID);
-                frames.Put(httpSessionID, hframe);
-                hframe.SetNewlyCreated(true);
-            }
-            else
-            {
-                hframe.SetNewlyCreated(false);
-            }
-            logger.Debug("return frame ", hframe);
-            return hframe;
-        }
-
-        public String GetFrameId()
-        {
-            return hframe_name;
-        }
-
-        public String GetHFrameName()
-        {
-            return hframe_name;
-        }
-
-        public bool IsSingleThreading()
-        {
-            return this.singleThreading;
-        }
-
-        private static long requestIDCounter = 1000000L;
-
-        public static String CreateRequestID()
-        {
-            return "RID" + (requestIDCounter++);
-        }
-    }
-
-
-    internal class IconSrcAttribute : HAttribute
-    {
-
-        private String iconName;
-        private HFrame hframe;
-
-        internal IconSrcAttribute(HFrame hframe, String iconName)
-            : base("", "")
-        {
-            this.hframe = hframe;
-            this.iconName = iconName;
-        }
-
-        public String getName()
-        {
-            return HDTD.AttName.SRC;
-        }
-
-        public String getValue()
-        {
-            if (!hframe.GetIconDirectory().EndsWith("/"))
-            {
-                return hframe.GetIconDirectory() + "/" + iconName;
-            }
-            else
-            {
-                return hframe.GetIconDirectory() + iconName;
-            }
-        }
-
-    }
-
-    public interface IListModel<E>
-    {
-
-        int GetRowCount();
-
-        E GetValueAt(int row);
-
-    }
-
-    public class NBSP : HComponent
-    {
-
-        private int nrOfNbsp;
-
-        public NBSP() : this(1) { }
-
-        public NBSP(int nrOfNbsp)
-        {
-            this.nrOfNbsp = nrOfNbsp;
-        }
-
-        public override void PrintTo(TextWriter pr)
-        {
-            for (int i = 0; i < this.nrOfNbsp; i++)
-            {
-                pr.Write("&nbsp;");
-            }
-        }
-
-    }
-
-    public class ObjectCommandEvent<E> : EventObject
-    {
-
-        protected String command;
-        protected E _object;
-        protected Object source;
-
-        public ObjectCommandEvent(Object source, E _object, String command)
-            : base(source)
-        {
-            this._object = _object;
-            this.command = command;
-            this.source = source;
-        }
-
-        public String getCommand()
-        {
-            return command;
-        }
-        public bool isCommand(String command)
-        {
-            return StringUtils.Equals(this.command, command);
-        }
-
-        public void setCommand(String command)
-        {
-            this.command = command;
-        }
-
-        public E getObject()
-        {
-            return _object;
-        }
-
-        public void setObject(E _object)
-        {
-            this._object = _object;
-        }
-
-        public override String ToString()
-        {
-            return "source:" + source + " object:" + _object + " command:" + command;
-        }
-    }
-
-    public interface IObjectCommandListener<E>
-    {
-        void Arrived(ObjectCommandEvent<E> hevent);
-    }
-
-
-    public class HObjectCommandList<E> : TABLE, IHListener
-    {
-
-        class OCRow : TR
-        {
-
-            private TD commandTD;
-            private ICellsRenderer<E> cellsRenderer;
-            private E obj;
-
-            public void SetObject(E obj)
-            {
-                this.obj = obj;
-            }
-
-            internal OCRow(DIV commandLinksDIV, ICellsRenderer<E> cellsRenderer)
-            {
-                this.cellsRenderer = cellsRenderer;
-                this.commandTD = new TD(commandLinksDIV);
-            }
-
-            internal OCRow(DIV commandLinksDIV) : this(commandLinksDIV, new DefaultCellsRenderer()) { }
-
-
-            public override HComponent Get(int index)
-            {
-                TD[] tds = cellsRenderer.GetCells(obj);
-                if (tds.Length == index)
-                {
-                    return commandTD;
-                }
-                else
-                {
-                    return tds[index];
-                }
-            }
-
-            public override int Count()
-            {
-                return cellsRenderer.ColumnCount() + 1;
-            }
-
-
-
-            class DefaultCellsRenderer : ICellsRenderer<E>
-            {
-
-                private TD[] tds = new TD[1];
-                private DIV content = new DIV();
-
-                internal DefaultCellsRenderer()
-                {
-                    tds[0] = new TD(content);
-                    content.SetStyleClass(HStyles.S100);
-                }
-
-                public int ColumnCount()
-                {
-                    return 1;
-                }
-
-                public TD[] GetCells(E obj)
-                {
-                    //tds[0].SetAttribute(HDTD.AttName.COLSPAN, maxNrOfCells.ToString());
-                    content.SetText(obj == null ? "null!" : obj.ToString());
-                    return tds;
-                }
-
-            }
-
-        }
-
-        private OCRow renderOCRow;
-        private HLink[] commandLinks;
-        private DIV commandDiv;
-
-
-        private String[] commands;
-        private HFrame hframe;
-
-        private List<E> objects;
-
-        public HObjectCommandList(HFrame hframe, List<E> objects, ICellsRenderer<E> renderer, params String[] commands)
-        {
-            this.commands = commands;
-            this.hframe = hframe;
-            commandDiv = new DIV();
-            commandDiv.SetStyleClass(HStyles.BUTTON_PANEL_NOBORDER);
-            commandLinks = new HLink[commands.Length];
-            commandDiv.Add(new NBSP());
-            for (int i = 0; i < commands.Length; i++)
-            {
-                commandLinks[i] = new HLink(hframe, commands[i]);
-                commandDiv.Add(commandLinks[i]);
-                commandLinks[i].AddHListener(this);
-            }
-            if (renderer != null)
-            {
-                renderOCRow = new OCRow(commandDiv, renderer);
-            }
-            else
-            {
-                renderOCRow = new OCRow(commandDiv);
-            }
-            SetObjects(objects);
-        }
-
-        public HObjectCommandList(HFrame hframe, List<E> objects, params String[] commands)
-            : this(hframe, objects, null, commands)
-        {
-        }
-
-        public HObjectCommandList(HFrame hframe, ICellsRenderer<E> renderer, params String[] commands)
-            : this(hframe, null, renderer, commands)
-        {
-        }
-
-        public HObjectCommandList(HFrame hframe, params String[] commands)
-            : this(hframe, null, null, commands)
-        {
-        }
-
-
-        public override HComponent Get(int index)
-        {
-            // UPDATE renderOCRow
-            renderOCRow.SetObject(objects.Get(index));
-            foreach (HLink links in commandLinks)
-            {
-                links.SetSubId(index.ToString());
-            }
-            return renderOCRow;
-        }
-
-        public override int Count()
-        {
-            return objects.Count;
-        }
-
-        public void SetObjects(List<E> objects)
-        {
-            if (objects == null)
-            {
-                this.objects = new List<E>();
-            }
-            else
-            {
-                this.objects = objects;
-            }
-        }
-
-        public void SetObjects(IEnumerable<E> objects)
-        {
-            this.objects = new List<E>();
-            foreach (E obj in objects)
-            {
-                this.objects.Add(obj);
-            }
-            //UpdateTable();
-        }
-
-        public void AddObject(E element)
-        {
-            objects.AddUnique(element);
-            //UpdateTable();
-        }
-
-        public void AddObject(int index, E element)
-        {
-            objects.Insert(index, element);
-            //UpdateTable();
-        }
-
-        public List<E> GetObjects()
-        {
-            return objects;
-        }
-
-        public void RemoveObject(E element)
-        {
-            objects.Remove(element);
-            //UpdateTable();
-        }
-
-        public void RemoveObject(int index)
-        {
-            objects.RemoveAt(index);
-        }
-
-        public void RemoveAllObjects()
-        {
-            objects.Clear();
-        }
-
-        //
-        // LISTENER HANDLING
-        //
-        private List<IObjectCommandListener<E>> listeners = new List<IObjectCommandListener<E>>();
-
-        public void AddObjectCommandListener(IObjectCommandListener<E> listener)
-        {
-            if (listeners.Contains(listener))
-            {
-                return;
-            }
-            listeners.Add(listener);
-        }
-
-        public void RemoveObjectCommandListener(IObjectCommandListener<E> listener)
-        {
-            listeners.Remove(listener);
-        }
-
-        private void Fire(ObjectCommandEvent<E> e)
-        {
-            foreach (IObjectCommandListener<E> listener in listeners)
-            {
-                listener.Arrived(e);
-            }
-        }
-
-        public void Arrived(HEvent e)
-        {
-            HLink link = (HLink)e.GetSource();
-            int subid = Int32.Parse(link.GetSubId());
-            String command = link.GetText();
-            ObjectCommandEvent<E> ocEvent = new ObjectCommandEvent<E>(link, objects.Get(subid), command);
-            Fire(ocEvent);
-        }
-
-    }
-
-    public class HObjectList<E> : HContainer, IObjectCommandListener<E>
-    {
-
-
-
-
-        private HObjectCommandList<E> ocl;
-
-        public HObjectList(HFrame hframe, List<E> objects, ICellsRenderer<E> renderer)
-        {
-            ocl = new HObjectCommandList<E>(hframe, objects, renderer, HStyles.DELETE_ICON);
-            Init();
-        }
-
-        public HObjectList(HFrame hframe, ICellsRenderer<E> renderer)
-        {
-            ocl = new HObjectCommandList<E>(hframe, null, renderer, HStyles.DELETE_ICON);
-            Init();
-        }
-
-        public HObjectList(HFrame hframe)
-        {
-            ocl = new HObjectCommandList<E>(hframe, HStyles.DELETE_ICON);
-            Init();
-        }
-
-        private void Init()
-        {
-            ocl.AddObjectCommandListener(this);
-            Add(ocl);
-        }
-
-        public void SetObjects(params E[] objs)
-        {
-            ocl.SetObjects(objs);
-        }
-
-        public List<E> GetObjects()
-        {
-            return ocl.GetObjects();
-        }
-
-        public void AddObjects(E obj)
-        {
-            ocl.AddObject(obj);
-        }
-
-        public void Arrived(ObjectCommandEvent<E> oe)
-        {
-            E obj = oe.getObject();
-            ocl.RemoveObject(obj);
-        }
-
-        internal void RemoveAllObjects()
-        {
-            ocl.RemoveAllObjects();
-        }
-    }
-
-
-
-    public interface RadioButton
-    {
-        String GetInitName();
-        void setGroupName(String groupName);
-        bool isSelected();
-        void setSelected(bool selected);
-    }
-
-    public class HStyles
-    {
-
-        public static readonly String DELETE_ICON = "X";
-        public static readonly String HBUTTON = "HBUTTON";
-        public static readonly String HLINK = "HLINK";
-        public static readonly String HLABEL = "HLABEL";
-        public static readonly String HSimpleAttributeValuePanel_LABEL_DIV = "HSAVP_L";
-        public static readonly String HSimpleAttributeValuePanel_VALUE_DIV = "HSAVP_V";
-        public static readonly String HTABBEDPANE = "HTABBEDPANE";
-        public static readonly String HTABBEDPANE_MAIN = "HTABBEDPANE_MAIN";
-        public static readonly String HTABBEDPANE_TAB = "HTABBEDPANE_TAB";
-        public static readonly String HTABBEDPANE_TABS = "HTABBEDPANE_TABS";
-        public static readonly String HTABBEDPANE_TX = "HTABBEDPANE_TX";
-        public static readonly String MODAL_WINDOW = "MODAL_WINDOW";
-
-        public static readonly String HTABLE = "HTABLE";
-        public static readonly String HTEXT = "HTEXT";
-        public static readonly String HTEXTFIELD = "HTEXTFIELD";
-        public static readonly String HTEXTAREA = "HTEXTAREA";
-        public static readonly String HTABBEDPANE_TAB_SELECTED = "HTABBEDPANE_TAB_SELECTED";
-        public static readonly String S100 = "S100";
-        public static readonly String BUTTON_PANEL = "BUTTON_PANEL";
-        public static readonly String BUTTON_PANEL_NOBORDER = "H_BUTTON_PANEL_NOBORDER";
-
-
-
-    }
-
-    public interface ICellRenderer<E>
-    {
-
-        TD GetCell(
-           HTable<E> table,
-           Object value,
-           bool isSelected,
-           bool hasFocus,
-           int row,
-           int column);
-    }
-
-    public interface ICellsRenderer<E>
-    {
-        int ColumnCount();
-        TD[] GetCells(E value);
-    }
-
-
-    public interface ITableModel<E> : IListModel<E>
-    {
-
-        int GetColumnCount();
-
-        //new int GetRowCount();
-
-        E GetValueAt(int row, int col);
-
-
-    }
-
-    public interface ITableRowRenderer<E>
-    {
-
-        void SetCellRenderer(ICellRenderer<E> cellrenderer);
-
-        void SetCellRenderer(int column, ICellRenderer<E> cellrenderer);
-
-        HComponent GetTableRowRendererComponent(HTable<E> table, bool isSelected,
-               bool hasFocus, int row);
-
-    }
-
-    public interface ITextRenderer<E>
-    {
-        String GetRendererString(E _object, bool isSelected);
-    }
+		public DataSourceEntry(DataSource ds, String dataSourceName) {
+			DataSources.getInstance().put(dataSourceName, ds);
+		}
+
+	}
+
+	/**
+	 * Singleton for keeping the data source objects.
+	 * 
+	 * @author tonibuenter
+	 */
+	public static class DataSources {
+
+		private static DataSources instance;
+
+		public static DataSources getInstance() {
+			return instance == null ? instance = new DataSources() : instance;
+		}
+
+		private final Map<String, DataSource> dss = new HashMap<String, DataSource>();
+
+		public DataSource get() {
+			return dss.get(DEFAULT_DATASOURCE_NAME);
+		}
+
+		public DataSource get(String dataSourceName) {
+			if (dataSourceName == null) {
+				dataSourceName = DEFAULT_DATASOURCE_NAME;
+			}
+			return dss.get(dataSourceName);
+		}
+
+		public void put(String dataSourceName, DataSource ds) {
+			dss.put(dataSourceName, ds);
+		}
+
+		public void put(DataSource ds) {
+			dss.put(DEFAULT_DATASOURCE_NAME, ds);
+		}
+
+	}
+
+	public static interface IQuery extends Serializable {
+
+		Result run(Request request);
+
+	}
+
+	/**
+	 * Interface for service repositories. Currently we have a JSON base and a SQL
+	 * base service repository.
+	 * 
+	 * @author tonibuenter
+	 */
+	public static interface IServiceRepository {
+
+		ServiceEntry get(String serviceId) throws Exception;
+
+		List<ServiceEntry> list() throws Exception;
+
+		void add(ServiceEntry serviceEntry) throws Exception;
+
+	}
+
+	/**
+	 * MainQuery is the main class the provides the processing of a RemoteQuery
+	 * request. It takes care of the service statement parsing and processing.
+	 * 
+	 * @author tonibuenter
+	 */
+	public static class MainQuery implements IQuery {
+
+		// TODO idea :: how to create your own plugins like 'my-sql-extension:select
+		// %SELECTLIST% where %WHERE% clause'
+
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+
+		private static final Logger logger = Logger.getLogger(MainQuery.class
+		    .getName());
+
+		private final Map<String, Serializable> processStore = new HashMap<String, Serializable>();
+
+		public void put(String key, Serializable value) {
+			processStore.put(key, value);
+		}
+
+		public Serializable get(String key) {
+			return processStore.get(key);
+		}
+
+		public Result run(RemoteQuery.Request request) {
+			Result result = null;
+			ProcessLog log = ProcessLog.Current();
+			log.incrRecursion();
+			String serviceId = request.getServiceId();
+			String userId = request.getUserId();
+			if (Utils.isEmpty(userId)) {
+				log.warn(
+				    "Request object has no userId set. Process continues with userId="
+				        + ANONYMOUS, logger);
+				request.setUserId(ANONYMOUS);
+				userId = request.getUserId();
+			}
+			// TODO better in the process object ?
+			try {
+				//
+				ServiceEntry serviceEntry = ServiceRepository.getInstance().get(
+				    serviceId);
+				if (serviceEntry == null) {
+					log.error("No ServiceEntry found for " + serviceId, logger);
+					return new Result(log);
+				}
+				//
+				// CHECK ACCESS
+				//
+				boolean hasAccess = false;
+				Set<String> roles = serviceEntry.getRoleSet();
+				if (Utils.isEmpty(roles)) {
+					hasAccess = true;
+				} else {
+					for (String role : roles) {
+						if (request.getRoles().contains(role)) {
+							hasAccess = true;
+							break;
+						}
+					}
+				}
+				if (hasAccess) {
+					log.system("Access to " + serviceId + " for " + userId + " : ok",
+					    logger);
+				} else {
+					log.warn("No access to " + serviceId + " for " + userId + " (roles: "
+					    + roles + ")", logger);
+					return new Result(log);
+				}
+				//
+				// START PROCESSING STATEMENTS
+				//
+
+				log.system("ServiceEntry found for userId=" + userId + " is : "
+				    + serviceEntry, logger);
+
+				String statements = serviceEntry.getStatements();
+
+				String[] statementList = Utils.tokenize(statements,
+				    STATEMENT_DELIMITER, STATEMENT_ESCAPE);
+
+				// parameterSupport = ParameterSupport.begin(con, sqRequest, sqEntry);
+				for (String statement : statementList) {
+					Result result2 = processSingleStatement(request, serviceEntry,
+					    statement);
+					if (result2 != null) {
+						if (result != null) {
+							result2.setSubResult(result);
+						}
+						result = result2;
+					}
+
+				}
+
+			} catch (Exception e) {
+				log.error(e, logger);
+			} finally {
+				// ParameterSupport.release(parameterSupport);
+			}
+			if (result == null) {
+				// TODO Default result object ?
+			} else {
+				result.setUserId(userId);
+			}
+			return result;
+		}
+
+		private Result processSingleStatement(Request request,
+		    ServiceEntry serviceEntry, String serviceStmt) {
+			ProcessLog log = ProcessLog.Current();
+			try {
+				Result result = null;
+
+				log.incrRecursion();
+				int recursion = log.getRecursionValue();
+				if (recursion > MAX_RECURSION) {
+					log.error("Recursion limit reached " + MAX_RECURSION
+					    + ". Stop processing.", logger);
+					return null;
+				}
+
+				serviceStmt = serviceStmt.trim();
+				if (Utils.isEmpty(serviceStmt)) {
+					log.warn("Empty serviceStmt -> no processing.", logger);
+					return null;
+				}
+
+				String[] p = Utils.tokenize(serviceStmt, ':', STATEMENT_ESCAPE);
+
+				// unexpected parsing result
+				if (p == null || p.length == 0) {
+					log.warn("Unexpected serviceStmt : " + serviceStmt + ". Skipping!",
+					    logger);
+					return null;
+				}
+				//
+				// plain SQL case
+				//
+				if (p.length == 1 || !startsWithMLT(serviceStmt)) {
+					result = processSql(serviceEntry, serviceStmt, request);
+					return result;
+				}
+				String cmd = p[0];
+				String stmt = p[1];
+				//
+				// include
+				//
+				if (cmd.equals(MLT.include)) {
+					ServiceEntry se2 = ServiceRepository.getInstance().get(stmt);
+					if (se2 == null) {
+						log.warn("Tried to include " + stmt + ". Skipping.", logger);
+						return null;
+					}
+					String includeServiceStmt = se2.getStatements();
+					result = processSingleStatement(request, serviceEntry,
+					    includeServiceStmt);
+					return result;
+				}
+				//
+				// java:
+				//
+				if (cmd.equals(MLT.java)) {
+					result = processJava(stmt, request);
+					return result;
+				}
+				//
+				// sql:
+				//
+				if (cmd.equals(MLT.sql)) {
+					result = processSql(serviceEntry, stmt, request);
+					return result;
+				}
+				//
+				// set, ... request parameter assignements
+				//
+				if (cmd.startsWith(MLT.set)) {
+					applySetCommand(request, cmd, stmt);
+					return null;
+				}
+				if (cmd.equals(MLT.serviceId)) {
+					String parentServiceId = serviceEntry.getServiceId();
+					String subServiceId = stmt;
+					request.setServiceId(subServiceId);
+					result = run(request);
+					request.setServiceId(parentServiceId);
+					return result;
+				}
+			} catch (Exception e) {
+				log.error(
+				    "ServiceStmt for " + serviceStmt + " failed. Skip execution.",
+				    logger);
+
+			} finally {
+				log.decrRecursion();
+			}
+			return null;
+
+		}
+
+		public static boolean startsWithMLT(String serviceStmt) {
+			if (serviceStmt.startsWith(MLT.include)) {
+				return true;
+			}
+			if (serviceStmt.startsWith(MLT.java)) {
+				return true;
+			}
+			if (serviceStmt.startsWith(MLT.serviceId)) {
+				return true;
+			}
+			if (serviceStmt.startsWith(MLT.sql)) {
+				return true;
+			}
+			if (serviceStmt.startsWith(MLT.set)) {
+				return true;
+			}
+			if (serviceStmt.startsWith(MLT.tx_begin)) {
+				return true;
+			}
+			if (serviceStmt.startsWith(MLT.tx_commit)) {
+				return true;
+			}
+			return false;
+		}
+
+		public static void applySetCommand(Request request, String cmd, String stmt) {
+			if (cmd.startsWith(MLT.set_null)) {
+				TreeMap<Integer, Map<String, String>> ptm = request
+				    .getParametersTreeMap();
+				String[] keys = Utils.tokenize(stmt, ',');
+				for (String key : keys) {
+
+					for (Entry<Integer, Map<String, String>> e : ptm.entrySet()) {
+						Map<String, String> m = e.getValue();
+						if (m != null) {
+							m.remove(key);
+						}
+					}
+				}
+				return;
+
+			}
+			String ls = "";
+			if (cmd.startsWith(MLT.set_if_empty)) {
+				ls = cmd.substring(MLT.set_if_empty.length());
+			} else if (cmd.startsWith(MLT.set_if_null)) {
+				ls = cmd.substring(MLT.set_if_null.length());
+			} else {
+				ls = cmd.substring(MLT.set.length());
+			}
+			Integer level = parseLevel(ls);
+			if (level == null) {
+				logger.severe("Syntax error int set clause: " + cmd + " (stmt : "
+				    + stmt + "). Skipping.");
+				return;
+			}
+
+			String[] pairs = stmt.split(",");
+			for (String pair : pairs) {
+				String[] nv = pair.split("=");
+				String n = nv[0];
+				String v = nv.length > 1 ? nv[1] : null;
+				String oldValue = request.getValue(n);
+				if (oldValue == null && cmd.startsWith(MLT.set_if_null)) {
+					request.put(level, n, v);
+				} else if ((oldValue == null || oldValue.trim().length() == 0)
+				    && cmd.startsWith(MLT.set_if_empty)) {
+					request.put(level, n, v);
+				} else {
+					request.put(level, n, v);
+				}
+			}
+		}
+
+		/**
+		 * Parses the input string and return
+		 * 
+		 * @param ls
+		 * @return
+		 */
+		public static Integer parseLevel(String ls) {
+			try {
+				ls = ls.trim();
+				if (ls.length() == 0) {
+					return 0;
+				}
+
+				if (ls.startsWith("-")) {
+					ls = ls.substring(1);
+				}
+				Integer l = LevelConstantNames.get(ls.toUpperCase());
+				if (l != null) {
+					return l;
+				}
+				return Integer.parseInt(ls);
+			} catch (Exception e) {
+				logger.severe(Utils.getStackTrace(e));
+			}
+			return null;
+		}
+
+		private Result processJava(String className, Request request)
+		    throws InstantiationException, IllegalAccessException,
+		    ClassNotFoundException {
+			Result result = null;
+
+			Object serviceObject = Class.forName(className).newInstance();
+			if (serviceObject instanceof IQuery) {
+				IQuery service = (IQuery) serviceObject;
+				result = service.run(request);
+			} else {
+				ProcessLog.Current().error(
+				    "Class " + className + " is not an instance of "
+				        + IQuery.class.getName(), logger);
+			}
+
+			return result;
+		}
+
+		public Result processSql(ServiceEntry serviceEntry, String sql,
+		    Request request) {
+
+			Result result = null;
+			// context
+			ProcessLog log = ProcessLog.Current();
+
+			PreparedStatement ps = null;
+			ResultSet rs = null;
+
+			QueryAndParams qap = null;
+
+			log.system("sql before conversion: " + sql);
+
+			qap = convertQuery(sql);
+			sql = qap.questionMarkQuery;
+			log.system("sql after conversion: " + sql);
+
+			//
+			// PREPARE SERVICE_STMT
+			//
+
+			List<Object> paramObjects = new ArrayList<Object>();
+
+			for (String attributeName : qap.parameters) {
+				String attributeValue = request.getValue(attributeName);
+				if (attributeValue == null) {
+					log.warn("processSql:No value provided for parameter name:"
+					    + attributeName + " (serviceId:" + request.getServiceId()
+					    + "). Will use empty string.", logger);
+					paramObjects.add("");
+				} else {
+					paramObjects.add(attributeValue);
+				}
+			}
+			//
+			// DEFAULT PARAMETER
+			//
+
+			//
+			// FINALIZE SERVICE_STMT
+			//
+
+			DataSource ds = DataSources.getInstance().get(
+			    serviceEntry.getDatasourceName());
+			if (ds == null) {
+				log.error("No DataSource found ServiceEntry.getDatasourceName="
+				    + serviceEntry.getDatasourceName() + "!", logger);
+			} else {
+				Connection con = null;
+				try {
+					con = ds.getConnection();
+					ps = con.prepareStatement(sql);
+					int index = 0;
+					for (Object v : paramObjects) {
+						ps.setObject(++index, v);
+					}
+					boolean hasResultSet = ps.execute();
+					if (hasResultSet) {
+						rs = ps.getResultSet();
+						result = Utils.buildResult(0, -1, rs);
+						result.setName(serviceEntry.getServiceId());
+					} else {
+						log.system("ServiceEntry : " + serviceEntry.getServiceId()
+						    + " 	rowsAffected:" + ps.getUpdateCount());
+					}
+				}
+
+				catch (SQLException e) {
+					String warnMsg = "Warning for service " + serviceEntry.getServiceId()
+					    + " (parameters:" + qap.parameters + ") execption msg: "
+					    + e.getMessage();
+					log.warn(warnMsg);
+					logger.warning(warnMsg);
+				}
+
+				catch (Exception e) {
+					String errorMsg = "Error for service " + serviceEntry.getServiceId()
+					    + " (parameters:" + qap.parameters + ") execption msg: "
+					    + e.getMessage();
+					log.error(errorMsg, logger);
+					log.error(qap == null ? "-no qap-" : "parameterNameQuery="
+					    + qap.parameterNameQuery + ", questionMarkQuery="
+					    + qap.questionMarkQuery + ", parameters=" + qap.parameters,
+					    logger);
+				} finally {
+					Utils.closeQuietly(rs);
+					Utils.closeQuietly(ps);
+					Utils.closeQuietly(con);
+				}
+			}
+			return result;
+		}
+
+		//
+		// NEW
+		//
+
+		static class QueryAndParams {
+			String parameterNameQuery;
+			String questionMarkQuery;
+			List<String> parameters = new ArrayList<String>();
+
+			@Override
+			public String toString() {
+				return "QueryAndParams [parameterNameQuery=" + parameterNameQuery
+				    + ", questionMarkQuery=" + questionMarkQuery + ", parameters="
+				    + parameters + "]";
+			}
+
+		}
+
+		static QueryAndParams convertQuery(String query) {
+
+			StringBuffer buf = new StringBuffer(query.length());
+
+			boolean started = false;
+			boolean prot = false;
+			List<String> parameters = new ArrayList<String>();
+			StringBuffer currentParam = new StringBuffer();
+			for (char c : query.toCharArray()) {
+
+				if (prot) {
+					//
+				} else {
+
+					if (started) {
+						if (Character.isJavaIdentifierPart(c)) {
+							currentParam.append(c);
+							continue;
+						} else {
+							started = false;
+							parameters.add(currentParam.toString());
+							currentParam = new StringBuffer();
+							// buf.append(c);
+							// continue;
+						}
+					}
+					if (!started && c == ':') {
+						started = true;
+						buf.append('?');
+						continue;
+					}
+				}
+
+				if (c == '\'') {
+					prot = !prot;
+				}
+
+				buf.append(c);
+			}
+
+			// end processing
+			if (started) {
+				parameters.add(currentParam.toString());
+			}
+
+			//
+			QueryAndParams qap = new QueryAndParams();
+			qap.parameterNameQuery = query;
+			qap.questionMarkQuery = buf.toString();
+			qap.parameters = parameters;
+			return qap;
+		}
+
+	}
+
+	//
+	//
+	// BuildIns ...
+	//
+	//
+
+	/**
+	 * BuildIns is a collection of Java IQueries which solve rather universal
+	 * tasks such as : register a service,
+	 * 
+	 * @author tonibuenter
+	 */
+	public static class BuiltIns {
+
+		public static class RegisterService implements IQuery {
+
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public Result run(Request request) {
+				ProcessLog pLog = ProcessLog.Current();
+				String serviceEntriesJson = request.getValue("serviceEntries");
+				IServiceRepository sr = ServiceRepository.getInstance();
+				try {
+					if (!Utils.isBlank(serviceEntriesJson)) {
+						List<ServiceEntry> serviceEntries = JsonUtils.toList(
+						    serviceEntriesJson, ServiceEntry.class);
+						for (ServiceEntry serviceEntry : serviceEntries) {
+							sr.add(serviceEntry);
+						}
+					} else {
+						String serviceId = request.getValue(Params.serviceId);
+						String statements = request.getValue(Params.statements);
+						String roles = request.getValue(Params.roles);
+						sr.add(new ServiceEntry(serviceId, statements, roles));
+					}
+				} catch (Exception e) {
+					pLog.error(e, rqLogger);
+				}
+				return new Result(pLog);
+			}
+
+		}
+
+		public static class ListServices implements IQuery {
+
+			/**
+             * 
+             */
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public Result run(Request request) {
+
+				ProcessLog pLog = ProcessLog.Current();
+				IServiceRepository sr = ServiceRepository.getInstance();
+				Result r = new Result(COL_SERVICE_ID, COL_STATEMENTS, COL_ROLES,
+				    COL_DATASOURCE);
+				try {
+					List<ServiceEntry> list = sr.list();
+					for (ServiceEntry se : list) {
+						r.addRow(se.getServiceId(), se.getStatements(),
+						    Utils.joinTokens(se.getRoleSet()), se.getDatasourceName());
+					}
+				} catch (Exception e) {
+					pLog.error(e, rqLogger);
+				}
+				r.setProcessLog(pLog);
+				return r;
+			}
+		}
+	}
+
+	/**
+	 * ProcessLog class is a collector of log information specific to a single
+	 * request resolution.
+	 * 
+	 * @author tonibuenter
+	 */
+	public static class ProcessLog implements Serializable {
+
+		public static final int USER_OK_CODE = 10;
+		public static final int USER_WARNING_CODE = 20;
+		public static final int USER_ERROR_CODE = 30;
+		public static final int OK_CODE = 1000;
+		public static final int WARNING_CODE = 2000;
+		public static final int ERROR_CODE = 3000;
+		public static final int SYSTEM_CODE = 4000;
+
+		public static final ThreadLocal<ProcessLog> TL = new ThreadLocal<ProcessLog>() {
+			@Override
+			protected ProcessLog initialValue() {
+				return new ProcessLog();
+			}
+		};
+
+		public static class LogEntry implements Serializable, Comparable<LogEntry> {
+
+			private static final long serialVersionUID = 1L;
+
+			private final String msg;
+			private int msgCode;
+			private final long time;
+
+			private final String state;
+
+			public LogEntry(int msgCode, String msg, String state, long time,
+			    String... data) {
+				super();
+				this.msg = msg;
+				this.msgCode = msgCode;
+				this.state = state;
+				this.time = time;
+			}
+
+			public String getMsg() {
+				return msg;
+			}
+
+			public String getState() {
+				return this.state == null ? ProcessLog.OK : this.state;
+			}
+
+			public String getTime() {
+				return Utils.toIsoDateTime(time);
+			}
+
+			public long getTimeMillis() {
+				return time;
+			}
+
+			public int compareTo(LogEntry o) {
+				int i = this.prio(state) - prio(o.state);
+				if (i == 0) {
+					i = this.time == o.time ? 0 : (this.time < o.time ? 1 : -1);
+				}
+				return i;
+			}
+
+			private int prio(String state) {
+				if (Error.equals(state)) {
+					return 1;
+				}
+				if (Warning.equals(state)) {
+					return 2;
+				}
+				if (OK.equals(state)) {
+					return 3;
+				}
+				if (System.equals(state)) {
+					return 4;
+				}
+				return 5;
+			}
+
+			@Override
+			public String toString() {
+				return Utils.toIsoDateTime(time) + ":" + msg + "(" + state + ":"
+				    + msgCode + ")";
+			}
+
+			@Override
+			public int hashCode() {
+				final int prime = 31;
+				int result = 1;
+				result = prime * result + ((msg == null) ? 0 : msg.hashCode());
+				result = prime * result + ((state == null) ? 0 : state.hashCode());
+				result = prime * result + (int) (time ^ (time >>> 32));
+				return result;
+			}
+
+			@Override
+			public boolean equals(Object obj) {
+				if (this == obj) {
+					return true;
+				}
+				if (obj == null) {
+					return false;
+				}
+				if (getClass() != obj.getClass()) {
+					return false;
+				}
+				LogEntry other = (LogEntry) obj;
+				if (msg == null) {
+					if (other.msg != null) {
+						return false;
+					}
+				} else if (!msg.equals(other.msg)) {
+					return false;
+				}
+				if (state == null) {
+					if (other.state != null) {
+						return false;
+					}
+				} else if (!state.equals(other.state)) {
+					return false;
+				}
+				if (time != other.time) {
+					return false;
+				}
+				return true;
+			}
+
+			public int getMsgCode() {
+				return msgCode;
+			}
+
+			public void setMsgCode(int msgCode) {
+				this.msgCode = msgCode;
+			}
+
+		}
+
+		/**
+	     * 
+	     */
+
+		public static final String Warning = "Warning";
+		public static final String Error = "Error";
+		public static final String OK = "OK";
+		public static final String System = "System";
+		private static final long serialVersionUID = 1L;
+		private static final String FILE_ID = "_FILE_ID_";
+		private transient boolean silently = false;
+		transient private long betweenTime = java.lang.System.currentTimeMillis();
+
+		//
+		// ProcessLog Object Level
+		//
+
+		private String state = OK;
+		private final List<LogEntry> logEntries = new ArrayList<LogEntry>();
+		private final Map<String, String> attributes = new HashMap<String, String>();
+
+		private Long lastUsedTime;
+		private String userId;
+		private String name;
+		private int recursion = 0;
+
+		public ProcessLog() {
+		}
+
+		public void incrRecursion() {
+			recursion++;
+		}
+
+		public void decrRecursion() {
+			recursion--;
+		}
+
+		public int getRecursionValue() {
+			return recursion;
+		}
+
+		public void infoUser(String line) {
+			add(USER_OK_CODE, line, OK);
+		}
+
+		public void warnUser(String line, Logger logger) {
+			add(USER_WARNING_CODE, line, Warning);
+			_writeLog(line, Level.WARNING, logger);
+		}
+
+		public void errorUser(String line, Logger... logger) {
+			add(USER_ERROR_CODE, line, Error);
+			_writeLog(line, Level.SEVERE, logger);
+		}
+
+		public void error(String line, Logger... logger) {
+			this.state = Error;
+			add(ERROR_CODE, line, Error);
+			_writeLog(line, Level.SEVERE, logger);
+		}
+
+		public void error(Throwable t, Logger... logger) {
+			error(t.getMessage(), t, logger);
+		}
+
+		public void error(String line, Throwable t, Logger... logger) {
+			this.state = Error;
+			add(ERROR_CODE, line, Error);
+			_writeLog(line + "\n" + Utils.getStackTrace(t), Level.SEVERE, logger);
+		}
+
+		public void error(int msgCode, String line, Logger... logger) {
+			this.state = Error;
+			add(msgCode, line, Error);
+			_writeLog(line, Level.SEVERE, logger);
+		}
+
+		public void warn(String line, Logger... logger) {
+			add(WARNING_CODE, line, Warning);
+			_writeLog(line, Level.WARNING, logger);
+		}
+
+		public void system(String line, Logger... logger) {
+			long now = java.lang.System.currentTimeMillis();
+			long timeGap = now - this.betweenTime;
+			this.betweenTime = now;
+			add(SYSTEM_CODE, line + " [time gap : " + (timeGap / 1000) + "s]", System);
+			_writeLog(line, Level.INFO, logger);
+		}
+
+		public void system(Throwable t, Logger... logger) {
+			String line = Utils.getStackTrace(t);
+			system(line, logger);
+		}
+
+		public void _writeLog(String line, Level level, Logger... loggers) {
+			for (Logger logger : loggers) {
+				if (level == Level.WARNING) {
+					logger.warning(line);
+				} else if (level == Level.SEVERE) {
+					logger.severe(line);
+				} else {
+					logger.info(line);
+				}
+			}
+		}
+
+		private void add(int msgCode, String line, String level) {
+			if (silently) {
+				return;
+			}
+			//
+			// Making sure that a ProcessLog Object does not use the same time
+			// value twice.
+			//
+			if (lastUsedTime == null || lastUsedTime == 0) {
+				lastUsedTime = java.lang.System.currentTimeMillis();
+			}
+			long time = java.lang.System.currentTimeMillis();
+			if (time <= lastUsedTime) {
+				time = lastUsedTime + 1;
+			}
+			lastUsedTime = time;
+			logEntries.add(new LogEntry(msgCode, line, level, time));
+		}
+
+		public List<LogEntry> getLines() {
+			return logEntries;
+		}
+
+		public boolean isOk() {
+			return OK.equals(this.state);
+		}
+
+		public boolean isError() {
+			return Error.equals(this.state);
+		}
+
+		public String getState() {
+			return state;
+		}
+
+		public void setState(String state) {
+			this.state = state;
+		}
+
+		public void setAttribute(String key, String value) {
+			this.attributes.put(key, value);
+		}
+
+		public Map<String, String> getAttributes() {
+			return attributes;
+		}
+
+		public String getAttribute(String key) {
+			return this.attributes.get(key);
+		}
+
+		public void setUserId(String userId) {
+			this.userId = userId;
+		}
+
+		public String getUserId() {
+			return this.userId;
+		}
+
+		public void setSilently(boolean silently) {
+			this.silently = silently;
+		}
+
+		public boolean isSilently() {
+			return silently;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public String getName() {
+			return this.name;
+		}
+
+		public String getId() {
+			return this.attributes.get(FILE_ID);
+		}
+
+		public void setId(String id) {
+			this.attributes.put(FILE_ID, id);
+		}
+
+		public static ProcessLog Current() {
+			return TL.get();
+		}
+
+		public static void RemoveCurrent() {
+			TL.remove();
+		}
+
+		public static ProcessLog newOnThread(String userId) {
+			ProcessLog rl = new ProcessLog();
+			TL.set(rl);
+			return TL.get();
+		}
+
+	}
+
+	/**
+	 * <h2>Request for service process</h2> A request object is similar to a HTTP
+	 * request. Both have parameters string and file base. Parameter exist on
+	 * different scopes or as we call them here 'levels'. <h3>Parameters Levels</h3>
+	 * <h4>Initial Parameters</h4> These are parameters set during the creation of
+	 * the request, usually the can not be overriden later (during processing of
+	 * the request) <h4>Request Parameters</h4> Request parameters such as Http
+	 * Request Parameters <h4>Inter Request</h4> A set of parameters for inter
+	 * request communication. <h4>Session Parameters</h4> Session parameters are
+	 * similar to request attributes Session : parameters from HttpSession
+	 * Application : parameters from the ServletContext often called Application
+	 * Context $Parameter: the $Paramters like $USERID, $USERTID (an optional
+	 * technical user id), $SERVICEID, $SESSIONID, $C
+	 * 
+	 * @author tonibuenter
+	 */
+	public static class Request implements Serializable {
+
+		/**
+	 * 
+	 */
+		private static final long serialVersionUID = 1L;
+
+		private String serviceId;
+		private String userId;
+		private Set<String> roles = new HashSet<String>();
+		// private IRoleProvider roleProvider;
+
+		private TreeMap<Integer, Map<String, String>> parametersTreeMap = new TreeMap<Integer, Map<String, String>>();
+		private Map<String, String> fileInfo;
+		
+		private int defaultLevel = 10;
+
+		private transient Map<String, Object> transientAttributes = new HashMap<String, Object>();
+
+		@SuppressWarnings("unchecked")
+		private final Map<String, Serializable>[] fileList = new Map[4];
+		{
+			for (int i = 0; i < 4; i++) {
+				fileList[i] = new HashMap<String, Serializable>();
+			}
+		}
+
+		public Request() {
+		}
+
+		public Request(int defaultLevel) {
+			this.defaultLevel = defaultLevel;
+		}
+
+		public String getServiceId() {
+			return serviceId;
+		}
+
+		public void setServiceId(String serviceId) {
+			this.serviceId = serviceId;
+		}
+
+		public Map<String, String> getParametersMinLevel(int level) {
+			Set<Integer> keys = parametersTreeMap.keySet();
+			for (Integer key : keys) {
+				if (key == level) {
+					return parametersTreeMap.get(key);
+				}
+			}
+			return null;
+		}
+
+		public Map<String, String> getParameters(int level) {
+			Map<String, String> map = parametersTreeMap.get(new Integer(level));
+			if (map == null) {
+				map = new HashMap<String, String>();
+				parametersTreeMap.put(new Integer(level), map);
+			}
+			return map;
+		}
+
+		public String getValue(int level, String key) {
+			Map<String, String> parameters = getParameters(level);
+			if (parameters != null) {
+				return parameters.get(key);
+			}
+			return null;
+		}
+
+		public String getValue(String name) {
+			Set<Integer> keys = parametersTreeMap.keySet();
+			for (Integer key : keys) {
+				Map<String, String> parameters = getParameters(key);
+				String s = parameters.get(name);
+				if (s != null) {
+					return s;
+				}
+			}
+			return null;
+		}
+
+		// TODO junit
+		public Map<String, String> getMapSnapshot() {
+			Map<String, String> map = new HashMap<String, String>();
+			Set<Integer> keys = parametersTreeMap.keySet();
+
+			for (Integer key : keys) {
+				Map<String, String> parameters = getParameters(key);
+				for (Entry<String, String> e : parameters.entrySet()) {
+					if (!map.containsKey(key)) {
+						map.put(e.getKey(), e.getValue());
+					}
+				}
+			}
+			return map;
+		}
+
+		public String put(int level, String key, String value) {
+			Map<String, String> parameters = getParameters(level);
+			if (parameters == null) {
+				parameters = new HashMap<String, String>();
+				parametersTreeMap.put(level, parameters);
+			}
+			return parameters.put(key, value);
+		}
+
+		public String put(String key, String value) {
+			return put(defaultLevel, key, value);
+		}
+
+		// public IRoleProvider getRoleProvider() {
+		// return roleProvider;
+		// }
+		//
+		// public void setRoleProvider(IRoleProvider roleProvider) {
+		// this.roleProvider = roleProvider;
+		// }
+
+		public void addRole(String role) {
+			this.roles.add(role);
+		}
+
+		// public boolean isInRole(String role) {
+		// if (roles.contains(role)) {
+		// return true;
+		// }
+		// if (roleProvider != null && roleProvider.isInRole(role)) {
+		// return true;
+		// }
+		// return false;
+		// }
+
+		public String getUserId() {
+			return userId;
+		}
+
+		public void setUserId(String userId) {
+			this.userId = userId;
+		}
+
+		public Set<String> getRoles() {
+			return roles;
+		}
+
+		public void setRoles(Set<String> roles) {
+			this.roles = roles;
+		}
+
+		public void setTransientAttribute(String name, Object value) {
+			this.transientAttributes.put(name, value);
+
+		}
+
+		public Object getTransientAttribute(String name) {
+			return this.transientAttributes.get(name);
+		}
+
+		public TreeMap<Integer, Map<String, String>> getParametersTreeMap() {
+			return parametersTreeMap;
+		}
+
+		public void setParametersTreeMap(
+		    TreeMap<Integer, Map<String, String>> parametersTreeMap) {
+			this.parametersTreeMap = parametersTreeMap;
+		}
+
+		public Map<String, String> getFileInfo() {
+			return fileInfo;
+		}
+
+		public void setFileInfo(Map<String, String> fileInfo) {
+			this.fileInfo = fileInfo;
+		}
+
+	}
+
+	public static class Result {
+
+		private static final Logger logger = Logger.getLogger(Result.class
+		    .getName());
+
+		public static Map<String, String> asPropertyMap(Object object) {
+			Map<String, String> map = new HashMap<String, String>();
+			Method[] methods = object.getClass().getMethods();
+			for (Method method : methods) {
+				String name = Utils.getStringGetterMethodName(method);
+				if (!Utils.isBlank(name)) {
+					try {
+						Object o = method.invoke(object, (Object[]) null);
+						String value = o == null ? null : o.toString();
+						if (!Utils.isBlank(value)) {
+							map.put(name, value);
+						}
+					} catch (Exception e) {
+						logger.warning(e.getMessage());
+					}
+				}
+			}
+			return map;
+		}
+
+		public static Result asPagingResult(Object object) {
+			Map<String, String> pm = asPropertyMap(object);
+			String[] header = new String[pm.size()];
+			String[] row = new String[pm.size()];
+			int i = 0;
+			for (String key : pm.keySet()) {
+				header[i] = key;
+				row[i] = pm.get(key);
+				i++;
+			}
+			Result pr = new Result(header);
+			pr.addRow(row);
+			return pr;
+		}
+
+		//
+		// Object Level
+		//
+		private String name = "";
+		private String userId = "-";
+		private int size = 0;
+		private int from = 0;
+		private int totalCount = 0;
+
+		private List<List<String>> table = new ArrayList<List<String>>();
+		private List<String> header = new ArrayList<String>();
+		private String exception = null;
+		private ProcessLog processLog = null;
+		private Result subResult = null;
+
+		public static boolean USE_CAMEL_CASE_FOR_RESULT_HEADER = true;
+
+		public Result(String... header) {
+			this.header = Arrays.asList(header);
+		}
+
+		public Result(int from, int totalCount, List<String> header,
+		    List<List<String>> table) {
+			super();
+			this.from = from;
+			this.totalCount = totalCount;
+			this.header = header;
+			this.table = table;
+			update();
+		}
+
+		public Result(ProcessLog processLog) {
+			super();
+			this.processLog = processLog;
+			update();
+		}
+
+		public void update() {
+			size = this.table.size();
+			totalCount = Math.max(from + size, totalCount);
+		}
+
+		public void addRow(String... row) {
+			table.add(Arrays.asList(row));
+			update();
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public String getException() {
+			return exception;
+		}
+
+		public Map<String, String> getFirstRowAsMap() {
+			Map<String, String> map = new HashMap<String, String>();
+			if (table != null && table.size() > 0) {
+				List<String> row = table.get(0);
+				for (int i = 0; i < header.size(); i++) {
+					map.put(header.get(i), row.get(i));
+				}
+
+			}
+			return map;
+		}
+
+		public String getSingleValue() {
+			if (!Utils.isEmpty(table) && !Utils.isEmpty(table.get(0))) {
+				return table.get(0).get(0);
+			}
+			return null;
+		}
+
+		public String getValue(int rowIndex, String head) {
+			int index = getColIndex(head);
+			return (index > -1 && rowIndex < table.size()) ? table.get(rowIndex).get(
+			    index) : null;
+		}
+
+		public int getColIndex(String head) {
+			for (int i = 0; i < header.size(); i++) {
+				if (head.equalsIgnoreCase(header.get(i))) {
+					return i;
+				}
+			}
+			return -1;
+		}
+
+		public Map<String, Map<String, String>> toMap(String keyHead) {
+			Map<String, Map<String, String>> map = new HashMap<String, Map<String, String>>();
+			int index = getColIndex(keyHead);
+
+			for (int i = 0; i < table.size(); i++) {
+				List<String> row = table.get(i);
+				Map<String, String> subMap = new HashMap<String, String>();
+				String key = row.get(index);
+				map.put(key, subMap);
+				for (int j = 0; j < row.size(); j++) {
+					subMap.put(this.header.get(j), row.get(j));
+				}
+			}
+			return map;
+		}
+
+		public Map<String, List<String>> toMap(int... indexes) {
+			Map<String, List<String>> map = new HashMap<String, List<String>>();
+			for (int j = 0; j < table.size(); j++) {
+				List<String> value = table.get(j);
+				String key = createMapKey(value, indexes);
+				map.put(key, value);
+			}
+			return map;
+		}
+
+		public Map<String, String> toTwoColumnMap(String keyHeader,
+		    String valueHeader) {
+			Map<String, String> map = new HashMap<String, String>();
+			int keyIndex = getColIndex(keyHeader);
+			int valueIndex = getColIndex(valueHeader);
+			for (int j = 0; j < table.size(); j++) {
+				List<String> row = table.get(j);
+				String key = row.get(keyIndex);
+				String value = row.get(valueIndex);
+				map.put(key, value);
+			}
+			return map;
+		}
+
+		public Map<String, List<List<String>>> toMultiMap(int... indexes) {
+			Map<String, List<List<String>>> map = new HashMap<String, List<List<String>>>();
+			for (int j = 0; j < table.size(); j++) {
+				List<String> value = table.get(j);
+				String key = createMapKey(value, indexes);
+				List<List<String>> rows = map.get(key);
+				if (rows == null) {
+					rows = new ArrayList<List<String>>();
+					map.put(key, rows);
+				}
+				rows.add(value);
+			}
+			return map;
+		}
+
+		public static String createMapKey(List<String> row, int... indexes) {
+			String key = "";
+			for (int i = 0; i < indexes.length; i++) {
+				if (i == 0) {
+					key = row.get(indexes[i]);
+				} else {
+					key = key + "-" + row.get(indexes[i]);
+				}
+			}
+			return key;
+		}
+
+		public void setException(String exception) {
+			this.exception = exception;
+		}
+
+		public Result(Exception e) {
+			this.exception = e.getMessage();
+		}
+
+		public String getUserId() {
+			return userId;
+		}
+
+		public int getSize() {
+			return size;
+		}
+
+		public List<List<String>> getTable() {
+			return table;
+		}
+
+		public List<String> getHeader() {
+			return header;
+		}
+
+		public int getTotalCount() {
+			return totalCount;
+		}
+
+		public int getFrom() {
+			return from;
+		}
+
+		public void setFrom(int from) {
+			this.from = from;
+		}
+
+		public void setUserId(String userId) {
+			this.userId = userId;
+		}
+
+		@Override
+		public String toString() {
+			String tableString = "[";
+			for (int i = 0; i < table.size(); i++) {
+				if (i != 0) {
+					tableString += ", ";
+				}
+				List<String> row = table.get(i);
+				tableString += row;
+			}
+			tableString += "]";
+			return "Result [name=" + name + ", userId=" + userId + ", size=" + size
+			    + ", from=" + from + ", totalCount=" + totalCount + ", table="
+			    + tableString + ", header=" + header + ", exception=" + exception
+			    + "]";
+		}
+
+		public String getSingleValue(String head) {
+			int index = getColIndex(head);
+			return (index > -1 && table.size() > 0) ? table.get(0).get(index) : null;
+		}
+
+		/**
+		 * Creates a list of objects. The data is filled by applying corresponding
+		 * set methods. E.g. for Columnt FIRST_NAME it will try to call
+		 * setFIRST_NAME(String) or setFirstName(String)
+		 * 
+		 * @param <E>
+		 * @param claxx
+		 * @return
+		 * @throws Exception
+		 */
+		public <E> List<E> asList(Class<E> claxx) {
+			List<E> list = new ArrayList<E>();
+			try {
+				if (table.size() == 0) {
+					return list;
+				}
+
+				for (int i = 0; i < table.size(); i++) {
+					E e = claxx.newInstance();
+					list.add(e);
+				}
+
+				int colIndex = 0;
+				for (String head : header) {
+					if (Utils.isBlank(head)) {
+						head = "" + colIndex;
+					}
+					String[] res = Utils.createSetGetNames(head);
+					Method m = null;
+					for (String setGetName : res) {
+						try {
+							m = claxx.getMethod("set" + setGetName, String.class);
+						} catch (Exception e) {
+							logger.info("Did not find method: " + setGetName + ": ->" + e);
+						}
+						if (m != null) {
+							break;
+						}
+					}
+					if (m != null) {
+						int rowIndex = 0;
+						for (E e : list) {
+							m.invoke(e, table.get(rowIndex).get(colIndex));
+							rowIndex++;
+						}
+					}
+					colIndex++;
+				}
+			} catch (Exception e) {
+				logger.severe(Utils.getStackTrace(e));
+			}
+			return list;
+		}
+
+		public <E> Map<String, E> asMap(String keyProperty, Class<E> claxx) {
+			Map<String, E> map = new HashMap<String, E>();
+			try {
+				List<E> list = this.asList(claxx);
+				map = Utils.asMap(keyProperty, list);
+			} catch (Exception e) {
+				logger.severe(Utils.getStackTrace(e));
+			}
+			return map;
+		}
+
+		public <E> Map<String, List<E>> asMapList(String property, Class<E> claxx) {
+			Map<String, List<E>> map = new HashMap<String, List<E>>();
+			try {
+				List<E> list = this.asList(claxx);
+				String methodName = "get" + property.substring(0, 1).toUpperCase()
+				    + property.substring(1);
+				Method m = claxx.getMethod(methodName);
+				for (E e : list) {
+					String key = m.invoke(e).toString();
+					List<E> listElement = map.get(key);
+					if (listElement == null) {
+						listElement = new ArrayList<E>();
+						map.put(key, listElement);
+					}
+					listElement.add(e);
+				}
+			} catch (Exception e) {
+				logger.severe(Utils.getStackTrace(e));
+			}
+			return map;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public ProcessLog getProcessLog() {
+			return processLog;
+		}
+
+		public void setProcessLog(ProcessLog processLog) {
+			this.processLog = processLog;
+		}
+
+		public static Result createSingleValue(String header, String value) {
+			Result r = new Result(header);
+			r.addRow(value);
+			return r;
+		}
+
+		public Result getSubResult() {
+			return subResult;
+		}
+
+		public void setSubResult(Result subResult) {
+			this.subResult = subResult;
+		}
+
+	}
+
+	/**
+	 * ServiceEntry class holds all information a service such as serviceId,
+	 * statements, data source name and access.
+	 * 
+	 * @author tonibuenter
+	 */
+	public static class ServiceEntry implements Serializable {
+
+		public static final String SYSTEM_ROLENAME = "SYSTEM";
+
+		/**
+     * 
+     */
+		private static final long serialVersionUID = 1L;
+
+		private final String serviceId;
+		private final String statements;
+		private Set<String> roles;
+
+		private String datasourceName = DEFAULT_DATASOURCE_NAME;
+
+		public ServiceEntry(String serviceId, String statements, String roles) {
+			super();
+			this.serviceId = serviceId;
+			this.statements = statements;
+			if (!Utils.isEmpty(roles)) {
+				String[] r = roles.split(",");
+				this.roles = new HashSet<String>(Arrays.asList(r));
+			}
+		}
+
+		public ServiceEntry(String serviceId, String statements, Set<String> roles) {
+			super();
+			this.serviceId = serviceId;
+			this.statements = statements;
+			this.roles = roles;
+		}
+
+		public String getServiceId() {
+			return serviceId;
+		}
+
+		public String getStatements() {
+			return statements;
+		}
+
+		public Set<String> getRoleSet() {
+			return this.roles;
+		}
+
+		public String getRoles() {
+			return Utils.joinTokens(roles);
+		}
+
+		public String getDatasourceName() {
+			return datasourceName;
+		}
+
+		public void setDatasourceName(String datasourceName) {
+			this.datasourceName = datasourceName;
+		}
+
+		@Override
+		public String toString() {
+			return "ServiceEntry [serviceId=" + serviceId + ", statements="
+			    + statements + ", roles=" + roles + ", datasourceName="
+			    + datasourceName + "]";
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result
+			    + ((serviceId == null) ? 0 : serviceId.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) {
+				return true;
+			}
+			if (obj == null) {
+				return false;
+			}
+			if (getClass() != obj.getClass()) {
+				return false;
+			}
+			ServiceEntry other = (ServiceEntry) obj;
+			if (serviceId == null) {
+				if (other.serviceId != null) {
+					return false;
+				}
+			} else if (!serviceId.equals(other.serviceId)) {
+				return false;
+			}
+			return true;
+		}
+
+	}
+
+	public static class ServiceRepository implements IServiceRepository {
+
+		private static final Logger logger = Logger
+		    .getLogger(ServiceRepository.class.getName());
+
+		private static ServiceRepository instance;
+
+		public static ServiceRepository getInstance() {
+			if (instance == null) {
+				throw new RuntimeException(ServiceRepository.class.getName()
+				    + " not yet created. Please create an instance first!");
+			}
+			return instance;
+		}
+
+		public static void closeAll() {
+			if (instance != null) {
+				instance = null;
+			}
+		}
+
+		private ServiceRepositorySql sql;
+		private ServiceRepositoryJson json;
+
+		private IServiceRepository sr() {
+			if (sql != null) {
+				return sql;
+			} else if (json != null) {
+				return json;
+			} else {
+				throw new RuntimeException(
+				    "No service repository initialized. Currently 'sql' and 'json' service repositories are available.");
+			}
+
+		}
+
+		/**
+		 * Creates a ServiceRepository and assign the static instance with it.
+		 * 
+		 * @param ds
+		 *          datasource for ServiceEntries.
+		 * @param tableName
+		 *          table name (including possible schema prefix)
+		 */
+		public ServiceRepository(DataSource ds, String tableName) {
+			logger.fine("try to create ServiceRepositorySql");
+			sql = new ServiceRepositorySql(ds, tableName);
+			instance = this;
+		}
+
+		/**
+		 * Creates a JsonServiceRepository and assign the static instance with it.
+		 * 
+		 * @param jsonString
+		 */
+		public ServiceRepository(String jsonString) {
+			logger.info("Try to create ServiceRepositoryJson ...");
+			json = new ServiceRepositoryJson(jsonString);
+			instance = this;
+		}
+
+		@Override
+		public ServiceEntry get(String serviceId) throws SQLException, Exception {
+			IServiceRepository sr = sr();
+			return sr.get(serviceId);
+		}
+
+		@Override
+		public void add(ServiceEntry serviceEntry) throws Exception {
+			IServiceRepository sr = sr();
+			sr.add(serviceEntry);
+		}
+
+		@Override
+		public List<ServiceEntry> list() throws Exception {
+			return sr().list();
+		}
+	}
+
+	public static class ServiceRepositoryJson implements IServiceRepository {
+
+		private static final Logger logger = Logger
+		    .getLogger(ServiceRepositoryJson.class.getName());
+
+		private static ServiceRepositoryJson instance;
+
+		public static ServiceRepositoryJson getInstance() {
+			if (instance == null) {
+				throw new RuntimeException(ServiceRepositoryJson.class.getName()
+				    + " not yet created. Please create an instance first!");
+			}
+			return instance;
+		}
+
+		private List<ServiceEntry> entries;
+
+		/**
+		 * Creating a ServiceRepositoryJson object
+		 * 
+		 * @param string
+		 *          file path or json string
+		 * @param charsetName
+		 *          ENCODING for reading the file
+		 */
+		@SuppressWarnings("unchecked")
+		public ServiceRepositoryJson(String string, String charsetName) {
+			File f = new File(string);
+			String jsonString;
+			if (f.exists()) {
+				jsonString = Utils.readFileToString(f, charsetName);
+			} else {
+				jsonString = string;
+			}
+			if (Utils.isBlank(jsonString)) {
+				entries = new ArrayList<ServiceEntry>();
+			}
+			Type tt = new TypeToken<List<ServiceEntry>>() {
+			}.getType();
+			entries = (List<ServiceEntry>) JsonUtils.toObject(jsonString, tt);
+			logger.fine("found " + entries.size() + " service entries.");
+		}
+
+		/**
+		 * Creating a ServiceRepositoryJson object
+		 * 
+		 * @param string
+		 *          file path or json string
+		 */
+		public ServiceRepositoryJson(String string) {
+			this(string, null);
+		}
+
+		public ServiceEntry get(String serviceId) throws SQLException {
+			for (ServiceEntry sid : entries) {
+				if (sid.getServiceId().equals(serviceId)) {
+					return sid;
+				}
+			}
+			return null;
+		}
+
+		@Override
+		public void add(ServiceEntry serviceEntry) {
+			ProcessLog pLog = ProcessLog.Current();
+			if (entries.contains(serviceEntry)) {
+				pLog.warn("ServiceEntry " + serviceEntry.getServiceId()
+				    + " will be replaced by new ServiceEntry.", logger);
+				entries.remove(serviceEntry);
+			}
+			entries.add(serviceEntry);
+		}
+
+		@Override
+		public List<ServiceEntry> list() {
+			return this.entries;
+		}
+	}
+
+	public static class ServiceRepositorySql implements IServiceRepository {
+
+		private static final Logger logger = Logger
+		    .getLogger(ServiceRepositorySql.class.getName());
+
+		private final DataSource ds;
+		private String tableName;
+		private String selectQuery;
+
+		public ServiceRepositorySql(DataSource ds, String tableName) {
+			this.ds = ds;
+			if (tableName.split(" ").length > 1) {
+				selectQuery = tableName;
+			} else {
+				this.tableName = tableName;
+			}
+		}
+
+		public ServiceEntry get(String serviceId) throws SQLException {
+			String sql = selectQuery != null ? selectQuery : "select "
+			    + COL_SERVICE_ID + ", " + COL_STATEMENTS + ", " + COL_ROLES
+			    + " from " + tableName + " where " + COL_SERVICE_ID + " = ?";
+			List<ServiceEntry> r = _get(sql, serviceId);
+			return Utils.isEmpty(r) ? null : r.get(0);
+		}
+
+		@Override
+		public List<ServiceEntry> list() throws Exception {
+			String sql = "select " + COL_SERVICE_ID + ", " + COL_STATEMENTS + ", "
+			    + COL_ROLES + ", " + COL_DATASOURCE + " from " + tableName;
+			List<ServiceEntry> r = _get(sql);
+			return r;
+		}
+
+		private List<ServiceEntry> _get(String sql, String... parameters)
+		    throws SQLException {
+			Connection con = null;
+			PreparedStatement ps = null;
+			ResultSet rs = null;
+			ServiceEntry se = null;
+			List<ServiceEntry> result = new ArrayList<ServiceEntry>();
+			try {
+				con = getConnection();
+
+				ps = con.prepareStatement(sql);
+				for (int i = 0; i < parameters.length; i++) {
+					ps.setString(i + 1, parameters[i]);
+				}
+
+				rs = ps.executeQuery();
+				while (rs.next()) {
+					String serviceId = rs.getString(COL_SERVICE_ID);
+					String statements = rs.getString(COL_STATEMENTS);
+					String roles = rs.getString(COL_ROLES);
+					se = new RemoteQuery.ServiceEntry(serviceId, statements, roles);
+					logger.info("Found " + se);
+					result.add(se);
+				}
+			} finally {
+				Utils.closeQuietly(rs);
+				Utils.closeQuietly(ps);
+				returnConnection(con);
+			}
+			return result;
+		}
+
+		private Connection getConnection() throws SQLException {
+			if (ds == null) {
+				throw new RuntimeException(ServiceRepositorySql.class.getName()
+				    + " DataSource is null. Please provide a DataSource!");
+			}
+			return ds.getConnection();
+		}
+
+		private void returnConnection(Connection con) throws SQLException {
+			if (ds != null) {
+				con.close();
+			}
+		}
+
+		@Override
+		public void add(ServiceEntry se) throws Exception {
+			Connection con = null;
+			try {
+				String sql = "insert into " + tableName + " (" + COL_SERVICE_ID + ", "
+				    + COL_STATEMENTS + ", " + COL_ROLES + ", " + COL_DATASOURCE
+				    + ") values (?,?,?,?)";
+				con = getConnection();
+				Utils.runQuery(con, sql, se.getServiceId(), se.getStatements(),
+				    se.getRoles(), se.getDatasourceName());
+			} finally {
+				returnConnection(con);
+			}
+
+		}
+
+	}
+
+	static class StringTokenizer2 {
+
+		private int index = 0;
+		private String[] tokens = null;
+		private final StringBuffer buf;
+		private boolean ignoreWhiteSpace = true;
+
+		public StringTokenizer2(String string, char del, char esc) {
+			this(string, del, esc, true);
+		}
+
+		public StringTokenizer2(String string, char del, char esc,
+		    boolean ignoreWhiteSpace) {
+			this.ignoreWhiteSpace = ignoreWhiteSpace;
+			// first we count the tokens
+			int count = 1;
+			boolean inescape = false;
+			char c;
+			buf = new StringBuffer();
+			for (int i = 0; i < string.length(); i++) {
+				c = string.charAt(i);
+				if (c == del && !inescape) {
+					count++;
+					continue;
+				}
+				if (c == esc && !inescape) {
+					inescape = true;
+					continue;
+				}
+				inescape = false;
+			}
+			tokens = new String[count];
+
+			// now we collect the characters and create all tokens
+			int k = 0;
+			for (int i = 0; i < string.length(); i++) {
+				c = string.charAt(i);
+				if (c == del && !inescape) {
+					tokens[k] = buf.toString();
+					buf.delete(0, buf.length());
+					k++;
+					continue;
+				}
+				if (c == esc && !inescape) {
+					inescape = true;
+					continue;
+				}
+				buf.append(c);
+				inescape = false;
+			}
+			tokens[k] = buf.toString();
+		}
+
+		public boolean hasMoreTokens() {
+			return index < tokens.length;
+		}
+
+		public String nextToken() {
+			String token = tokens[index];
+			index++;
+			return ignoreWhiteSpace ? token.trim() : token;
+		}
+
+		public int countTokens() {
+			return tokens.length;
+		}
+
+		public String[] getAllTokens() {
+			return tokens;
+		}
+
+		/**
+		 * Static convenience method for converting a string directly into an array
+		 * of String by using the delimiter and escape character as specified.
+		 */
+		public static String[] toTokens(String line, char delim, char escape) {
+			StringTokenizer2 tokenizer = new StringTokenizer2(line, delim, escape);
+			return tokenizer.getAllTokens();
+		}
+
+		/**
+		 * Create a string with the delimiter an escape character as specified.
+		 */
+		public static String toString(String[] tokens, char delim, char escape) {
+
+			String token = null;
+			int i, j;
+			char c;
+			StringBuffer buff = new StringBuffer();
+
+			for (i = 0; i < tokens.length; i++) {
+				token = tokens[i];
+				for (j = 0; j < token.length(); j++) {
+					c = token.charAt(j);
+					if (c == escape || c == delim) {
+						buff.append(escape);
+					}
+					buff.append(c);
+				}
+				buff.append(delim);
+			}
+			if (buff.length() > 0) {
+				buff.setLength(buff.length() - 1);
+			}
+			return buff.toString();
+		}
+
+	}
+
+	public static class Utils {
+
+		private static final Logger logger = Logger
+		    .getLogger(Utils.class.getName());
+
+		public static final String ISO_DATE_PATTERN_yyyy_MM_dd = "yyyy-MM-dd";
+		public static final String ISO_DATE_PATTERN_yyyy_MM_dd__HH_mm = "yyyy-MM-dd HH:mm";
+		public static final String ISO_DATE_PATTERN_yyyy_MM_dd__HH_mm_ss = "yyyy-MM-dd HH:mm:ss SSS";
+		public static final String ISO_DATE_PATTERN_HH_mm = "HH:mm";
+
+		public static final String ISO_DATE_PATTERN_yyyy_MM_dd__HH_mm_ss__SSS = "yyyy-MM-dd HH:mm:ss SSS";
+
+		public static ThreadLocal<SimpleDateFormat> IsoDateTL = new ThreadLocal<SimpleDateFormat>() {
+			@Override
+			protected SimpleDateFormat initialValue() {
+				return new SimpleDateFormat(ISO_DATE_PATTERN_yyyy_MM_dd);
+			}
+		};
+
+		public static ThreadLocal<SimpleDateFormat> IsoDateTimeTL = new ThreadLocal<SimpleDateFormat>() {
+			@Override
+			protected SimpleDateFormat initialValue() {
+				return new SimpleDateFormat(ISO_DATE_PATTERN_yyyy_MM_dd__HH_mm);
+			}
+		};
+
+		public static ThreadLocal<SimpleDateFormat> IsoDateTimeFullTL = new ThreadLocal<SimpleDateFormat>() {
+			@Override
+			protected SimpleDateFormat initialValue() {
+				return new SimpleDateFormat(ISO_DATE_PATTERN_yyyy_MM_dd__HH_mm_ss);
+			}
+		};
+
+		public static ThreadLocal<SimpleDateFormat> IsoTimeTL = new ThreadLocal<SimpleDateFormat>() {
+			@Override
+			protected SimpleDateFormat initialValue() {
+				return new SimpleDateFormat(ISO_DATE_PATTERN_HH_mm);
+			}
+		};
+
+		public static final String nowIsoDateTimeFull() {
+			return IsoDateTimeFullTL.get().format(new Date());
+		}
+
+		public static final String nowIsoDateTime() {
+			return IsoDateTimeTL.get().format(new Date());
+		}
+
+		public static final String nowIsoTime() {
+			return IsoTimeTL.get().format(new Date());
+		}
+
+		public static final String nowIsoDate() {
+			return IsoDateTL.get().format(new Date());
+		}
+
+		public static Date parseDate(String date) throws ParseException {
+			return IsoDateTL.get().parse(date);
+		}
+
+		public static String toIsoDate(long timeMillis) {
+			return IsoDateTL.get().format(new Date(timeMillis));
+		}
+
+		public static String toIsoDate(Date time) {
+			return IsoDateTL.get().format(time);
+		}
+
+		public static Date parseTime(String date) throws ParseException {
+			return IsoTimeTL.get().parse(date);
+		}
+
+		public static Date parseDateTime(String date) throws ParseException {
+			return IsoDateTimeTL.get().parse(date);
+		}
+
+		public static String formatToDateTime(Date time) {
+			return IsoDateTimeTL.get().format(time);
+		}
+
+		public static String formatToDateTime(long time) {
+			return formatToDateTime(new Date(time));
+		}
+
+		public static String formatToDate(long time) {
+			return toIsoDate(new Date(time));
+		}
+
+		public static String formatToTime(Date time) {
+			return IsoTimeTL.get().format(time);
+		}
+
+		public static String formatToTime(long time) {
+			return formatToTime(new Date(time));
+		}
+
+		public static Date toDate(String isoDateString) throws ParseException {
+			return IsoDateTL.get().parse(isoDateString);
+		}
+
+		public static Date tryToDate(String isoDateString) {
+			try {
+				return toDate(isoDateString);
+			} catch (Exception e) {
+				return null;
+			}
+		}
+
+		public static boolean isDate(String isoDateString) {
+			Date d = null;
+			try {
+				d = IsoDateTL.get().parse(isoDateString);
+			} catch (Exception e) {
+			}
+			return d != null;
+		}
+
+		//
+		// public static long toTimeInMillis(String isoDateTimeString) {
+		// try {
+		// if (isoDateTimeString.length() == ISO_DATE_PATTERN_yyyy_MM_dd.length()) {
+		// return toDateInMillis(isoDateTimeString);
+		// }
+		// return IsoDateTimeTL.get().parse(isoDateTimeString).getTime();
+		// } catch (ParseException e) {
+		// logger.severe(Utils.getStacktrace(e));
+		// }
+		// return 0;
+		// }
+
+		public static String toIsoDateTime(Date date) {
+			return IsoDateTimeTL.get().format(date);
+		}
+
+		public static String toIsoDateTime(long date) {
+			return IsoDateTimeTL.get().format(new Date(date));
+		}
+
+		public static int getCurrentHour() {
+			Calendar c = Calendar.getInstance();
+			c.setTime(new Date());
+			return c.get(Calendar.HOUR_OF_DAY);
+		}
+
+		public static int getMinuteOfTheDay() {
+			Calendar c = Calendar.getInstance();
+			c.setTime(new Date());
+			return 60 * c.get(Calendar.HOUR_OF_DAY) + c.get(Calendar.MINUTE);
+		}
+
+		public static long toDateInMillis(String isoDateString) {
+			try {
+				return IsoDateTL.get().parse(isoDateString).getTime();
+			} catch (ParseException e) {
+				logger.severe(getStackTrace(e));
+			}
+			return 0;
+		}
+
+		public static long toTimeInMillis(String isoDateTimeString) {
+			long res = 0;
+			try {
+				res = IsoDateTimeFullTL.get().parse(isoDateTimeString).getTime();
+				return res;
+			} catch (ParseException e) {
+			}
+			try {
+				res = IsoDateTimeSecTL.get().parse(isoDateTimeString).getTime();
+				return res;
+			} catch (ParseException e) {
+			}
+			try {
+				res = IsoDateTimeTL.get().parse(isoDateTimeString).getTime();
+				return res;
+			} catch (ParseException e) {
+			}
+			try {
+				res = IsoDateTL.get().parse(isoDateTimeString).getTime();
+				return res;
+			} catch (ParseException e) {
+			}
+			logger.severe("Parse error for " + isoDateTimeString + ". Return 0.");
+			return res;
+		}
+
+		public static String toIsoDateTimeSec(long timeMillis) {
+			return toIsoDateTimeSec(new Date(timeMillis));
+		}
+
+		public static String toIsoDateTimeSec(Date date) {
+			return IsoDateTimeSecTL.get().format(date);
+		}
+
+		public static ThreadLocal<SimpleDateFormat> IsoDateTimeSecTL = new ThreadLocal<SimpleDateFormat>() {
+			@Override
+			protected SimpleDateFormat initialValue() {
+				return new SimpleDateFormat(ISO_DATE_PATTERN_yyyy_MM_dd__HH_mm_ss);
+			}
+		};
+
+		public static String nowIsoDateTimeSec() {
+			return toIsoDateTimeSec(new Date());
+		}
+
+		public static String getStackTrace(Throwable t) {
+			StringBuffer buf = new StringBuffer();
+			if (t != null) {
+				buf.append(" <");
+				buf.append(t.toString());
+				buf.append(">");
+
+				java.io.StringWriter sw = new java.io.StringWriter(1024);
+				java.io.PrintWriter pw = new java.io.PrintWriter(sw);
+				t.printStackTrace(pw);
+				pw.close();
+				buf.append(sw.toString());
+			}
+			return buf.toString();
+		}
+
+		//
+		// STRING UTILS
+		//
+
+		public static String rne(String string, String defaultContentType) {
+			if (isEmpty(string)) {
+				return defaultContentType;
+			} else {
+				return string;
+			}
+		}
+
+		public static String rnn(Object o) {
+			return o == null ? "" : o.toString();
+		}
+
+		public static boolean isEmpty(String str) {
+			return str == null || str.length() == 0;
+		}
+
+		public static boolean isBlank(String str) {
+			int strLen;
+			if (str == null || (strLen = str.length()) == 0) {
+				return true;
+			}
+			for (int i = 0; i < strLen; i++) {
+				if ((Character.isWhitespace(str.charAt(i)) == false)) {
+					return false;
+				}
+			}
+			return true;
+		}
+
+		public static String[] createSetGetNames(String head) {
+			String normalCase = head.substring(0, 1).toUpperCase()
+			    + head.substring(1);
+			String camelCase = camelCase(head);
+			camelCase = camelCase.substring(0, 1).toUpperCase()
+			    + camelCase.substring(1);
+			String[] res = { normalCase, camelCase };
+			return res;
+		}
+
+		public static String camelCase(String columnName) {
+			StringBuilder res = new StringBuilder();
+			boolean upper = false;
+			for (int i = 0; i < columnName.length(); i++) {
+				char c = columnName.charAt(i);
+				if (c == '_' || !Character.isLetterOrDigit(c)) {
+					upper = true;
+					continue;
+				}
+				if (upper) {
+					res.append(Character.toUpperCase(c));
+					upper = false;
+				} else {
+					res.append(Character.toLowerCase(c));
+				}
+			}
+			return res.toString();
+		}
+
+		public static String[] tokenize(String string) {
+			return tokenize(string, DEFAULT_DEL, DEFAULT_ESC);
+		}
+
+		public static String[] tokenize(String string, char del) {
+			return tokenize(string, del, DEFAULT_ESC);
+		}
+
+		public static String joinTokens(Collection<String> list) {
+			if (isEmpty(list)) {
+				return "";
+			}
+
+			String res = "";
+			int i = 0;
+			for (String s : list) {
+				s = escape(s, DEFAULT_DEL, DEFAULT_ESC);
+				if (i == 0) {
+					res = s;
+				} else {
+					res = res + DEFAULT_DEL + s;
+				}
+				i++;
+			}
+			return res;
+		}
+
+		public static String joinTokens(String[] list) {
+			return joinTokens(Arrays.asList(list));
+		}
+
+		public static String escape(String in, char del, char esc) {
+			char[] chars = in.toCharArray();
+			String res = "";
+			for (char c : chars) {
+				if (c == del || c == esc) {
+					res += esc;
+				}
+				res += c;
+			}
+			return res;
+		}
+
+		public static String[] tokenize(String string, char del, char esc) {
+			if (isEmpty(string)) {
+				return new String[0];
+			}
+			// first we count the tokens
+			int count = 1;
+			boolean inescape = false;
+			char c, pc = 0;
+			StringBuffer buf = new StringBuffer();
+			for (int i = 0; i < string.length(); i++) {
+				c = string.charAt(i);
+				if (c == del && !inescape) {
+					count++;
+					continue;
+				}
+				if (c == esc && !inescape) {
+					inescape = true;
+					continue;
+				}
+				inescape = false;
+			}
+			String[] tokens = new String[count];
+
+			// now we collect the characters and create all tokens
+			int k = 0;
+			for (int i = 0; i < string.length(); i++) {
+				c = string.charAt(i);
+				if (c == del && !inescape) {
+					tokens[k] = buf.toString();
+					buf.delete(0, buf.length());
+					k++;
+					pc = c;
+					continue;
+				}
+				if (c == esc && !inescape) {
+					inescape = true;
+					pc = c;
+					continue;
+				}
+				//
+				// append
+				//
+				if (c != del && pc == esc) {
+					buf.append(pc);
+				}
+				buf.append(c);
+				pc = c;
+				inescape = false;
+			}
+			tokens[k] = buf.toString();
+			return tokens;
+		}
+
+		public static Set<String> asSet(String... values) {
+			Set<String> set = new HashSet<String>();
+			if (values != null) {
+				for (String value : values) {
+					set.add(value);
+				}
+			}
+			return set;
+		}
+
+		public static Set<String> asSet(String string, char del, char esc) {
+			return asSet(tokenize(string, del, esc));
+		}
+
+		public static <E> List<E> asList(E... elements) {
+			ArrayList<E> list = new ArrayList<E>(1);
+			for (E e : elements) {
+				list.add(e);
+			}
+			return list;
+		}
+
+		//
+		// Collection Utils
+		//
+
+		//
+		// IO UTILS
+		//
+
+		public static void copy(Reader in, Writer out) throws IOException {
+			int c;
+			while ((c = in.read()) != -1) {
+				out.write(c);
+			}
+		}
+
+		public static void closeQuietly(Writer w) {
+			try {
+				w.close();
+			} catch (Exception e) {
+				// ignore
+			}
+		}
+
+		public static void closeQuietly(Reader r) {
+			try {
+				r.close();
+			} catch (Exception e) {
+				// ignore
+			}
+		}
+
+		public static String readFileToString(File file, String charsetName) {
+			BufferedReader r = null;
+			charsetName = charsetName == null ? ENCODING : charsetName;
+			StringBuffer buf = new StringBuffer((int) file.length());
+			try {
+				r = new BufferedReader(new InputStreamReader(new FileInputStream(file),
+				    charsetName));
+				int c = 0;
+				while ((c = r.read()) != -1) {
+					buf.append(c);
+				}
+			} catch (Exception e) {
+				logger.severe(getStackTrace(e));
+			} finally {
+				closeQuietly(r);
+			}
+			return buf.toString();
+		}
+
+		//
+		//
+		// DB UTILS
+		//
+		//
+
+		public static void closeQuietly(ResultSet rs) {
+			try {
+				rs.close();
+			} catch (Exception e) {
+				// ignore
+			}
+		}
+
+		public static void closeQuietly(Statement stmt) {
+			try {
+				stmt.close();
+			} catch (Exception e) {
+				// ignore
+			}
+		}
+
+		public static void commitSilently(Connection connection) {
+			try {
+				connection.commit();
+			} catch (Exception e) {
+			}
+		}
+
+		public static void closeQuietly(Connection connection) {
+			try {
+				connection.close();
+			} catch (Exception e) {
+				// ignore
+			}
+		}
+
+		public static Object runQuery(Connection connection, String sqlStatement,
+		    Object... parameters) {
+			PreparedStatement ps = null;
+			ResultSet rs = null;
+			try {
+				ps = connection.prepareStatement(sqlStatement);
+				for (int i = 0; i < parameters.length; i++) {
+					ps.setObject(i + 1, parameters[i]);
+				}
+
+				boolean hasResultSet = ps.execute();
+				if (hasResultSet) {
+					rs = ps.getResultSet();
+					return rs;
+				} else {
+					return new Integer(ps.getUpdateCount());
+				}
+			} catch (Throwable t) {
+				logger.warning(t.getMessage());
+			} finally {
+				Utils.closeQuietly(ps);
+			}
+			return new Integer(-1);
+		}
+
+		// TODO not yet done
+		public static void processRqQueryText(String rqServices) {
+
+			Map<String, String> parameters = new HashMap<String, String>();
+			String query = "";
+			BufferedReader in = new BufferedReader(new StringReader(rqServices));
+			String line = null;
+			boolean startParameter = false;
+			boolean startQuery = false;
+			try {
+				while ((line = in.readLine()) != null) {
+					line = line.trim();
+					if (line.length() == 0) {
+						continue;
+					}
+
+					// comment
+					if (line.startsWith("--")) {
+						if (!startParameter) {
+							//
+							// execute collected
+							//
+							if (startQuery) {
+								parameters.put("SERVICE_STMT", query);
+								// saveServicequery(parameters);
+								startQuery = false;
+
+							}
+							startParameter = true;
+
+							parameters = new HashMap<String, String>();
+						}
+						// processParameter(parameters, line.substring(2));
+						continue;
+					}
+					startParameter = false;
+					if (!startQuery) {
+						startQuery = true;
+						query = line + '\n';
+					} else {
+						query += line + '\n';
+					}
+
+				}
+				if (startQuery) {
+					parameters.put("SERVICE_STMT", query);
+					// saveServicequery(parameters);
+					startQuery = false;
+
+				}
+			} catch (IOException e) {
+				logger.severe(e.getMessage());
+			}
+
+		}
+
+		public static String sqlValueToString(Object value, int sqlType)
+		    throws IllegalArgumentException, SecurityException,
+		    IllegalAccessException, InvocationTargetException,
+		    NoSuchMethodException {
+
+			switch (sqlType) {
+			case Types.CHAR:
+			case Types.VARCHAR:
+				return value == null ? "" : value.toString();// _NULL_ :
+				// String.valueOf(value);
+			default:
+			}
+			String strValue = value == null ? "" : value.toString();
+			if (isBlank(strValue)) {
+				return "";
+			}
+			if (value.getClass().getName().toString()
+			    .startsWith("oracle.sql.TIMESTAMP")) {
+				value = value.getClass().getMethod("toJdbc").invoke(value);
+			}
+			if (value instanceof Timestamp) {
+				Timestamp t = (Timestamp) value;
+				return toIsoDateTime(t.getTime());
+			}
+			if (value instanceof Date) {
+				Date t = (Date) value;
+				return toIsoDate(t.getTime());
+			}
+			return strValue;
+		}
+
+		public static String blobToString(Clob blob) {
+			try {
+				Writer out = new StringWriter();
+				Reader in = blob.getCharacterStream();
+				copy(in, out);
+				out.flush();
+				closeQuietly(out);
+				return out.toString();
+			} catch (Exception e) {
+				logger.severe(getStackTrace(e));
+			}
+			return "";
+		}
+
+		public static Result buildResult(int start, int max, ResultSet rs) {
+			Result result = null;
+			try {
+
+				//
+				ResultSetMetaData md = rs.getMetaData();
+
+				int colums = rs.getMetaData().getColumnCount();
+				String[] header = new String[colums];
+				int[] sqlTypes = new int[colums];
+				header = new String[colums];
+				for (int i = 0; i < colums; i++) {
+					header[i] = md.getColumnName(i + 1);
+					if (Result.USE_CAMEL_CASE_FOR_RESULT_HEADER) {
+						header[i] = camelCase(header[i]);
+					}
+					sqlTypes[i] = md.getColumnType(i + 1);
+				}
+				//
+				int counter = 0;
+				result = new Result(header);
+				result.from = -1;
+				String[] row = null;
+				while (rs.next()) {
+
+					if (counter >= start && ((counter < start + max) || max == -1)) {
+						if (result.from == -1) {
+							result.from = counter;
+						}
+
+						row = new String[colums];
+
+						for (int i = 0; i < colums; i++) {
+							if (sqlTypes[i] == Types.BLOB) {
+								logger
+								    .warning("BLOB type not supported! Returning empty string!");
+								row[i] = "";
+							} else if (sqlTypes[i] == Types.CLOB) {
+								Clob clob = (Clob) rs.getObject(i + 1);
+								row[i] = blobToString(clob);
+							} else {
+								Object sqlValue = rs.getObject(i + 1);
+								row[i] = sqlValueToString(sqlValue, sqlTypes[i]);
+							}
+						}
+						result.addRow(row);
+					} else {
+						//
+					}
+					counter++;
+				}
+				result.totalCount = counter;
+
+			} catch (Exception e) {
+				result = new Result(e);
+			} finally {
+
+			}
+			return result;
+		}
+
+		//
+		// COLLECTION UTILS
+		//
+
+		public static <E> boolean isEmpty(Collection<E> c) {
+			return c == null || c.size() == 0;
+		}
+
+		//
+		// OBJECT UTILS
+		//
+
+		public static Map<String, String> asMap(Object obj) throws Exception {
+			Map<String, String> values = new HashMap<String, String>();
+			Method[] methods = obj.getClass().getMethods();
+
+			for (Method method : methods) {
+				if (Modifier.isStatic(method.getModifiers())) {
+					continue;
+				}
+				if (method.getParameterTypes().length == 0
+				    && method.getName().startsWith("get")
+				    && method.getName().length() > 3
+				    && method.getReturnType().equals(String.class)) {
+					String key = method.getName().substring(3, 4).toLowerCase()
+					    + method.getName().substring(4);
+					Object r = method.invoke(obj, (Object[]) null);
+					String value = rnn(r);
+					values.put(key, value);
+				}
+			}
+			return values;
+		}
+
+		public static <E> E newObject(Map<String, String> values, Class<E> claxx)
+		    throws Exception {
+			E e;
+			e = claxx.newInstance();
+			int colIndex = 0;
+			for (String propertyName : values.keySet()) {
+				if (isBlank(propertyName)) {
+					propertyName = "" + colIndex;
+				}
+				String[] res = createSetGetNames(propertyName);
+				Method m = null;
+				for (String setGetName : res) {
+					try {
+						m = claxx.getMethod("set" + setGetName, String.class);
+					} catch (Exception e1) {
+					}
+					if (m != null) {
+						break;
+					}
+				}
+				if (m != null) {
+					try {
+						m.invoke(e, values.get(propertyName));
+					} catch (Exception e1) {
+					}
+				}
+				colIndex++;
+			}
+			return e;
+		}
+
+		public static String getStringGetterMethodName(Method method) {
+
+			if (method.getParameterTypes().length != 0) {
+				return null;
+			}
+			if (String.class.equals(method.getReturnType()) == false) {
+				return null;
+			}
+			String methodName = method.getName();
+
+			if (!methodName.startsWith("get") || !(methodName.length() > 3)
+			    || !Character.isUpperCase(methodName.charAt(3))) {
+				return null;
+			}
+			return Character.toLowerCase(methodName.charAt(3))
+			    + methodName.substring(4);
+
+		}
+
+		@SuppressWarnings("unchecked")
+		public static <E> Map<String, E> asMap(String keyProperty, List<E> list) {
+			if (isEmpty(list)) {
+				return new HashMap<String, E>();
+			}
+			Class<E> claxx = (Class<E>) list.get(0).getClass();
+			Map<String, E> map = new HashMap<String, E>();
+			try {
+				String methodName = "get" + keyProperty.substring(0, 1).toUpperCase()
+				    + keyProperty.substring(1);
+				Method m = claxx.getMethod(methodName);
+				for (E e : list) {
+					map.put(m.invoke(e).toString(), e);
+				}
+			} catch (Exception e) {
+				logger.severe(getStackTrace(e));
+			}
+			return map;
+		}
+
+	}
+
+	public static class JsonUtils {
+
+		private static final Logger logger = Logger.getLogger(JsonUtils.class
+		    .getName());
+
+		public static String toJson(Object object) {
+			Gson gson = new Gson();
+			String jsonStr = gson.toJson(object);
+			return jsonStr;
+		}
+
+		public static <T> T fromJson(String jsonStr, Class<T> classOfT) {
+			Gson gson = new Gson();
+			return gson.fromJson(jsonStr, classOfT);
+		}
+
+		public static String toJson(String name, String value) {
+			Gson gson = new Gson();
+			JsonObject jo = new JsonObject();
+			jo.addProperty(name, value);
+
+			return gson.toJson(jo);
+		}
+
+		public static String toJson(String name, Object value) {
+			if (value instanceof String) {
+				return toJson(name, (String) value);
+			}
+			Gson gson = new Gson();
+			JsonObject o = new JsonObject();
+			JsonElement e = gson.toJsonTree(value);
+			o.add(name, e);
+			return gson.toJson(o);
+		}
+
+		public static String toJson(JsonObject jsonObject) {
+			return jsonObject.toString();
+		}
+
+		public static JsonObject toJsonObject(String s) {
+			JsonParser jp = new JsonParser();
+			JsonObject jo = jp.parse(s).getAsJsonObject();
+			return jo;
+		}
+
+		public static String exception(String message) {
+			return toJson("exception", message);
+		}
+
+		public static String message(String message) {
+			return toJson("message", message);
+		}
+
+		public static Map<String, String> toStringMap(String jsonString) {
+			JsonParser p = new JsonParser();
+			JsonObject jsonObject = (JsonObject) p.parse(jsonString);
+			Set<Map.Entry<String, JsonElement>> jsonElements = jsonObject.entrySet();
+			Map<String, String> map = new HashMap<String, String>();
+			for (Map.Entry<String, JsonElement> entry : jsonElements) {
+				String key = entry.getKey();
+				JsonElement je = entry.getValue();
+				if (je.isJsonPrimitive()) {
+					JsonPrimitive jp = (JsonPrimitive) je;
+					if (jp.isBoolean() || jp.isNumber() || jp.isString()) {
+						map.put(key, jp.getAsString());
+					}
+				}
+			}
+			return map;
+		}
+
+		public static String jsonNoop() {
+			return toJson("NOOP");
+		}
+
+		public static class Parameters extends HashMap<String, String> {
+
+			/**
+	         * 
+	         */
+			private static final long serialVersionUID = 1L;
+
+		}
+
+		public static String jsonException(String message) {
+			return toJson("exception", message);
+		}
+
+		public static String jsonMessage(String message) {
+			return toJson("message", message);
+		}
+
+		public static <E> E toObject(String json, Class<E> claxx) {
+			return new Gson().fromJson(json, claxx);
+		}
+
+		public static <E> E toObjectSilently(String json, Class<E> claxx) {
+			try {
+				return new Gson().fromJson(json, claxx);
+			} catch (Exception e) {
+			}
+			return null;
+		}
+
+		//
+		// LIST MAP start
+		//
+		private static Object _toListMapE(JsonElement je) {
+			if (je.isJsonNull()) {
+				return null;
+			}
+			if (je.isJsonPrimitive()) {
+				return _toListMapP(je.getAsJsonPrimitive());
+			}
+			if (je.isJsonArray()) {
+				return _toListMapA(je.getAsJsonArray());
+			}
+			if (je.isJsonObject()) {
+				return _toListMapO(je.getAsJsonObject());
+			}
+			return null;
+		}
+
+		private static String _toListMapP(JsonPrimitive jp) {
+			return jp.getAsString();
+		}
+
+		private static Object _toListMapA(JsonArray ja) {
+			List<Object> list = new ArrayList<Object>(ja.size());
+			for (int i = 0; i < ja.size(); i++) {
+				JsonElement je = ja.get(i);
+				Object v = _toListMapE(je);
+				if (v != null) {
+					list.add(v);
+				}
+			}
+			return list;
+		}
+
+		private static Object _toListMapO(JsonObject jo) {
+			Set<Map.Entry<String, JsonElement>> jes = jo.entrySet();
+			Map<String, Object> map = new HashMap<String, Object>();
+			for (Map.Entry<String, JsonElement> entry : jes) {
+				String key = entry.getKey();
+				Object v = _toListMapE(entry.getValue());
+				if (v != null) {
+					map.put(key, v);
+				}
+			}
+			return map;
+		}
+
+		public static Object toListMap(String jsonString) {
+			JsonParser p = new JsonParser();
+			JsonElement je = p.parse(jsonString);
+			return _toListMapE(je);
+		}
+
+		public static Object toObject(String json, Type type) {
+			try {
+				return new Gson().fromJson(json, type);
+			} catch (Exception e) {
+				logger.severe(Utils.getStackTrace(e));
+			}
+			return null;
+		}
+
+		//
+		// LIST MAP end
+		//
+
+		@SuppressWarnings("unchecked")
+		public static <E> E[] toArray(String jsonString, Class<E> claxx) {
+
+			JsonParser p = new JsonParser();
+			E[] array = null;
+			Gson g = new Gson();
+			JsonElement je = p.parse(jsonString);
+			if (je.isJsonArray()) {
+				JsonArray a = je.getAsJsonArray();
+				array = (E[]) Array.newInstance(claxx, a.size());
+				int index = 0;
+				for (JsonElement e : a) {
+					array[index] = g.fromJson(e, claxx);
+					index++;
+				}
+			}
+			return array;
+
+		}
+
+		public static <E> List<E> toList(String jsonString, Class<E> claxx) {
+			return Utils.asList(toArray(jsonString, claxx));
+		}
+	}
+
+	public static class ObjectStore<E> {
+		private static final Logger logger = Logger.getLogger(ObjectStore.class
+		    .getName());
+
+		private final Class<E> resultClass;
+		private Set<String> roles;
+		private final String userId;
+
+		public ObjectStore(Class<E> resultClass, String userId, Set<String> roles) {
+
+			this.resultClass = resultClass;
+			// this.basicParams = basicParams;
+			this.userId = userId;
+			if (roles != null) {
+				this.roles = roles;
+			} else {
+				this.roles = new HashSet<String>();
+			}
+		}
+
+		public E newInstance(Map<String, String> params) {
+			try {
+				return Utils.newObject(params, this.resultClass);
+			} catch (Exception e) {
+				logger.severe(e.getMessage());
+				return null;
+			}
+		}
+
+		public E newInstance(Request request) {
+			return newInstance(request.getMapSnapshot());
+		}
+
+		private Result _process(String serviceId,
+		    TreeMap<Integer, Map<String, String>> params) {
+			Request request = new Request();
+			request.setUserId(userId);
+			request.setRoles(roles);
+			request.setServiceId(serviceId);
+			if (params != null) {
+				request.setParametersTreeMap(params);
+			}
+
+			MainQuery mq = new MainQuery();
+			return mq.run(request);
+		}
+
+		public List<E> search(String serviceId,
+		    TreeMap<Integer, Map<String, String>> params) {
+			Result pr = _process(serviceId, params);
+			List<E> result = null;
+			if (pr != null) {
+				result = pr.asList(resultClass);
+			}
+			return result;
+		}
+
+		public List<E> search(String serviceId, Map<String, String> params) {
+			return search(serviceId, wrap(params));
+		}
+
+		public List<E> search(String serviceId, E object) throws Exception {
+			if (object == null) {
+				return search(serviceId);
+			}
+			Map<String, String> params = Utils.asMap(object);
+
+			return search(serviceId, wrap(params));
+		}
+
+		TreeMap<Integer, Map<String, String>> wrap(Map<String, String> params) {
+			TreeMap<Integer, Map<String, String>> tm = new TreeMap<Integer, Map<String, String>>();
+			tm.put(0, params);
+			return tm;
+		}
+
+		public List<E> search(String serviceId) {
+			return search(serviceId, (TreeMap<Integer, Map<String, String>>) null);
+		}
+
+		public E get(String serviceId, TreeMap<Integer, Map<String, String>> tm) {
+			List<E> result = this.search(serviceId, tm);
+			return !Utils.isEmpty(result) ? result.get(0) : null;
+		}
+
+		public E get(String serviceId, Map<String, String> parameters) {
+			return get(serviceId, wrap(parameters));
+		}
+
+		public E get(String serviceId, E object) throws Exception {
+			List<E> result = this.search(serviceId, object);
+			return !Utils.isEmpty(result) ? result.get(0) : null;
+		}
+
+		public E get(String serviceId) {
+			return get(serviceId, new HashMap<String, String>());
+		}
+
+		public Result update(String serviceId, Map<String, String> parameters) {
+			return _process(serviceId, wrap(parameters));
+		}
+
+		public Result update(String serviceId, E object) throws Exception {
+			Map<String, String> params = Utils.asMap(object);
+
+			return _process(serviceId, wrap(params));
+		}
+
+		// public void update(String serviceId, E object,
+		// Map<String, String> additionalParams) throws Exception {
+		// DataService ds = DataService.getInstance();
+		// ds.process(serviceId,
+		// applyBasicParams(ObjectUtils.asMap(object), additionalParams));
+		// }
+
+		public Result update(String serviceId) {
+			return _process(serviceId, null);
+		}
+
+		public Set<String> getRoles() {
+			return roles;
+		}
+
+		public void setRoles(Set<String> roles) {
+			this.roles = roles;
+		}
+
+	}
+
+	public static void shutdown() {
+		Utils.IsoDateTimeSecTL.remove();
+		Utils.IsoDateTimeTL.remove();
+		Utils.IsoDateTL.remove();
+		Utils.IsoTimeTL.remove();
+		Utils.IsoDateTimeFullTL.remove();
+	}
+
+}
+
+ 
 }
