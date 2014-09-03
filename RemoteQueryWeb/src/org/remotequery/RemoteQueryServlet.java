@@ -121,44 +121,51 @@ public class RemoteQueryServlet extends HttpServlet {
 	    HttpServletResponse httpResponse) throws ServletException, IOException {
 		logger.fine("start " + servletName + ".doGet");
 
+		String serviceId = "";
+
+		//
+		// Checking user principal (userId) from the HTTP request - if empty
+		// ANONYMOUS is set.
+		//
+
 		String userId = httpRequest.getUserPrincipal() != null ? httpRequest
 		    .getUserPrincipal().getName() : RemoteQuery.ANONYMOUS;
 		HttpSession session = httpRequest.getSession();
 
 		// String rootPath = session.getServletContext().getRealPath("/");
 
+		//
+		// Selecting last part in URL as service id. If empty an exception result is
+		// returned: '-no service id-'
+		//
+
 		String requestUri = httpRequest.getRequestURI();
 		logger.fine("Request URI " + requestUri);
 		String[] parts = requestUri.split("/");
-
-		if (parts.length == 0) {
-			logger.severe("requestUri is empty: " + requestUri);
+		if (parts.length > 0) {
+			serviceId = parts[parts.length - 1];
+		}
+		logger.fine("serviceId: " + serviceId);
+		if (Utils.isBlank(serviceId)) {
+			logger.severe("-no service id-" + requestUri);
+			returnAsJsonString(JsonUtils.toJson("-no service id-"), httpResponse);
 			return;
 		}
-		String serviceId = parts[parts.length - 1];
-
-		logger.fine("serviceId: " + serviceId);
-
-		//
-		//
-		//
 
 		try {
 			ProcessLog pLog = ProcessLog.Current();
-			if (Utils.isBlank(serviceId)) {
-				logger.severe("serviceId is blank! requestUri: " + requestUri);
-				return;
-			}
-			Request request = new Request(REQUEST);
 
 			//
-			// USER ID (independent from $USERID !)
+			// Create RQ request with userId.
 			//
+
+			Request request = new Request(REQUEST);
 			request.setUserId(userId);
 
 			//
 			//
-			// INITIAL PARAMETERS
+			// Setting RQ INITIAL parameters such as $WEBROOT, $SERVICEID, $USERID,
+			// $CURRENT_TIME_MILLIS, $TIMESTAMP and $DATE.
 			//
 			//
 
@@ -180,7 +187,10 @@ public class RemoteQueryServlet extends HttpServlet {
 			    Utils.toIsoDate(currentTimeMillis));
 
 			//
-			// REQUEST DATA
+			//
+			// Setting RQ REQUEST parameters with build-in RequestDataHandler or with
+			// Java class defined by servlet init parameter 'requestDataHandler'.
+			//
 			//
 
 			RequestData requestData = null;
@@ -199,6 +209,7 @@ public class RemoteQueryServlet extends HttpServlet {
 				requestData = getRequestData(httpRequest);
 			}
 
+			// copy String parameters
 			Map<String, List<String>> param = requestData.getParameters();
 			for (Entry<String, List<String>> paramEntry : param.entrySet()) {
 				String name = paramEntry.getKey();
@@ -216,10 +227,13 @@ public class RemoteQueryServlet extends HttpServlet {
 					request.put(REQUEST, name, value);
 				}
 			}
+			// copy File parameters
+			request.setFileInfo(requestData.getFileInfo());
 
 			//
 			//
-			// REQUEST HEADERS
+			// Setting RQ HEADER parameters from the HTTP request headers.
+			//
 			//
 
 			@SuppressWarnings("rawtypes")
@@ -233,7 +247,8 @@ public class RemoteQueryServlet extends HttpServlet {
 
 			//
 			//
-			// SESSION ATTRIBUTES
+			// Setting RQ SESSION paramters from the HTTP session if value is a
+			// string.
 			//
 			//
 
@@ -248,20 +263,29 @@ public class RemoteQueryServlet extends HttpServlet {
 					logger.fine("http session parameter: " + name
 					    + ". Skipped! Value is not a string.");
 				}
-
 			}
+
+			//
+			//
+			// Setting RQ request transient attribute with
+			// 'httpRequest'-> HTTP request and 'requestData' -> request data
+			// (RequestDataHandler).
+			//
+			//
 
 			request.setTransientAttribute("httpRequest", httpRequest);
 			request.setTransientAttribute("requestData", requestData);
 
 			//
-			// Check for accessServiceId and run it
+			// Authentication and authorisation check. When accessServiceId is set, the RQ request is run with this accessServiceId.
+			// In case the RQ result has an Exception (string) the processing aborts and the exception is return as a JSON string.
 			//
 
 			//
 			// When accessServiceId is available the corresponding RQ is executed with
 			// the accessServiceId. If the
-			// result of the RQ run is null or the exception of the run is null
+			// result of the RQ run is null or the exception of the run is null.
+			// RQ SESSION parameters are written (back) to the HTTP session.
 			//
 
 			if (!Utils.isBlank(accessServiceId)) {
@@ -286,39 +310,30 @@ public class RemoteQueryServlet extends HttpServlet {
 			}
 
 			//
-			// Prepare main RQ
+			// Set serviceId to RQ request.
 			//
 
 			request.setServiceId(serviceId);
-			// reset userId
-			userId = request.getUserId();
-			request.put(INITIAL, WebConstants.$USERID, userId);
-
-			//
-			//
-			//
 
 			long startTime = System.currentTimeMillis();
 			MainQuery mainRq = new MainQuery();
 			Result result = mainRq.run(request);
 			pLog.system("Request time used (ms):"
 			    + (System.currentTimeMillis() - startTime), logger);
-			
-			
 
 			//
-			// Writing session parameters to HttpSession
+			// RQ SESSION parameters are written (back) to the HTTP session.
 			//
 
 			Map<String, String> newSessionMap = request.getParameters(SESSION);
 			for (Entry<String, String> sessionEntry : newSessionMap.entrySet()) {
 				session.setAttribute(sessionEntry.getKey(), sessionEntry.getValue());
 			}
-			
+
 			//
 			// Writing result to HttpResponse
 			//
-			
+
 			if (result != null) {
 				String s = JsonUtils.toJson(result);
 				returnAsJsonString(s, httpResponse);

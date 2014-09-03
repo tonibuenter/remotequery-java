@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.logging.Logger;
 
@@ -65,12 +64,19 @@ public class AppInitListener1 implements ServletContextListener {
 			//
 			// AppInit-A :: Init default DataSource
 			//
+			String createRemoteQueryServiceTableSql = null;
 
 			String dbUrl = sc.getInitParameter("dbUrl");
 			dbUrl = Utils.isEmpty(dbUrl) ? "jdbc:hsqldb:file:~/RemoteQueryDB;shutdown=true"
 			    : dbUrl;
 			logger.info("Try to create connection to " + dbUrl);
 			if (USE_HSQLDB) {
+				createRemoteQueryServiceTableSql = "create table REMOTE_QUERY_SERVICE ("
+				    + "SERVICE_ID varchar(512), "
+				    + "STATEMENTS varchar(4096), "
+				    + "ROLES varchar(1024), "
+				    + "DATASOURCE varchar(1024), "
+				    + " PRIMARY KEY(SERVICE_ID) " + ")";
 				dataSource = new JDBCPool();
 				((JDBCPool) dataSource).setDatabase(dbUrl);
 				((JDBCPool) dataSource).setUser("SA");
@@ -81,14 +87,21 @@ public class AppInitListener1 implements ServletContextListener {
 					}
 				};
 			} else {
+				createRemoteQueryServiceTableSql = "create table REMOTE_QUERY_SERVICE ("
+				    + "SERVICE_ID varchar(512), "
+				    + "STATEMENTS text, "
+				    + "ROLES varchar(1024), "
+				    + "DATASOURCE varchar(1024), "
+				    + " PRIMARY KEY(SERVICE_ID) " + ")";
 				dataSource = new MysqlConnectionPoolDataSource();
 				((MysqlConnectionPoolDataSource) dataSource).setUrl(dbUrl);
 				((MysqlConnectionPoolDataSource) dataSource).setUser("...");
 				((MysqlConnectionPoolDataSource) dataSource).setPassword("...");
 				closeable = new Closeable() {
 					public void close() throws Exception {
-						((MysqlConnectionPoolDataSource) dataSource).getPooledConnection().close();
-					
+						((MysqlConnectionPoolDataSource) dataSource).getPooledConnection()
+						    .close();
+
 					}
 				};
 			}
@@ -111,12 +124,7 @@ public class AppInitListener1 implements ServletContextListener {
 				repo = new ServiceRepository("[]");
 			} else {
 				// create a ServiceRepository in the Database
-				String createRemoteQueryServiceTableSql = "create table REMOTE_QUERY_SERVICE ("
-				    + "SERVICE_ID varchar(700), "
-				    + "STATEMENTS text, "
-				    + "ROLES varchar(1024), "
-				    + "DATASOURCE varchar(1024), "
-				    + " PRIMARY KEY(SERVICE_ID) " + ")";
+
 				String dropRemoteQueryServiceTableSql = "drop table REMOTE_QUERY_SERVICE";
 				Utils.runQuery(connection, dropRemoteQueryServiceTableSql);
 				Utils.runQuery(connection, createRemoteQueryServiceTableSql);

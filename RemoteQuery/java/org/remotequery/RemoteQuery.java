@@ -1172,7 +1172,8 @@ public class RemoteQuery {
 		// private IRoleProvider roleProvider;
 
 		private TreeMap<Integer, Map<String, String>> parametersTreeMap = new TreeMap<Integer, Map<String, String>>();
-
+		private Map<String, String> fileInfo;
+		
 		private int defaultLevel = 10;
 
 		private transient Map<String, Object> transientAttributes = new HashMap<String, Object>();
@@ -1322,6 +1323,14 @@ public class RemoteQuery {
 		public void setParametersTreeMap(
 		    TreeMap<Integer, Map<String, String>> parametersTreeMap) {
 			this.parametersTreeMap = parametersTreeMap;
+		}
+
+		public Map<String, String> getFileInfo() {
+			return fileInfo;
+		}
+
+		public void setFileInfo(Map<String, String> fileInfo) {
+			this.fileInfo = fileInfo;
 		}
 
 	}
