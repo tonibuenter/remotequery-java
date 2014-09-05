@@ -96,6 +96,54 @@ $(document).ready(function() {
       // value="">
       // </form>
     }
+    
+    
+
+
+    function loginUi(serviceId) {
+      var ui, view$, userId$, passwd$, login$, clear$, id;
+
+      view$ = $('<div>').addClass('ui-field-contain');
+      id = 'login-' + APP_base.newId();
+      userId$ = $('<input>', {
+        'type' : 'text',
+        'id' : id
+      });
+      view$.append($('<label>', {
+        'for' : id,
+        'text' : 'User Id'
+      }), userId$);
+      id = 'login-' + APP_base.newId();
+      passwd$ = $('<input>', {
+        'type' : 'password',
+        'id' : id
+      });
+      view$.append($('<label>', {
+        'for' : id,
+        'text' : 'Password'
+      }), passwd$);
+      login$ = APP_ui.button('Login', function() {
+        var s = userId$.val();
+        APP_data.callSq(serviceId, {
+          'userId' : s,
+          'secretWord' : passwd$.val()
+        }, function() {
+          alert('login result');
+        });
+      }).addClass('ui-btn');
+      clear$ = APP_ui.button('Clear', function() {
+        userId$.val('');
+        passwd$.val('');
+      }).addClass('ui-btn');
+      view$.append($('<div>').append(login$, clear$));
+      ui = APP_ui.templateUi({
+        'view$' : view$
+      });
+
+      return ui;
+
+    }
+
 
   }
 
