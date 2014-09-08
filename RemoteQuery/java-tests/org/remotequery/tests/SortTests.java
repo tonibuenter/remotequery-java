@@ -1,4 +1,4 @@
-package remotequery.tests;
+package org.remotequery.tests;
 
 import java.util.Arrays;
 import java.util.Comparator;

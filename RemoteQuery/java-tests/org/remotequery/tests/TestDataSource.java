@@ -1,4 +1,4 @@
-package remotequery.tests;
+package org.remotequery.tests;
 
 import java.io.PrintWriter;
 import java.sql.Array;
