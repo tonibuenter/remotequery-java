@@ -1,6 +1,12 @@
 $(document).ready(function() {
 
-  var page$, header$, content$, footer$, _loginUi;
+  var page$, header$, content$, footer$;
+  // uis
+  var main, login;
+  // for login/session tracking
+  var sessionId;
+  // helper stuff
+  var switchSupport = APP_ui.switchSupport();
 
   page$ = $('<div>', {
     'data-role' : 'page'
@@ -35,26 +41,51 @@ $(document).ready(function() {
     //
     // header
     //
-    content$.empty().append(APP_ui.button('show all', function() {
-      alert('hello !!!!!!!!!!!!!!');
-    }));
+
     //
     // footer
     //
-    footer$.empty().append(APP_ui.button('bye bye', function() {
-      alert('bye');
-    }));
 
     //
-    _loginUi = loginUi();
-    content$.append(_loginUi.view());
+    // content
+    //
+
+    main = mainUi();
+    content$.append(main.view());
+    switchSupport.put('main', main.view());
+
+    login = loginUi("UserLogin");
+    content$.append(login.view());
+    switchSupport.put('login', login.view());
+    login.done(function(arg0) {
+      if (_.isString(arg0)) {
+        sessionId = arg0;
+        switchSupport.show('main');
+      } else {
+        // show error ...
+      }
+    });
 
     //
 
     $('body').enhanceWithin();
+
+    switchSupport.show('login');
+
   }
 
-  function loginUi() {
+  function mainUi() {
+    var view$ = $('<div>');
+    var ui = APP_ui.templateUi({
+      'view$' : view$
+    });
+
+    view$.append($('<h2>').text('... main ui ...'));
+
+    return ui;
+  }
+
+  function loginUi2() {
     var view$ = $('<div>');
     var ui = APP_ui.templateUi({
       'view$' : view$
@@ -96,54 +127,63 @@ $(document).ready(function() {
       // value="">
       // </form>
     }
-    
-    
+  }
 
+  function loginUi(serviceId) {
+    var ui, view$, userId$, passwd$, login$, clear$, id;
+    //
+    var doneCb;
 
-    function loginUi(serviceId) {
-      var ui, view$, userId$, passwd$, login$, clear$, id;
-
-      view$ = $('<div>').addClass('ui-field-contain');
-      id = 'login-' + APP_base.newId();
-      userId$ = $('<input>', {
-        'type' : 'text',
-        'id' : id
+    view$ = $('<div>').addClass('ui-field-contain');
+    id = 'login-' + APP_base.newId();
+    userId$ = $('<input>', {
+      'type' : 'text',
+      'id' : id
+    });
+    view$.append($('<label>', {
+      'for' : id,
+      'text' : 'User Id'
+    }), userId$);
+    id = 'login-' + APP_base.newId();
+    passwd$ = $('<input>', {
+      'type' : 'password',
+      'id' : id
+    });
+    view$.append($('<label>', {
+      'for' : id,
+      'text' : 'Password'
+    }), passwd$);
+    login$ = APP_ui.button('Login', function() {
+      rQ.call(serviceId, {
+        'userId' : userId$.val(),
+        'secretWord' : passwd$.val()
+      }, function() {
+        alert('login result');
+        // if session ok
+        done('dummy');
       });
-      view$.append($('<label>', {
-        'for' : id,
-        'text' : 'User Id'
-      }), userId$);
-      id = 'login-' + APP_base.newId();
-      passwd$ = $('<input>', {
-        'type' : 'password',
-        'id' : id
-      });
-      view$.append($('<label>', {
-        'for' : id,
-        'text' : 'Password'
-      }), passwd$);
-      login$ = APP_ui.button('Login', function() {
-        var s = userId$.val();
-        APP_data.callSq(serviceId, {
-          'userId' : s,
-          'secretWord' : passwd$.val()
-        }, function() {
-          alert('login result');
-        });
-      }).addClass('ui-btn');
-      clear$ = APP_ui.button('Clear', function() {
-        userId$.val('');
-        passwd$.val('');
-      }).addClass('ui-btn');
-      view$.append($('<div>').append(login$, clear$));
-      ui = APP_ui.templateUi({
-        'view$' : view$
-      });
+    }).addClass('ui-btn');
+    clear$ = APP_ui.button('Clear', function() {
+      userId$.val('');
+      passwd$.val('');
+    }).addClass('ui-btn');
+    view$.append($('<div>').append(login$, clear$));
+    ui = APP_ui.templateUi({
+      'view$' : view$
+    });
 
-      return ui;
+    ui.done = done;
+    return ui;
 
+    function done(arg0) {
+      if (_.isFunction(arg0)) {
+        doneCb = arg0;
+        return;
+      }
+      if (_.isFunction(doneCb)) {
+        doneCb.apply(this, arguments);
+      }
     }
-
 
   }
 
