@@ -277,8 +277,10 @@ public class RemoteQueryServlet extends HttpServlet {
 			request.setTransientAttribute("requestData", requestData);
 
 			//
-			// Authentication and authorisation check. When accessServiceId is set, the RQ request is run with this accessServiceId.
-			// In case the RQ result has an Exception (string) the processing aborts and the exception is return as a JSON string.
+			// Authentication and authorisation check. When accessServiceId is set,
+			// the RQ request is run with this accessServiceId.
+			// In case the RQ result has an Exception (string) the processing aborts
+			// and the exception is return as a JSON string.
 			//
 
 			//
@@ -292,9 +294,7 @@ public class RemoteQueryServlet extends HttpServlet {
 				request.setServiceId(accessServiceId);
 				MainQuery accessRq = new MainQuery();
 				Result r = accessRq.run(request);
-				String exception =
-				// r == null ? null :
-				r.getException();
+				String exception = (r == null) ? null : r.getException();
 				if (Utils.isBlank(exception)) {
 					Map<String, String> map = request.getParameters(SESSION);
 					for (Entry<String, String> entry : map.entrySet()) {
