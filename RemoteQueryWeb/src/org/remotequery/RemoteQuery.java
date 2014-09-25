@@ -216,6 +216,39 @@ public class RemoteQuery {
 	}
 
 	/**
+	 * This class provides a convenient access to the ServiceEntry and the
+	 * connection defined by the ServieEntrys data source name. The connection is
+	 * automatically returned to the DataSource after the run mehod. The class can
+	 * be used for any IQuery implementation.
+	 * 
+	 * @author tonibuenter
+	 * 
+	 */
+	public static abstract class AbstractQuery implements IQuery {
+
+		private static final long serialVersionUID = 1L;
+		protected Connection connection;
+		protected ServiceEntry serviceEntry;
+
+		public Connection getConnection() {
+			return connection;
+		}
+
+		public void setConnection(Connection connection) {
+			this.connection = connection;
+		}
+
+		public ServiceEntry getServiceEntry() {
+			return serviceEntry;
+		}
+
+		public void setServiceEntry(ServiceEntry serviceEntry) {
+			this.serviceEntry = serviceEntry;
+		}
+
+	}
+
+	/**
 	 * Interface for service repositories. Currently we have a JSON base and a SQL
 	 * base service repository.
 	 * 
@@ -398,7 +431,7 @@ public class RemoteQuery {
 				// java:
 				//
 				if (cmd.equals(MLT.java)) {
-					result = processJava(stmt, request);
+					result = processJava(stmt, request, serviceEntry);
 					return result;
 				}
 				//
@@ -425,8 +458,8 @@ public class RemoteQuery {
 				}
 			} catch (Exception e) {
 				log.error(
-				    "ServiceStmt for " + serviceStmt + " failed. Skip execution.",
-				    logger);
+				    "ServiceStmt for " + serviceStmt + " failed. Exception: "
+				        + e.getMessage(), logger);
 
 			} finally {
 				log.decrRecursion();
@@ -536,19 +569,40 @@ public class RemoteQuery {
 			return null;
 		}
 
-		private Result processJava(String className, Request request)
-		    throws InstantiationException, IllegalAccessException,
-		    ClassNotFoundException {
+		private Result processJava(String className, Request request,
+		    ServiceEntry serviceEntry) throws InstantiationException,
+		    IllegalAccessException, ClassNotFoundException, SQLException {
 			Result result = null;
+			Connection connection = null;
+			ProcessLog pLog = ProcessLog.Current();
+			try {
 
-			Object serviceObject = Class.forName(className).newInstance();
-			if (serviceObject instanceof IQuery) {
+				Object serviceObject = Class.forName(className).newInstance();
+
+				if (!(serviceObject instanceof IQuery)) {
+					ProcessLog.Current().error(
+					    "Class " + className + " is not an instance of "
+					        + IQuery.class.getName(), logger);
+					return null;
+				}
+
 				IQuery service = (IQuery) serviceObject;
+				if (service instanceof AbstractQuery) {
+					//
+					((AbstractQuery) service).setServiceEntry(serviceEntry);
+					//
+					DataSource ds = DataSources.getInstance().get(
+					    serviceEntry.getDatasourceName());
+					if (ds != null) {
+						connection = ds.getConnection();
+						((AbstractQuery) service).setConnection(connection);
+					}
+				}
 				result = service.run(request);
-			} else {
-				ProcessLog.Current().error(
-				    "Class " + className + " is not an instance of "
-				        + IQuery.class.getName(), logger);
+			} catch (Exception e) {
+				pLog.error(e, logger);
+			} finally {
+				Utils.closeQuietly(connection);
 			}
 
 			return result;
@@ -1173,7 +1227,7 @@ public class RemoteQuery {
 
 		private TreeMap<Integer, Map<String, String>> parametersTreeMap = new TreeMap<Integer, Map<String, String>>();
 		private Map<String, String> fileInfo;
-		
+
 		private int defaultLevel = 10;
 
 		private transient Map<String, Object> transientAttributes = new HashMap<String, Object>();
