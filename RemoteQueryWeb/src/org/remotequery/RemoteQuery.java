@@ -1630,16 +1630,15 @@ public class RemoteQuery {
 			String tableString = "[";
 			for (int i = 0; i < table.size(); i++) {
 				if (i != 0) {
-					tableString += ", ";
+					tableString += "\n";
 				}
 				List<String> row = table.get(i);
 				tableString += row;
 			}
 			tableString += "]";
 			return "Result [name=" + name + ", userId=" + userId + ", size=" + size
-			    + ", from=" + from + ", totalCount=" + totalCount + ", table="
-			    + tableString + ", header=" + header + ", exception=" + exception
-			    + "]";
+			    + "\nfrom=" + from + ", totalCount=" + totalCount + "\n" + header
+			    + "\n" + tableString + ",\nexception=" + exception + "]";
 		}
 
 		public String getSingleValue(String head) {

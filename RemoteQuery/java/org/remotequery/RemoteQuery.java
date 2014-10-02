@@ -499,7 +499,6 @@ public class RemoteQuery {
 				    .getParametersTreeMap();
 				String[] keys = Utils.tokenize(stmt, ',');
 				for (String key : keys) {
-
 					for (Entry<Integer, Map<String, String>> e : ptm.entrySet()) {
 						Map<String, String> m = e.getValue();
 						if (m != null) {
@@ -508,7 +507,6 @@ public class RemoteQuery {
 					}
 				}
 				return;
-
 			}
 			String ls = "";
 			if (cmd.startsWith(MLT.set_if_empty)) {
