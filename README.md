@@ -1,7 +1,20 @@
-RemoteQuery Repository
+
+Welome to RemoteQuery!
 ======================
 
-The RemoteQuery repository contains the projects *RemoteQuery* and *RemoteQueryWeb*. RemoteQuery is often abbreviated as 'RQ' or 'rQ'.
+
+In one sentence: RemoteQuery is a tiny utility (for now as Java classes) which enables to use SQL statements 
+as JSON rest-like services covering access control, service and statement composition, parameter control and much more.
+
++ [RemoteQuery (Intro Slides)] (RemoteQuery.pdf)
++ [RemoteQuery Tech Stack Promotion] (RemoteQuery Tech Stack Promotion.pdf)
+
+
+About RemoteQuery Repository
+----------------------------
+
+The RemoteQuery repository contains the projects *RemoteQuery* and *RemoteQueryWeb*. 
+RemoteQuery is often abbreviated as 'RQ' or 'rQ'.
 
 RemoteQuery (RQ)
 ----------------

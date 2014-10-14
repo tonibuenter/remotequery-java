@@ -94,11 +94,13 @@ public class RemoteQuery {
 		// combination
 		public static final String serviceId = "serviceId";
 		public static final String include = "include";
-		// parameter manipulation
+		// parameter / result statements
 		public static final String set = "set";
 		public static final String set_if_empty = "set-if-empty";
 		public static final String set_if_null = "set-if-null";
 		public static final String set_null = "set-null";
+		public static final String foreach = "foreach";
+		public static final String join_result_with = "join-result-with";
 		//
 		public static final String tx_begin = "tx-begin";
 		public static final String tx_commit = "tx-commit";
@@ -352,8 +354,8 @@ public class RemoteQuery {
 
 				// parameterSupport = ParameterSupport.begin(con, sqRequest, sqEntry);
 				for (String statement : statementList) {
-					Result result2 = processSingleStatement(request, serviceEntry,
-					    statement);
+					Result result2 = processSingleStatement(request, result,
+					    serviceEntry, statement);
 					if (result2 != null) {
 						if (result != null) {
 							result2.setSubResult(result);
@@ -377,7 +379,7 @@ public class RemoteQuery {
 		}
 
 		private Result processSingleStatement(Request request,
-		    ServiceEntry serviceEntry, String serviceStmt) {
+		    Result currentResult, ServiceEntry serviceEntry, String serviceStmt) {
 			ProcessLog log = ProcessLog.Current();
 			try {
 				Result result = null;
@@ -387,13 +389,13 @@ public class RemoteQuery {
 				if (recursion > MAX_RECURSION) {
 					log.error("Recursion limit reached " + MAX_RECURSION
 					    + ". Stop processing.", logger);
-					return null;
+					return currentResult;
 				}
 
 				serviceStmt = serviceStmt.trim();
 				if (Utils.isEmpty(serviceStmt)) {
 					log.warn("Empty serviceStmt -> no processing.", logger);
-					return null;
+					return currentResult;
 				}
 
 				String[] p = Utils.tokenize(serviceStmt, ':', STATEMENT_ESCAPE);
@@ -402,7 +404,7 @@ public class RemoteQuery {
 				if (p == null || p.length == 0) {
 					log.warn("Unexpected serviceStmt : " + serviceStmt + ". Skipping!",
 					    logger);
-					return null;
+					return currentResult;
 				}
 				//
 				// plain SQL case
@@ -413,6 +415,19 @@ public class RemoteQuery {
 				}
 				String cmd = p[0];
 				String stmt = p[1];
+				String argsString = Utils.joinTokens(p, 1, ':', STATEMENT_ESCAPE);
+				//
+				// join-result-with
+				//
+				if (MLT.join_result_with.equals(cmd)) {
+					String joinKey = p[1];
+					String joinCol = p[2];
+					String subServiceStmt = Utils.joinTokens(p, 3, ':', STATEMENT_ESCAPE);
+					Result result2 = processSingleStatement(request, currentResult,
+					    serviceEntry, subServiceStmt);
+					currentResult.join(joinKey, joinCol, result2);
+					return currentResult;
+				}
 				//
 				// include
 				//
@@ -420,10 +435,10 @@ public class RemoteQuery {
 					ServiceEntry se2 = ServiceRepository.getInstance().get(stmt);
 					if (se2 == null) {
 						log.warn("Tried to include " + stmt + ". Skipping.", logger);
-						return null;
+						return currentResult;
 					}
 					String includeServiceStmt = se2.getStatements();
-					result = processSingleStatement(request, serviceEntry,
+					result = processSingleStatement(request, result, serviceEntry,
 					    includeServiceStmt);
 					return result;
 				}
@@ -446,8 +461,11 @@ public class RemoteQuery {
 				//
 				if (cmd.startsWith(MLT.set)) {
 					applySetCommand(request, cmd, stmt);
-					return null;
+					return currentResult;
 				}
+				//
+				// serviceId
+				//
 				if (cmd.equals(MLT.serviceId)) {
 					String parentServiceId = serviceEntry.getServiceId();
 					String subServiceId = stmt;
@@ -1757,6 +1775,77 @@ public class RemoteQuery {
 			this.subResult = subResult;
 		}
 
+		public void join(String joinKey, String joinCol, Result joinResult) {
+			int joinKeyIndex = joinResult.getHeaderIndex(joinCol);
+
+			Map<String, Integer> keyIndexMap = getKeyIndexMap(joinCol);
+			Map<String, List<List<String>>> joinSubtables = new HashMap<String, List<List<String>>>();
+			for (List<String> joinRow : joinResult.table) {
+				String key = joinRow.get(joinKeyIndex);
+				if (keyIndexMap.containsKey(key)) {
+					List<List<String>> list = joinSubtables.get(key);
+					if (list == null) {
+						list = new ArrayList<List<String>>();
+						joinSubtables.put(key, list);
+					}
+					list.add(joinRow);
+				}
+
+			}
+
+			this.header.add(joinCol);
+
+			for (Entry<String, List<List<String>>> e : joinSubtables.entrySet()) {
+				String key = e.getKey();
+				List<List<String>> r = e.getValue();
+				Result tmpResult = new Result(0, r.size(), joinResult.header, r);
+				String s = JsonUtils.toJson(tmpResult);
+				List<String> row = this.table.get(keyIndexMap.get(key));
+				row.add(s);
+			}
+
+		}
+
+		public Map<String, Integer> getKeyIndexMap(String colName) {
+			Map<String, Integer> map = new HashMap<String, Integer>();
+			Set<Object> processCheckSet = new HashSet<Object>();
+			int keyIndex = getHeaderIndex(colName);
+			for (int i = 0; i < this.table.size(); i++) {
+				List<String> row = this.table.get(i);
+				String key = row.get(keyIndex);
+				if (processCheckSet.contains(key)) {
+					continue;
+				}
+				processCheckSet.add(key);
+				map.put(key, new Integer(i));
+			}
+			return map;
+		}
+
+		public int getHeaderIndex(String colName) {
+			for (int i = 0; i < header.size(); i++) {
+				if (header.get(i).equals(colName)) {
+					return i;
+				}
+			}
+			return -1;
+		}
+
+		public static Result union(Result p1, Result p2) {
+			if (p1 == null) {
+				return p2;
+			}
+			if (p2 == null) {
+				return p1;
+			}
+			if (p2.table != null) {
+				for (List<String> row : p2.table) {
+					p1.table.add(row);
+				}
+			}
+			return p1;
+		}
+
 	}
 
 	/**
@@ -2517,26 +2606,42 @@ public class RemoteQuery {
 		}
 
 		public static String joinTokens(Collection<String> list) {
+			return joinTokens(list, DEFAULT_DEL, DEFAULT_ESC);
+		}
+
+		public static String joinTokens(Collection<String> list, char del, char esc) {
 			if (isEmpty(list)) {
 				return "";
 			}
-
 			String res = "";
 			int i = 0;
 			for (String s : list) {
-				s = escape(s, DEFAULT_DEL, DEFAULT_ESC);
+				s = escape(s, del, esc);
 				if (i == 0) {
 					res = s;
 				} else {
-					res = res + DEFAULT_DEL + s;
+					res = res + del + s;
 				}
 				i++;
 			}
 			return res;
 		}
 
-		public static String joinTokens(String[] list) {
-			return joinTokens(Arrays.asList(list));
+		public static String joinTokens(String[] arr) {
+			return joinTokens(arr, 0, arr.length, DEFAULT_DEL, DEFAULT_ESC);
+		}
+
+		public static String joinTokens(String[] arr, int start, char del, char esc) {
+			return joinTokens(arr, start, arr.length, del, esc);
+		}
+
+		public static String joinTokens(String[] arr, int start, int end, char del,
+		    char esc) {
+			List<String> list = new ArrayList<String>(end - start);
+			for (int i = start; i < arr.length && i < end; i++) {
+				list.add(arr[i]);
+			}
+			return joinTokens(list, del, esc);
 		}
 
 		public static String escape(String in, char del, char esc) {
