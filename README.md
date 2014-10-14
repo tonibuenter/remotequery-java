@@ -6,8 +6,8 @@ Welome to RemoteQuery!
 In one sentence: RemoteQuery is a tiny utility (for now as Java classes) which enables to use SQL statements 
 as JSON rest-like services covering access control, service and statement composition, parameter control and much more.
 
-+ [RemoteQuery (Intro Slides)] (RemoteQuery.pdf)
-+ [RemoteQuery Tech Stack Promotion] (RemoteQuery Tech Stack Promotion.pdf)
++ [RemoteQuery (Intro Slides)] (blob/master/RemoteQuery.pdf?raw=true)
++ [RemoteQuery Tech Stack Promotion] (blob/master/RemoteQuery%20Tech%20Stack%20Promotion.pdf?raw=true)
 
 
 About RemoteQuery Repository
