@@ -20,10 +20,11 @@ import org.remotequery.RemoteQueryServlet.WebConstants;
 
 /**
  * This class is a base class which can be used for uploading files. You can
- * create a subclass an provide IUploadFileHandler for the protected field
- * uploadFileHandler.
- * The RemoteQueryServlet is using the IUploadFileHandler class defined by the init parameter
- * 'requestDataHandler'.
+ * create a subclass and provide IUploadFileHandler for the protected field
+ * uploadFileHandler. The RemoteQueryServlet is using the IUploadFileHandler
+ * class defined by the init parameter 'requestDataHandler'.
+ * 
+ * http://commons.apache.org/proper/commons-fileupload/using.html
  * 
  * @author tonibuenter
  * 
@@ -84,6 +85,7 @@ public class RequestDataHandler implements IRequestDataHandler {
 						}
 					}
 				} else {
+					
 					String fileName = FilenameUtils.getName(item.getName());
 					if (fileName != null) {
 						String fileIdentificator = uploadFileHandler.processFile(fileName,
@@ -110,7 +112,5 @@ public class RequestDataHandler implements IRequestDataHandler {
 		return Base64.decodeBase64(s);
 	}
 
-	interface IUploadFileHandler {
-		String processFile(String fileName, InputStream stream);
-	}
+	
 }

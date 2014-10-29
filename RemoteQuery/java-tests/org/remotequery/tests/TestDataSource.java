@@ -11,6 +11,7 @@ import java.sql.NClob;
 import java.sql.PreparedStatement;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.sql.SQLXML;
 import java.sql.Savepoint;
@@ -18,6 +19,8 @@ import java.sql.Statement;
 import java.sql.Struct;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Executor;
+import java.util.logging.Logger;
 
 import javax.sql.DataSource;
 
@@ -76,6 +79,12 @@ public class TestDataSource implements DataSource {
 	    throws SQLException {
 		return wrappedConnection;
 	}
+
+	@Override
+  public Logger getParentLogger() throws SQLFeatureNotSupportedException {
+	  // TODO Auto-generated method stub
+	  return null;
+  }
 
 }
 
@@ -298,4 +307,35 @@ class MyWrappedConnection implements Connection {
 	    throws SQLException {
 		return c.createStruct(typeName, attributes);
 	}
+
+	@Override
+  public void setSchema(String schema) throws SQLException {
+	  // TODO Auto-generated method stub
+	  
+  }
+
+	@Override
+  public String getSchema() throws SQLException {
+	  // TODO Auto-generated method stub
+	  return null;
+  }
+
+	@Override
+  public void abort(Executor executor) throws SQLException {
+	  // TODO Auto-generated method stub
+	  
+  }
+
+	@Override
+  public void setNetworkTimeout(Executor executor, int milliseconds)
+      throws SQLException {
+	  // TODO Auto-generated method stub
+	  
+  }
+
+	@Override
+  public int getNetworkTimeout() throws SQLException {
+	  // TODO Auto-generated method stub
+	  return 0;
+  }
 }

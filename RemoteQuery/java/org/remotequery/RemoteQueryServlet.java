@@ -362,9 +362,6 @@ public class RemoteQueryServlet extends HttpServlet {
 		}
 	}
 
-	public interface IRequestDataHandler {
-		RequestData process(HttpServletRequest httpRequest) throws Exception;
-	}
 
 	public static class RequestData implements Serializable {
 
@@ -416,6 +413,10 @@ public class RemoteQueryServlet extends HttpServlet {
 
 		}
 		return rd;
+	}
+	
+	public interface IRequestDataHandler {
+		RequestData process(HttpServletRequest httpRequest) throws Exception;
 	}
 
 }
