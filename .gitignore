@@ -3,3 +3,4 @@ bin
 .metadata
 *.class
 local
+.DS_Store
