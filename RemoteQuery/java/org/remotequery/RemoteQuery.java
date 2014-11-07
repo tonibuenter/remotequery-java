@@ -415,7 +415,7 @@ public class RemoteQuery {
 				}
 				String cmd = p[0];
 				String stmt = p[1];
-				String argsString = Utils.joinTokens(p, 1, ':', STATEMENT_ESCAPE);
+				// String argsString = Utils.joinTokens(p, 1, ':', STATEMENT_ESCAPE);
 				//
 				// join-result-with
 				//
@@ -3325,6 +3325,10 @@ public class RemoteQuery {
 			} else {
 				this.roles = new HashSet<String>();
 			}
+		}
+
+		public ObjectStore(Class<E> resultClass) {
+			this(resultClass, RemoteQuery.ANONYMOUS, new HashSet<String>());
 		}
 
 		public E newInstance(Map<String, String> params) {

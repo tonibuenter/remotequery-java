@@ -9,6 +9,7 @@
 
   root[REMOTE_QUERY_NAME] = {
     'call' : callRq,
+    'callForm' : callRqForm,
     'url' : function(arg0) {
       if (typeof arg0 === 'string') {
         url = arg0;
@@ -42,6 +43,31 @@
         if (callback !== undefined) {
           callback.apply(this, arguments);
         }
+      }
+    });
+  }
+
+  function callRqForm(form$, serviceId, arg2, arg3) {
+    var params, cb;
+    if (typeof arg3 === 'function') {
+      cb = arg3;
+      params = arg2;
+    } else {
+      params = {};
+      cb = arg2;
+    }
+    form$.attr('enctype', 'multipart/form-data');
+    form$.ajaxSubmit({
+      'url' : url + '/' + serviceId,
+      'dataType' : 'json',
+      'data' : params,
+      'clearForm' : false,
+      'type' : 'POST',
+      'error' : function(e) {
+        alert('error ' + e);
+      },
+      'success' : function(data) {
+        cb(data);
       }
     });
   }

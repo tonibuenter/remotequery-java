@@ -29,7 +29,7 @@ import org.remotequery.RemoteQueryServlet.WebConstants;
  * @author tonibuenter
  * 
  */
-public class RequestDataHandler implements IRequestDataHandler {
+public abstract class RequestDataHandler implements IRequestDataHandler {
 
 	private static Logger logger = Logger.getLogger(RequestDataHandler.class
 	    .getName());
@@ -37,17 +37,21 @@ public class RequestDataHandler implements IRequestDataHandler {
 	/**
 	 * 
 	 */
-	protected IUploadFileHandler uploadFileHandler = null;
+
+	public abstract IUploadFileHandler getUploadFileHandler();
 
 	public RequestData process(HttpServletRequest httpRequest) throws Exception {
 
 		boolean isMultipart = ServletFileUpload.isMultipartContent(httpRequest);
+
 		RequestData requestData = new RequestData();
+		IUploadFileHandler uploadFileHandler = getUploadFileHandler();
+
 		if (isMultipart) {
 			//
 			// multi part processing
 			//
-			TreeMap<String, String> files = new TreeMap<String, String>();
+			
 
 			// Create a new file upload handler
 			ServletFileUpload upload = new ServletFileUpload();
@@ -69,9 +73,8 @@ public class RequestDataHandler implements IRequestDataHandler {
 
 						byte[] docu = dataUrl2Binary(value);
 						InputStream stream2 = new ByteArrayInputStream(docu);
-						String fileIdentificator = uploadFileHandler.processFile(fileName,
-						    stream2);
-						files.put(name, fileIdentificator);
+						uploadFileHandler.processFile(fileName,
+						    stream2, requestData);
 						IOUtils.closeQuietly(stream2);
 					} else {
 						logger.fine("Form field " + name + " with value " + value
@@ -85,18 +88,18 @@ public class RequestDataHandler implements IRequestDataHandler {
 						}
 					}
 				} else {
-					
+
 					String fileName = FilenameUtils.getName(item.getName());
 					if (fileName != null) {
-						String fileIdentificator = uploadFileHandler.processFile(fileName,
-						    stream);
-						files.put(name, fileIdentificator);
+						uploadFileHandler.processFile(fileName,
+						    stream, requestData);
 					}
 				}
 			}
 		} else {
 			requestData = RemoteQueryServlet.getRequestData(httpRequest);
 		}
+		uploadFileHandler.done(requestData);
 		return requestData;
 	}
 
@@ -112,5 +115,4 @@ public class RequestDataHandler implements IRequestDataHandler {
 		return Base64.decodeBase64(s);
 	}
 
-	
 }

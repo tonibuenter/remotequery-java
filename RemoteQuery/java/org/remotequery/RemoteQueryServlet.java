@@ -74,8 +74,6 @@ public class RemoteQueryServlet extends HttpServlet {
 
 		public static final String $CURRENT_TIME_MILLIS = "$CURRENT_TIME_MILLIS";
 
-		public static final String $USERID = "$USERID";
-
 		public static final String dataurl_ = "dataurl_";
 		public static final int MAX_FIELD_LENGTH = 50 * 1024 * 1024;
 
@@ -175,8 +173,6 @@ public class RemoteQueryServlet extends HttpServlet {
 
 			request.put(INITIAL, WebConstants.$SERVICEID, serviceId);
 
-			request.put(INITIAL, WebConstants.$USERID, userId);
-
 			request.put(INITIAL, WebConstants.$CURRENT_TIME_MILLIS, ""
 			    + currentTimeMillis);
 
@@ -228,7 +224,6 @@ public class RemoteQueryServlet extends HttpServlet {
 				}
 			}
 			// copy File parameters
-			request.setFileInfo(requestData.getFileInfo());
 
 			//
 			//
@@ -362,11 +357,9 @@ public class RemoteQueryServlet extends HttpServlet {
 		}
 	}
 
-
 	public static class RequestData implements Serializable {
 
 		private final Map<String, List<String>> parameters = new HashMap<String, List<String>>();
-		private final Map<String, String> fileInfo = new HashMap<String, String>();
 		/**
      * 
      */
@@ -394,9 +387,6 @@ public class RemoteQueryServlet extends HttpServlet {
 			return parameters;
 		}
 
-		public Map<String, String> getFileInfo() {
-			return fileInfo;
-		}
 	}
 
 	public static RequestData getRequestData(HttpServletRequest httpRequest) {
@@ -414,7 +404,7 @@ public class RemoteQueryServlet extends HttpServlet {
 		}
 		return rd;
 	}
-	
+
 	public interface IRequestDataHandler {
 		RequestData process(HttpServletRequest httpRequest) throws Exception;
 	}
