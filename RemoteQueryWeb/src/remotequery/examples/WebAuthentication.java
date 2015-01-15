@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Logger;
 
 import org.remotequery.RemoteQuery.IQuery;
 import org.remotequery.RemoteQuery.LevelConstants;
@@ -12,11 +11,13 @@ import org.remotequery.RemoteQuery.ProcessLog;
 import org.remotequery.RemoteQuery.Request;
 import org.remotequery.RemoteQuery.Result;
 import org.remotequery.RemoteQuery.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WebAuthentication implements IQuery {
 
-	private static Logger logger = Logger.getLogger(WebAuthentication.class
-	    .getName());
+	private static Logger logger = LoggerFactory
+	    .getLogger(WebAuthentication.class);
 	public static Map<String, Long> sessions = new HashMap<String, Long>();
 
 	private static final long serialVersionUID = 1L;

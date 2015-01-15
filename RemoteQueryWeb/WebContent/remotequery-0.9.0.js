@@ -19,7 +19,8 @@
     'names' : {
       'RegisterService' : 'RegisterService'
     },
-    'toList' : toList
+    'toList' : toList,
+    'toMap' : toMap
   };
 
   function callRq(serviceId, arg1, arg2) {
@@ -72,6 +73,27 @@
     });
   }
 
+  function callRqMulti(requestArray, mainCb) {
+    var requestArrayStr = JSON.stringify(requestArray);
+    callRq('MultiService', {
+      'requestArray' : requestArrayStr
+    }, processSuccess);
+
+    function processSuccess(data) {
+      var resultArray = [];
+      var requestCb, pr;
+      if (data.table && data.table.length === requestArray.length) {
+        $.each(data.table, function(i, row) {
+          pr = JSON.parse(row[0]);
+          resultArray.push(pr);
+        });
+        if (_.isFunction(mainCb)) {
+          mainCb(resultArray);
+        }
+      }
+    }
+  }
+
   function toList(serviceData) {
     var list;
     list = [];
@@ -86,6 +108,43 @@
       list.header = serviceData.header;
     }
     return list;
+  }
+
+  function toMap(serviceData, keyColumns) {
+    var map = {}, keys, keyIndexes = [], i;
+    var rowCounter, row, currentMap;
+    if (_.isArray(keyColumns)) {
+      keys = keyColumns;
+    } else {
+      keys = keyColumns.split('.');
+    }
+    if (serviceData.table && serviceData.header) {
+      for (i = 0; i < keys.length; i++) {
+        var keyColumn = keys[i];
+        $.each(serviceData.header, function(index, headerValue) {
+          if (headerValue == keyColumn) {
+            keyIndexes.push(index);
+          }
+        });
+      }
+      // new and fast
+      for (rowCounter = 0; rowCounter < serviceData.table.length; rowCounter++) {
+        row = serviceData.table[rowCounter];
+        currentMap = map;
+        for (i = 0; i < keys.length; i++) {
+          var keyIndex = keyIndexes[i];
+          var keyName = row[keyIndex];
+          if (!currentMap[keyName]) {
+            currentMap[keyName] = {};
+          }
+          currentMap = currentMap[keyName];
+        }
+        for (i = 0; i < serviceData.header.length; i++) {
+          currentMap[serviceData.header[i]] = row[i];
+        }
+      }
+    }
+    return map;
   }
 
 })(this);

@@ -63,8 +63,8 @@
 			<version>2.2.4</version>
 			<scope>compile</scope>
 		</dependency>
-	
-	<dependency>
+
+		<dependency>
 			<groupId>javax</groupId>
 			<artifactId>javaee-web-api</artifactId>
 			<version>6.0</version>
@@ -77,7 +77,16 @@
 			<version>5</version>
 			<scope>compile</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>1.7.9</version>
+			<type>jar</type>
+			<scope>compile</scope>
+		</dependency>
+
+
 	</dependencies>
-	
 
 </project>

@@ -2,8 +2,6 @@ package org.remotequery;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.util.TreeMap;
-import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -17,6 +15,8 @@ import org.apache.commons.io.IOUtils;
 import org.remotequery.RemoteQueryServlet.IRequestDataHandler;
 import org.remotequery.RemoteQueryServlet.RequestData;
 import org.remotequery.RemoteQueryServlet.WebConstants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class is a base class which can be used for uploading files. You can
@@ -31,8 +31,8 @@ import org.remotequery.RemoteQueryServlet.WebConstants;
  */
 public abstract class RequestDataHandler implements IRequestDataHandler {
 
-	private static Logger logger = Logger.getLogger(RequestDataHandler.class
-	    .getName());
+	private static Logger logger = LoggerFactory
+	    .getLogger(RequestDataHandler.class);
 
 	/**
 	 * 
@@ -51,7 +51,6 @@ public abstract class RequestDataHandler implements IRequestDataHandler {
 			//
 			// multi part processing
 			//
-			
 
 			// Create a new file upload handler
 			ServletFileUpload upload = new ServletFileUpload();
@@ -73,15 +72,14 @@ public abstract class RequestDataHandler implements IRequestDataHandler {
 
 						byte[] docu = dataUrl2Binary(value);
 						InputStream stream2 = new ByteArrayInputStream(docu);
-						uploadFileHandler.processFile(fileName,
-						    stream2, requestData);
+						uploadFileHandler.processFile(fileName, stream2, requestData);
 						IOUtils.closeQuietly(stream2);
 					} else {
-						logger.fine("Form field " + name + " with value " + value
+						logger.debug("Form field " + name + " with value " + value
 						    + " detected.");
 						int len = value != null ? value.length() : 0;
 						if (len > WebConstants.MAX_FIELD_LENGTH) {
-							logger.warning("Field value for " + name
+							logger.warn("Field value for " + name
 							    + " is to long. It is removed!");
 						} else {
 							requestData.add(name, value);
@@ -91,8 +89,7 @@ public abstract class RequestDataHandler implements IRequestDataHandler {
 
 					String fileName = FilenameUtils.getName(item.getName());
 					if (fileName != null) {
-						uploadFileHandler.processFile(fileName,
-						    stream, requestData);
+						uploadFileHandler.processFile(fileName, stream, requestData);
 					}
 				}
 			}
@@ -107,7 +104,7 @@ public abstract class RequestDataHandler implements IRequestDataHandler {
 		String _base64 = ";base64,";
 		int startPosition = dataUrl.indexOf(";base64,");
 		if (startPosition == -1) {
-			logger.severe("data url missing");
+			logger.error("data url missing");
 			return null;
 		}
 		startPosition += _base64.length();

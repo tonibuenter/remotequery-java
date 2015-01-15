@@ -1,16 +1,22 @@
 package org.remotequery;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Reader;
 import java.io.Serializable;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -39,9 +45,11 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.sql.DataSource;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -59,8 +67,8 @@ import com.google.gson.reflect.TypeToken;
  */
 public class RemoteQuery {
 
-	private static final Logger rqLogger = Logger.getLogger(RemoteQuery.class
-	    .getName());
+	private static final Logger rqLogger = LoggerFactory
+	    .getLogger(RemoteQuery.class);
 
 	/**
 	 * "DEFAULT_DATASOURCE" is the default data source name.
@@ -217,6 +225,228 @@ public class RemoteQuery {
 
 	}
 
+	//
+	//
+	// PROCESSING JSON STATEMENTS
+	//
+	//
+
+	public static class JsonAnswer {
+		public Result result;
+		boolean returnFlag;
+
+		public JsonAnswer(Result result) {
+			this.result = result;
+		}
+
+		public JsonAnswer() {
+		}
+
+		String getSingleValue() {
+			if (result != null) {
+				return result.getSingleValue();
+			}
+			return null;
+		}
+
+	}
+
+	public interface IJsonProcessor {
+		JsonAnswer run(Object statement);
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static class JsonProcessor {
+
+		public static Map<String, Class> commands = new HashMap<String, Class>();
+		static {
+			commands.put("switch", SwitchProcessor.class);
+			commands.put("userMessage", UserMessage.class);
+		}
+
+		String statements;
+		ServiceEntry serviceEntry;
+		Request request;
+		JsonAnswer answer;
+		final ProcessLog pLog;
+		List<Result> results;
+
+		public JsonProcessor(Request request, ServiceEntry serviceEntry,
+		    Result result, String statements) {
+			super();
+			this.serviceEntry = serviceEntry;
+			this.statements = statements;
+			this.request = request;
+			pLog = ProcessLog.Current();
+			results = new ArrayList<Result>();
+		}
+
+		public Result process() {
+			pLog.warn(request.getServiceId()
+			    + " -> JsonProcessor not yet implemented !!!", rqLogger);
+
+			answer = new JsonAnswer();
+			List statementList = JsonUtils.toObject(statements, List.class);
+			JsonAnswer aResult = processStatementList(statementList);
+			if (aResult.result == null) {
+				aResult.result = new Result(pLog);
+			} else {
+				aResult.result.setProcessLog(pLog);
+			}
+			return aResult.result;
+		}
+
+		public JsonAnswer processStatementList(List statements) {
+			JsonAnswer a = new JsonAnswer();
+			for (Object statement : statements) {
+				a = processStatement(statement);
+				if (answer.returnFlag) {
+					return a;
+				}
+			}
+			return a;
+		}
+
+		public JsonAnswer processStatement(Object statement) {
+			JsonAnswer a = null;
+
+			if (statement == null) {
+				a = new JsonAnswer();
+			}
+			if (statement instanceof String) {
+				a = (new StringProcessor(this).run(statement));
+			} else if (statement instanceof Map) {
+				a = processStatementMap((Map) statement);
+			} else if (statement instanceof List) {
+				a = processStatementList((List) statement);
+			}
+			return a;
+		}
+
+		public Result processServiceQuery(String statement) {
+			Result prevPagingResult = answer != null ? answer.result : null;
+			try {
+				return MainQuery.processStatementList(request, serviceEntry,
+				    prevPagingResult, statement);
+			} catch (Exception e) {
+				pLog.error("tried to run " + statement, rqLogger);
+			}
+			return null;
+		}
+
+		public JsonAnswer seriousErrorAnswer() {
+			return new JsonAnswer();
+		}
+
+		public JsonAnswer processStatementMap(Map<String, Object> statement) {
+			try {
+				for (Entry<String, Class> e : commands.entrySet()) {
+					String name = e.getKey();
+					Class claxx = commands.get(name);
+					if (statement.containsKey(name)) {
+						Constructor constructor = claxx
+						    .getDeclaredConstructor(JsonProcessor.class);
+						IJsonProcessor p = (IJsonProcessor) constructor.newInstance(this);
+						return p.run(statement);
+					}
+				}
+			} catch (Exception e) {
+				rqLogger.error(e.toString());
+			}
+			pLog.warn("Can not process map statements (keys: " + statement.keySet()
+			    + ")!", rqLogger);
+			return new JsonAnswer();
+
+		}
+
+		//
+		//
+		// SQ JSON PROCESSORS (FEATURES)
+		//
+		//
+
+		public static class SwitchProcessor implements IJsonProcessor {
+			private final JsonProcessor context;
+
+			public SwitchProcessor(JsonProcessor context) {
+				this.context = context;
+			}
+
+			public JsonAnswer run(Object o) {
+				try {
+					Map statement = (Map) o;
+					Map switchStatement = (Map) statement.get("switch");
+					Object conditionStatement = switchStatement.get("condition");
+					if (conditionStatement == null) {
+						context.pLog.warn("Missing condition for switch statement");
+						return new JsonAnswer();
+					}
+					JsonAnswer ca = context.processStatement(conditionStatement);
+					String value = ca.result != null ? ca.result.getSingleValue() : null;
+					String caseKey = "case:" + value;
+					Object caseStatement = switchStatement.get(caseKey);
+					Object nullStatement = switchStatement.get("null");
+					Object defaultStatement = switchStatement.get("default");
+					if (caseStatement != null && value != null) {
+						return context.processStatement(caseStatement);
+					} else if (nullStatement != null && value == null) {
+						return context.processStatement(nullStatement);
+					}
+					return context.processStatement(defaultStatement);
+				} catch (Exception e) {
+					context.pLog.error("Serious Error in *switch* statement ", rqLogger);
+				}
+				return context.seriousErrorAnswer();
+			}
+		}
+
+		public static class UserMessage implements IJsonProcessor {
+			private final JsonProcessor context;
+
+			public UserMessage(JsonProcessor context) {
+				this.context = context;
+			}
+
+			public JsonAnswer run(Object o) {
+				Map statement = (Map) o;
+				String s = "" + Utils.firstValue(statement);
+				int index = s.indexOf(":");
+				if (index == -1) {
+					context.pLog.user(ProcessLog.OK, s);
+				} else {
+					try {
+						String level = s.substring(0, index);
+						String message = s.substring(index + 1);
+						context.pLog.user(level.trim(), message.trim());
+					} catch (Exception e) {
+						context.pLog.error("Can not process userMessage : " + s);
+					}
+				}
+				return new JsonAnswer();
+			}
+		}
+
+		public static class StringProcessor implements IJsonProcessor {
+			private final JsonProcessor parent;
+
+			public StringProcessor(JsonProcessor parent) {
+				this.parent = parent;
+			}
+
+			public JsonAnswer run(Object o) {
+				String statement = (String) o;
+				return new JsonAnswer(parent.processServiceQuery(statement));
+			}
+		}
+
+	}
+
+	//
+	//
+	// END OF JSON STATEMENT PROCESSING
+	//
+	//
+
 	/**
 	 * This class provides a convenient access to the ServiceEntry and the
 	 * connection defined by the ServieEntrys data source name. The connection is
@@ -231,6 +461,7 @@ public class RemoteQuery {
 		private static final long serialVersionUID = 1L;
 		protected Connection connection;
 		protected ServiceEntry serviceEntry;
+		protected Map<String, String> initParameters = new HashMap<String, String>();
 
 		public Connection getConnection() {
 			return connection;
@@ -246,6 +477,20 @@ public class RemoteQuery {
 
 		public void setServiceEntry(ServiceEntry serviceEntry) {
 			this.serviceEntry = serviceEntry;
+		}
+
+		public void setInitParameters(String s) {
+
+			String[] ps1 = Utils.tokenize(s, ':');
+			for (int i = 0; i < ps1.length; i++) {
+				String[] ps2 = Utils.tokenize(ps1[i], '=');
+				if (ps2.length == 1) {
+					initParameters.put(ps2[0], "");
+				}
+				if (ps2.length == 2) {
+					initParameters.put(ps2[0], ps2[1]);
+				}
+			}
 		}
 
 	}
@@ -282,8 +527,8 @@ public class RemoteQuery {
 		 */
 		private static final long serialVersionUID = 1L;
 
-		private static final Logger logger = Logger.getLogger(MainQuery.class
-		    .getName());
+		private static final Logger logger = LoggerFactory
+		    .getLogger(MainQuery.class);
 
 		private final Map<String, Serializable> processStore = new HashMap<String, Serializable>();
 
@@ -295,7 +540,7 @@ public class RemoteQuery {
 			return processStore.get(key);
 		}
 
-		public Result run(RemoteQuery.Request request) {
+		public Result run(Request request) {
 			Result result = null;
 			ProcessLog log = ProcessLog.Current();
 			log.incrRecursion();
@@ -349,21 +594,31 @@ public class RemoteQuery {
 
 				String statements = serviceEntry.getStatements();
 
-				String[] statementList = Utils.tokenize(statements,
-				    STATEMENT_DELIMITER, STATEMENT_ESCAPE);
-
-				// parameterSupport = ParameterSupport.begin(con, sqRequest, sqEntry);
-				for (String statement : statementList) {
-					Result result2 = processSingleStatement(request, result,
-					    serviceEntry, statement);
-					if (result2 != null) {
-						if (result != null) {
-							result2.setSubResult(result);
-						}
-						result = result2;
-					}
-
+				if (statements.startsWith("[") && statements.endsWith("]")) {
+					JsonProcessor jp = new JsonProcessor(request, serviceEntry, result,
+					    statements);
+					result = jp.process();
+				} else {
+					result = processStatementList(request, serviceEntry, result,
+					    statements);
 				}
+				//
+				// String[] statementList = Utils.tokenize(statements,
+				// STATEMENT_DELIMITER, STATEMENT_ESCAPE);
+				//
+				// // parameterSupport = ParameterSupport.begin(con, sqRequest,
+				// sqEntry);
+				// for (String statement : statementList) {
+				// Result result2 = processSingleStatement(request, result,
+				// serviceEntry, statement);
+				// if (result2 != null) {
+				// if (result != null) {
+				// result2.setSubResult(result);
+				// }
+				// result = result2;
+				// }
+				//
+				// }
 
 			} catch (Exception e) {
 				log.error(e, logger);
@@ -378,7 +633,25 @@ public class RemoteQuery {
 			return result;
 		}
 
-		private Result processSingleStatement(Request request,
+		public static Result processStatementList(Request request,
+		    ServiceEntry serviceEntry, Result result, String statements) {
+
+			String[] statementList = Utils.tokenize(statements, STATEMENT_DELIMITER,
+			    STATEMENT_ESCAPE);
+			for (String statement : statementList) {
+				Result result2 = processSingleStatement(request, result, serviceEntry,
+				    statement);
+				if (result2 != null) {
+					if (result != null) {
+						result2.setSubResult(result);
+					}
+					result = result2;
+				}
+			}
+			return result;
+		}
+
+		private static Result processSingleStatement(Request request,
 		    Result currentResult, ServiceEntry serviceEntry, String serviceStmt) {
 			ProcessLog log = ProcessLog.Current();
 			try {
@@ -415,7 +688,7 @@ public class RemoteQuery {
 				}
 				String cmd = p[0];
 				String stmt = p[1];
-				String argsString = Utils.joinTokens(p, 1, ':', STATEMENT_ESCAPE);
+				// String argsString = Utils.joinTokens(p, 1, ':', STATEMENT_ESCAPE);
 				//
 				// join-result-with
 				//
@@ -446,7 +719,7 @@ public class RemoteQuery {
 				// java:
 				//
 				if (cmd.equals(MLT.java)) {
-					result = processJava(stmt, request, serviceEntry);
+					result = processJava(stmt, serviceStmt, request, serviceEntry);
 					return result;
 				}
 				//
@@ -470,7 +743,8 @@ public class RemoteQuery {
 					String parentServiceId = serviceEntry.getServiceId();
 					String subServiceId = stmt;
 					request.setServiceId(subServiceId);
-					result = run(request);
+					MainQuery mq = new MainQuery();
+					result = mq.run(request);
 					request.setServiceId(parentServiceId);
 					return result;
 				}
@@ -536,8 +810,8 @@ public class RemoteQuery {
 			}
 			Integer level = parseLevel(ls);
 			if (level == null) {
-				logger.severe("Syntax error int set clause: " + cmd + " (stmt : "
-				    + stmt + "). Skipping.");
+				logger.error("Syntax error int set clause: " + cmd + " (stmt : " + stmt
+				    + "). Skipping.");
 				return;
 			}
 
@@ -547,12 +821,20 @@ public class RemoteQuery {
 				String n = nv[0];
 				String v = nv.length > 1 ? nv[1] : null;
 				String oldValue = request.getValue(n);
-				if (oldValue == null && cmd.startsWith(MLT.set_if_null)) {
-					request.put(level, n, v);
-				} else if ((oldValue == null || oldValue.trim().length() == 0)
-				    && cmd.startsWith(MLT.set_if_empty)) {
-					request.put(level, n, v);
-				} else {
+				// set_if_null
+				if (cmd.startsWith(MLT.set_if_null)) {
+					if (oldValue == null) {
+						request.put(level, n, v);
+					}
+				}
+				// set_if_empty
+				else if (cmd.startsWith(MLT.set_if_empty)) {
+					if (oldValue == null || oldValue.trim().length() == 0) {
+						request.put(level, n, v);
+					}
+				}
+				// set
+				else {
 					request.put(level, n, v);
 				}
 			}
@@ -580,14 +862,15 @@ public class RemoteQuery {
 				}
 				return Integer.parseInt(ls);
 			} catch (Exception e) {
-				logger.severe(Utils.getStackTrace(e));
+				logger.error(Utils.getStackTrace(e));
 			}
 			return null;
 		}
 
-		private Result processJava(String className, Request request,
-		    ServiceEntry serviceEntry) throws InstantiationException,
-		    IllegalAccessException, ClassNotFoundException, SQLException {
+		private static Result processJava(String className, String classParameters,
+		    Request request, ServiceEntry serviceEntry)
+		    throws InstantiationException, IllegalAccessException,
+		    ClassNotFoundException, SQLException {
 			Result result = null;
 			Connection connection = null;
 			ProcessLog pLog = ProcessLog.Current();
@@ -604,15 +887,18 @@ public class RemoteQuery {
 
 				IQuery service = (IQuery) serviceObject;
 				if (service instanceof AbstractQuery) {
+					AbstractQuery aqService = (AbstractQuery) service;
 					//
-					((AbstractQuery) service).setServiceEntry(serviceEntry);
+					aqService.setServiceEntry(serviceEntry);
 					//
 					DataSource ds = DataSources.getInstance().get(
 					    serviceEntry.getDatasourceName());
 					if (ds != null) {
 						connection = ds.getConnection();
-						((AbstractQuery) service).setConnection(connection);
+						aqService.setConnection(connection);
 					}
+					//
+					aqService.setInitParameters(classParameters);
 				}
 				result = service.run(request);
 			} catch (Exception e) {
@@ -624,7 +910,7 @@ public class RemoteQuery {
 			return result;
 		}
 
-		public Result processSql(ServiceEntry serviceEntry, String sql,
+		public static Result processSql(ServiceEntry serviceEntry, String sql,
 		    Request request) {
 
 			Result result = null;
@@ -697,7 +983,7 @@ public class RemoteQuery {
 					    + " (parameters:" + qap.parameters + ") execption msg: "
 					    + e.getMessage();
 					log.warn(warnMsg);
-					logger.warning(warnMsg);
+					logger.warn(warnMsg);
 				}
 
 				catch (Exception e) {
@@ -840,9 +1126,10 @@ public class RemoteQuery {
 
 		public static class ListServices implements IQuery {
 
-			/**
-             * 
-             */
+			/** 
+			 * 
+			 * 
+			*/
 			private static final long serialVersionUID = 1L;
 
 			@Override
@@ -865,6 +1152,62 @@ public class RemoteQuery {
 				return r;
 			}
 		}
+
+		public static class MultiService implements IQuery {
+
+			/** 
+			 * 
+			 * 
+			*/
+			private static final long serialVersionUID = 1L;
+
+			@SuppressWarnings("rawtypes")
+			@Override
+			public Result run(Request request) {
+				Request requestC = null;
+				Result resultC = null;
+				ProcessLog pLog = null;
+				ProcessLog mainPlog = ProcessLog.Current();
+				Result mainResult = new Result("MultiResult");
+				mainResult.setProcessLog(mainPlog);
+				String requestArray = request.getValue("requestArray");
+				List requestList = JsonUtils.toObject(requestArray, List.class);
+				MainQuery mainQuery = new MainQuery();
+				for (int i = 0; i < requestList.size(); i++) {
+					pLog = ProcessLog.newOnThread(request.getUserId());
+					requestC = request.deepCopy();
+					requestC.remove("requestArray");
+					Object r = requestList.get(i);
+					if (r instanceof Map) {
+						Map rm = (Map) r;
+						String serviceId = rm.get("serviceId") + "";
+						if (Utils.isBlank(serviceId)) {
+							pLog.error("no serviceId in request", rqLogger);
+						} else {
+							requestC.setServiceId(serviceId);
+							Object p = rm.get("parameters");
+							if (p instanceof Map) {
+								Map pm = (Map) p;
+								for (Object o : pm.entrySet()) {
+									Entry e = (Entry) o;
+									requestC.put(e.getKey() + "", e.getValue() + "");
+								}
+							} else {
+								pLog.warn("No parameter in request ", rqLogger);
+							}
+							resultC = mainQuery.run(requestC);
+							resultC.setProcessLog(pLog);
+							String rs = JsonUtils.toJson(resultC);
+							mainResult.addRow(rs);
+						}
+
+					} else {
+						mainPlog.error("Request " + i + " is not an object : " + r);
+					}
+				}
+				return mainResult;
+			}
+		}
 	}
 
 	/**
@@ -882,6 +1225,20 @@ public class RemoteQuery {
 		public static final int WARNING_CODE = 2000;
 		public static final int ERROR_CODE = 3000;
 		public static final int SYSTEM_CODE = 4000;
+
+		public static final String Warning = "Warning";
+		public static final String Error = "Error";
+		public static final String OK = "OK";
+		public static final String System = "System";
+		private static final long serialVersionUID = 1L;
+		private static final String FILE_ID = "_FILE_ID_";
+
+		public static final Map<String, Integer> USER_CODE_MAP = new HashMap<String, Integer>();
+		static {
+			USER_CODE_MAP.put(OK, USER_OK_CODE);
+			USER_CODE_MAP.put(Warning, USER_WARNING_CODE);
+			USER_CODE_MAP.put(Error, USER_ERROR_CODE);
+		}
 
 		public static final ThreadLocal<ProcessLog> TL = new ThreadLocal<ProcessLog>() {
 			@Override
@@ -1011,18 +1368,12 @@ public class RemoteQuery {
 	     * 
 	     */
 
-		public static final String Warning = "Warning";
-		public static final String Error = "Error";
-		public static final String OK = "OK";
-		public static final String System = "System";
-		private static final long serialVersionUID = 1L;
-		private static final String FILE_ID = "_FILE_ID_";
-		private transient boolean silently = false;
-		transient private long betweenTime = java.lang.System.currentTimeMillis();
-
 		//
 		// ProcessLog Object Level
 		//
+
+		private transient boolean silently = false;
+		transient private long betweenTime = java.lang.System.currentTimeMillis();
 
 		private String state = OK;
 		private final List<LogEntry> logEntries = new ArrayList<LogEntry>();
@@ -1050,6 +1401,12 @@ public class RemoteQuery {
 
 		public void infoUser(String line) {
 			add(USER_OK_CODE, line, OK);
+		}
+
+		public void user(String level, String line) {
+			Integer code = USER_CODE_MAP.get(level);
+			code = code == null ? USER_OK_CODE : code;
+			add(code, line, level);
 		}
 
 		public void warnUser(String line, Logger logger) {
@@ -1105,9 +1462,9 @@ public class RemoteQuery {
 		public void _writeLog(String line, Level level, Logger... loggers) {
 			for (Logger logger : loggers) {
 				if (level == Level.WARNING) {
-					logger.warning(line);
+					logger.warn(line);
 				} else if (level == Level.SEVERE) {
-					logger.severe(line);
+					logger.error(line);
 				} else {
 					logger.info(line);
 				}
@@ -1241,10 +1598,10 @@ public class RemoteQuery {
 		private Set<String> roles = new HashSet<String>();
 		// private IRoleProvider roleProvider;
 
-		private TreeMap<Integer, Map<String, String>> parametersTreeMap = new TreeMap<Integer, Map<String, String>>();
-		private Map<String, String> fileInfo;
-
 		private int defaultLevel = 10;
+		private TreeMap<Integer, Map<String, String>> parametersTreeMap = new TreeMap<Integer, Map<String, String>>();
+
+		private Map<String, String> fileInfo;
 
 		private transient Map<String, Object> transientAttributes = new HashMap<String, Object>();
 
@@ -1257,6 +1614,12 @@ public class RemoteQuery {
 		}
 
 		public Request() {
+		}
+
+		public Request deepCopy() {
+			Request copy = (Request) Utils.deepClone(this);
+			copy.transientAttributes = transientAttributes;
+			return copy;
 		}
 
 		public Request(int defaultLevel) {
@@ -1335,6 +1698,13 @@ public class RemoteQuery {
 			return parameters.put(key, value);
 		}
 
+		public void remove(String key) {
+			Collection<Map<String, String>> maps = parametersTreeMap.values();
+			for (Map<String, String> map : maps) {
+				map.remove(key);
+			}
+		}
+
 		public String put(String key, String value) {
 			return put(defaultLevel, key, value);
 		}
@@ -1407,8 +1777,7 @@ public class RemoteQuery {
 
 	public static class Result {
 
-		private static final Logger logger = Logger.getLogger(Result.class
-		    .getName());
+		private static final Logger logger = LoggerFactory.getLogger(Result.class);
 
 		public static Map<String, String> asPropertyMap(Object object) {
 			Map<String, String> map = new HashMap<String, String>();
@@ -1423,7 +1792,7 @@ public class RemoteQuery {
 							map.put(name, value);
 						}
 					} catch (Exception e) {
-						logger.warning(e.getMessage());
+						logger.warn(e.getMessage());
 					}
 				}
 			}
@@ -1691,13 +2060,25 @@ public class RemoteQuery {
 					}
 					String[] res = Utils.createSetGetNames(head);
 					Method m = null;
+					Field f = null;
 					for (String setGetName : res) {
 						try {
 							m = claxx.getMethod("set" + setGetName, String.class);
 						} catch (Exception e) {
-							logger.info("Did not find method: " + setGetName + ": ->" + e);
+							logger.debug("Did not find method: " + setGetName + ": ->" + e);
 						}
 						if (m != null) {
+							break;
+						}
+						// try field
+						try {
+							String fieldName = setGetName.substring(0, 1).toLowerCase()
+							    + setGetName.substring(1);
+							f = claxx.getField(fieldName);
+						} catch (Exception e) {
+							logger.info("Did not find field: " + setGetName + ": ->" + e);
+						}
+						if (f != null) {
 							break;
 						}
 					}
@@ -1707,11 +2088,17 @@ public class RemoteQuery {
 							m.invoke(e, table.get(rowIndex).get(colIndex));
 							rowIndex++;
 						}
+					} else if (f != null) {
+						int rowIndex = 0;
+						for (E e : list) {
+							f.set(e, table.get(rowIndex).get(colIndex));
+							rowIndex++;
+						}
 					}
 					colIndex++;
 				}
 			} catch (Exception e) {
-				logger.severe(Utils.getStackTrace(e));
+				logger.error(Utils.getStackTrace(e));
 			}
 			return list;
 		}
@@ -1722,7 +2109,7 @@ public class RemoteQuery {
 				List<E> list = this.asList(claxx);
 				map = Utils.asMap(keyProperty, list);
 			} catch (Exception e) {
-				logger.severe(Utils.getStackTrace(e));
+				logger.error(e.getMessage(), e);
 			}
 			return map;
 		}
@@ -1744,7 +2131,7 @@ public class RemoteQuery {
 					listElement.add(e);
 				}
 			} catch (Exception e) {
-				logger.severe(Utils.getStackTrace(e));
+				logger.error(e.getMessage(), e);
 			}
 			return map;
 		}
@@ -1952,8 +2339,8 @@ public class RemoteQuery {
 
 	public static class ServiceRepository implements IServiceRepository {
 
-		private static final Logger logger = Logger
-		    .getLogger(ServiceRepository.class.getName());
+		private static final Logger logger = LoggerFactory
+		    .getLogger(ServiceRepository.class);
 
 		private static ServiceRepository instance;
 
@@ -1995,7 +2382,7 @@ public class RemoteQuery {
 		 *          table name (including possible schema prefix)
 		 */
 		public ServiceRepository(DataSource ds, String tableName) {
-			logger.fine("try to create ServiceRepositorySql");
+			logger.debug("try to create ServiceRepositorySql");
 			sql = new ServiceRepositorySql(ds, tableName);
 			instance = this;
 		}
@@ -2031,8 +2418,8 @@ public class RemoteQuery {
 
 	public static class ServiceRepositoryJson implements IServiceRepository {
 
-		private static final Logger logger = Logger
-		    .getLogger(ServiceRepositoryJson.class.getName());
+		private static final Logger logger = LoggerFactory
+		    .getLogger(ServiceRepositoryJson.class);
 
 		private static ServiceRepositoryJson instance;
 
@@ -2069,7 +2456,7 @@ public class RemoteQuery {
 			Type tt = new TypeToken<List<ServiceEntry>>() {
 			}.getType();
 			entries = (List<ServiceEntry>) JsonUtils.toObject(jsonString, tt);
-			logger.fine("found " + entries.size() + " service entries.");
+			logger.debug("found " + entries.size() + " service entries.");
 		}
 
 		/**
@@ -2110,7 +2497,7 @@ public class RemoteQuery {
 
 	public static class ServiceRepositorySql implements IServiceRepository {
 
-		private static final Logger logger = Logger
+		private static final Logger logger = LoggerFactory
 		    .getLogger(ServiceRepositorySql.class.getName());
 
 		private final DataSource ds;
@@ -2317,8 +2704,7 @@ public class RemoteQuery {
 
 	public static class Utils {
 
-		private static final Logger logger = Logger
-		    .getLogger(Utils.class.getName());
+		private static final Logger logger = LoggerFactory.getLogger(Utils.class);
 
 		public static final String ISO_DATE_PATTERN_yyyy_MM_dd = "yyyy-MM-dd";
 		public static final String ISO_DATE_PATTERN_yyyy_MM_dd__HH_mm = "yyyy-MM-dd HH:mm";
@@ -2469,7 +2855,7 @@ public class RemoteQuery {
 			try {
 				return IsoDateTL.get().parse(isoDateString).getTime();
 			} catch (ParseException e) {
-				logger.severe(getStackTrace(e));
+				logger.error(e.getMessage(), e);
 			}
 			return 0;
 		}
@@ -2496,7 +2882,7 @@ public class RemoteQuery {
 				return res;
 			} catch (ParseException e) {
 			}
-			logger.severe("Parse error for " + isoDateTimeString + ". Return 0.");
+			logger.error("Parse error for " + isoDateTimeString + ". Return 0.");
 			return res;
 		}
 
@@ -2774,7 +3160,7 @@ public class RemoteQuery {
 					buf.append(c);
 				}
 			} catch (Exception e) {
-				logger.severe(getStackTrace(e));
+				logger.error(e.getMessage(), e);
 			} finally {
 				closeQuietly(r);
 			}
@@ -2836,7 +3222,7 @@ public class RemoteQuery {
 					return new Integer(ps.getUpdateCount());
 				}
 			} catch (Throwable t) {
-				logger.warning(t.getMessage());
+				logger.warn(t.getMessage());
 			} finally {
 				Utils.closeQuietly(ps);
 			}
@@ -2894,7 +3280,7 @@ public class RemoteQuery {
 
 				}
 			} catch (IOException e) {
-				logger.severe(e.getMessage());
+				logger.error(e.getMessage());
 			}
 
 		}
@@ -2939,7 +3325,7 @@ public class RemoteQuery {
 				closeQuietly(out);
 				return out.toString();
 			} catch (Exception e) {
-				logger.severe(getStackTrace(e));
+				logger.error(e.getMessage(), e);
 			}
 			return "";
 		}
@@ -2978,8 +3364,7 @@ public class RemoteQuery {
 
 						for (int i = 0; i < colums; i++) {
 							if (sqlTypes[i] == Types.BLOB) {
-								logger
-								    .warning("BLOB type not supported! Returning empty string!");
+								logger.warn("BLOB type not supported! Returning empty string!");
 								row[i] = "";
 							} else if (sqlTypes[i] == Types.CLOB) {
 								Clob clob = (Clob) rs.getObject(i + 1);
@@ -3014,7 +3399,7 @@ public class RemoteQuery {
 		}
 
 		//
-		// OBJECT UTILS
+		// MAP UTILS
 		//
 
 		public static Map<String, String> asMap(Object obj) throws Exception {
@@ -3038,6 +3423,20 @@ public class RemoteQuery {
 			}
 			return values;
 		}
+
+		public static <K, V> V firstValue(Map<K, V> map) {
+			if (map == null) {
+				return null;
+			}
+			for (Entry<K, V> e : map.entrySet()) {
+				return e.getValue();
+			}
+			return null;
+		}
+
+		//
+		// OBJECT UTILS
+		//
 
 		public static <E> E newObject(Map<String, String> values, Class<E> claxx)
 		    throws Exception {
@@ -3068,6 +3467,31 @@ public class RemoteQuery {
 				colIndex++;
 			}
 			return e;
+		}
+
+		public static Serializable deepClone(Serializable s) {
+			if (s == null) {
+				return s;
+			}
+			Serializable object = null;
+			try {
+				ByteArrayOutputStream bos = new ByteArrayOutputStream();
+				ObjectOutputStream oos = new ObjectOutputStream(bos);
+				oos.writeObject(s);
+				oos.flush();
+				oos.close();
+				bos.close();
+				byte[] byteData = bos.toByteArray();
+
+				ByteArrayInputStream bais = new ByteArrayInputStream(byteData);
+				ObjectInputStream bis = new ObjectInputStream(bais);
+				object = (Serializable) bis.readObject();
+				bis.close();
+				bais.close();
+			} catch (Exception e1) {
+				rqLogger.error(e1 + "");
+			}
+			return object;
 		}
 
 		public static String getStringGetterMethodName(Method method) {
@@ -3104,7 +3528,7 @@ public class RemoteQuery {
 					map.put(m.invoke(e).toString(), e);
 				}
 			} catch (Exception e) {
-				logger.severe(getStackTrace(e));
+				logger.error(e.getMessage(), e);
 			}
 			return map;
 		}
@@ -3113,8 +3537,8 @@ public class RemoteQuery {
 
 	public static class JsonUtils {
 
-		private static final Logger logger = Logger.getLogger(JsonUtils.class
-		    .getName());
+		private static final Logger logger = LoggerFactory
+		    .getLogger(JsonUtils.class);
 
 		public static String toJson(Object object) {
 			Gson gson = new Gson();
@@ -3273,7 +3697,7 @@ public class RemoteQuery {
 			try {
 				return new Gson().fromJson(json, type);
 			} catch (Exception e) {
-				logger.severe(Utils.getStackTrace(e));
+				logger.error(e.getMessage(), e);
 			}
 			return null;
 		}
@@ -3308,8 +3732,8 @@ public class RemoteQuery {
 	}
 
 	public static class ObjectStore<E> {
-		private static final Logger logger = Logger.getLogger(ObjectStore.class
-		    .getName());
+		private static final Logger logger = LoggerFactory
+		    .getLogger(ObjectStore.class);
 
 		private final Class<E> resultClass;
 		private Set<String> roles;
@@ -3327,11 +3751,15 @@ public class RemoteQuery {
 			}
 		}
 
+		public ObjectStore(Class<E> resultClass) {
+			this(resultClass, RemoteQuery.ANONYMOUS, new HashSet<String>());
+		}
+
 		public E newInstance(Map<String, String> params) {
 			try {
 				return Utils.newObject(params, this.resultClass);
 			} catch (Exception e) {
-				logger.severe(e.getMessage());
+				logger.error(e.getMessage());
 				return null;
 			}
 		}

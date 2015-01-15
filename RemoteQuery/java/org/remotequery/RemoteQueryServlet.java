@@ -15,7 +15,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.logging.Logger;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -30,6 +29,8 @@ import org.remotequery.RemoteQuery.ProcessLog;
 import org.remotequery.RemoteQuery.Request;
 import org.remotequery.RemoteQuery.Result;
 import org.remotequery.RemoteQuery.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The following init parameters are checked by the RemoteQueryServlet:
@@ -88,8 +89,8 @@ public class RemoteQueryServlet extends HttpServlet {
 	private String requestDataHandler = "";
 
 	//
-	private static final Logger logger = Logger
-	    .getLogger(RemoteQueryServlet.class.getName());
+	private static final Logger logger = LoggerFactory
+	    .getLogger(RemoteQueryServlet.class);
 
 	@Override
 	public void init(ServletConfig config) throws ServletException {
@@ -106,6 +107,7 @@ public class RemoteQueryServlet extends HttpServlet {
 		//
 		requestDataHandler = config.getInitParameter("requestDataHandler");
 
+		logger.info("RemoteQueryServlet started");
 	}
 
 	@Override
@@ -117,7 +119,7 @@ public class RemoteQueryServlet extends HttpServlet {
 	@Override
 	public void doGet(final HttpServletRequest httpRequest,
 	    HttpServletResponse httpResponse) throws ServletException, IOException {
-		logger.fine("start " + servletName + ".doGet");
+		logger.debug("start " + servletName + ".doGet");
 
 		String serviceId = "";
 
@@ -138,14 +140,14 @@ public class RemoteQueryServlet extends HttpServlet {
 		//
 
 		String requestUri = httpRequest.getRequestURI();
-		logger.fine("Request URI " + requestUri);
+		logger.debug("Request URI " + requestUri);
 		String[] parts = requestUri.split("/");
 		if (parts.length > 0) {
 			serviceId = parts[parts.length - 1];
 		}
-		logger.fine("serviceId: " + serviceId);
+		logger.debug("serviceId: " + serviceId);
 		if (Utils.isBlank(serviceId)) {
-			logger.severe("-no service id-" + requestUri);
+			logger.error("-no service id-" + requestUri);
 			returnAsJsonString(JsonUtils.toJson("-no service id-"), httpResponse);
 			return;
 		}
@@ -196,12 +198,12 @@ public class RemoteQueryServlet extends HttpServlet {
 					    requestDataHandler).newInstance();
 					requestData = rdh.process(httpRequest);
 				} catch (Exception e1) {
-					logger.warning("Exception in IRequestDataHandler creation: "
+					logger.warn("Exception in IRequestDataHandler creation: "
 					    + e1.getMessage() + " Fallback to default IRequestDataHandler!");
 				}
 			}
 			if (requestData == null) {
-				logger.fine("Use default IRequestDataHandler.");
+				logger.debug("Use default IRequestDataHandler.");
 				requestData = getRequestData(httpRequest);
 			}
 
@@ -214,11 +216,11 @@ public class RemoteQueryServlet extends HttpServlet {
 				if (values != null) {
 					if (values.size() > 1) {
 						value = Utils.joinTokens(values);
-						logger.fine("paramEntry (multi value joined!): " + name + ":"
+						logger.debug("paramEntry (multi value joined!): " + name + ":"
 						    + value);
 					} else {
 						value = values.get(0);
-						logger.fine("paramEntry: " + name + ":" + value);
+						logger.debug("paramEntry: " + name + ":" + value);
 					}
 					request.put(REQUEST, name, value);
 				}
@@ -237,7 +239,7 @@ public class RemoteQueryServlet extends HttpServlet {
 				String name = (String) e.nextElement();
 				String value = httpRequest.getHeader(name);
 				request.put(HEADER, name, value);
-				logger.fine("http header: " + name + ":" + value);
+				logger.debug("http header: " + name + ":" + value);
 			}
 
 			//
@@ -253,9 +255,9 @@ public class RemoteQueryServlet extends HttpServlet {
 				Object value = session.getAttribute(name);
 				if (value instanceof String) {
 					request.put(SESSION, name, (String) value);
-					logger.fine("http session parameter: " + name + ":" + value);
+					logger.debug("http session parameter: " + name + ":" + value);
 				} else {
-					logger.fine("http session parameter: " + name
+					logger.debug("http session parameter: " + name
 					    + ". Skipped! Value is not a string.");
 				}
 			}
@@ -301,7 +303,7 @@ public class RemoteQueryServlet extends HttpServlet {
 				}
 			} else {
 				logger
-				    .fine("No accessServiceId defined. No accessService will be processing.");
+				    .debug("No accessServiceId defined. No accessService will be processing.");
 			}
 
 			//
@@ -336,7 +338,7 @@ public class RemoteQueryServlet extends HttpServlet {
 				returnAsJsonString(JsonUtils.toJson("empty"), httpResponse);
 			}
 		} catch (Exception e) {
-			logger.severe(Utils.getStackTrace(e));
+			logger.error(Utils.getStackTrace(e));
 		} finally {
 			ProcessLog.RemoveCurrent();
 		}
@@ -353,7 +355,7 @@ public class RemoteQueryServlet extends HttpServlet {
 			out.write(document);
 			out.flush();
 		} catch (Exception e) {
-			logger.severe(Utils.getStackTrace(e));
+			logger.error(Utils.getStackTrace(e));
 		}
 	}
 
@@ -398,7 +400,7 @@ public class RemoteQueryServlet extends HttpServlet {
 			String[] values = httpRequest.getParameterValues(name);
 			for (String value : values) {
 				rd.add(name, value);
-				logger.fine("http request parameter: " + name + ":" + value);
+				logger.debug("http request parameter: " + name + ":" + value);
 			}
 
 		}
