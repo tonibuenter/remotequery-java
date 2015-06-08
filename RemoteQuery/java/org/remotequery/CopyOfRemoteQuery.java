@@ -65,10 +65,10 @@ import com.google.gson.reflect.TypeToken;
  * 
  * @author tonibuenter
  */
-public class RemoteQuery {
+public class CopyOfRemoteQuery {
 
 	private static final Logger rqLogger = LoggerFactory
-	    .getLogger(RemoteQuery.class);
+	    .getLogger(CopyOfRemoteQuery.class);
 
 	/**
 	 * "DEFAULT_DATASOURCE" is the default data source name.
@@ -2643,7 +2643,7 @@ public class RemoteQuery {
 					String serviceId = rs.getString(COL_SERVICE_ID);
 					String statements = rs.getString(COL_STATEMENTS);
 					String roles = rs.getString(COL_ROLES);
-					se = new RemoteQuery.ServiceEntry(serviceId, statements, roles);
+					se = new CopyOfRemoteQuery.ServiceEntry(serviceId, statements, roles);
 					logger.info("Found " + se);
 					result.add(se);
 				}
@@ -3942,7 +3942,7 @@ public class RemoteQuery {
 		}
 
 		public ObjectStore(Class<E> resultClass) {
-			this(resultClass, RemoteQuery.ANONYMOUS, new HashSet<String>());
+			this(resultClass, CopyOfRemoteQuery.ANONYMOUS, new HashSet<String>());
 		}
 
 		public E newInstance(Map<String, String> params) {

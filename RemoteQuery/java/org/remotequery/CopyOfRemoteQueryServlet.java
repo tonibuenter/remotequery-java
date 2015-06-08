@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
  * return all SESSION level parameters of the RQ request are written back to the
  * HTTP session object.
  */
-public class RemoteQueryServlet extends HttpServlet {
+public class CopyOfRemoteQueryServlet extends HttpServlet {
 	/**
      * 
      */
@@ -93,7 +93,7 @@ public class RemoteQueryServlet extends HttpServlet {
 
 	//
 	private static final Logger logger = LoggerFactory
-	    .getLogger(RemoteQueryServlet.class);
+	    .getLogger(CopyOfRemoteQueryServlet.class);
 
 	@Override
 	public void init(ServletConfig config) throws ServletException {

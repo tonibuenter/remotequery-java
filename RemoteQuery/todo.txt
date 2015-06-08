@@ -1,3 +1,6 @@
+unit test for Utils.parseCommandValue
+
+2015-03-09 : \ as delimiter for set-.. values
 unit tests for tokenizer join methods
 unit tests for Result.join
 unit tests for join-result-with ...

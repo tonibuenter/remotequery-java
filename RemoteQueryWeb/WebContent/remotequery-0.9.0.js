@@ -147,4 +147,16 @@
     return map;
   }
 
+  function toMap2(list, attributeName) {
+    var map = {}, i, o;
+    for (i = 0; i < list.length; i++) {
+      o = list[i];
+      if (o && o[attributeName]) {
+        map[o[attributeName]] = o;
+      }
+    }
+    return map;
+  }
+  root[REMOTE_QUERY_NAME].toMap2 = toMap2;
+
 })(this);
