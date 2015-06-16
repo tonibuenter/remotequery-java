@@ -54,7 +54,7 @@ public class WebAuthentication implements IQuery {
 		request.setRoles(roles);
 		// result
 		Result r = new Result("sessionId");
-		r.addRow(sessionId);
+		r.addRowVar(sessionId);
 		return r;
 	}
 

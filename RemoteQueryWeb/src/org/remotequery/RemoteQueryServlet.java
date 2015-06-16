@@ -12,9 +12,11 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -86,6 +88,7 @@ public class RemoteQueryServlet extends HttpServlet {
 	private String servletName = "";
 	private String webRoot = "";
 	private String accessServiceId = "";
+	private Set<String> publicServiceIds = new HashSet<String>();
 	private String requestDataHandler = "";
 
 	//
@@ -95,6 +98,7 @@ public class RemoteQueryServlet extends HttpServlet {
 	@Override
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
+		String s;
 		logger.info("RemoteQueryServlet starting ...");
 		config.getServletContext().getAttributeNames();
 
@@ -104,6 +108,11 @@ public class RemoteQueryServlet extends HttpServlet {
 		webRoot = this.getServletContext().getRealPath("/");
 		//
 		accessServiceId = config.getInitParameter("accessServiceId");
+		//
+		s = config.getInitParameter("publicServiceIds");
+		if (!Utils.isBlank(s)) {
+			publicServiceIds = Utils.asSet(Utils.tokenize(s));
+		}
 		//
 		requestDataHandler = config.getInitParameter("requestDataHandler");
 
@@ -132,10 +141,11 @@ public class RemoteQueryServlet extends HttpServlet {
 		    .getUserPrincipal().getName() : RemoteQuery.ANONYMOUS;
 		HttpSession session = httpRequest.getSession();
 
+		String callback = httpRequest.getParameter("callback");
 		// String rootPath = session.getServletContext().getRealPath("/");
 
 		//
-		// Selecting last part in URL as service id. If empty an exception result is
+		// Last part in URL is the service id. If empty an exception result is
 		// returned: '-no service id-'
 		//
 
@@ -148,7 +158,8 @@ public class RemoteQueryServlet extends HttpServlet {
 		logger.debug("serviceId: " + serviceId);
 		if (Utils.isBlank(serviceId)) {
 			logger.error("-no service id-" + requestUri);
-			returnAsJsonString(JsonUtils.toJson("-no service id-"), httpResponse);
+			returnAsJsonString(callback, JsonUtils.toJson("-no service id-"),
+			    httpResponse);
 			return;
 		}
 
@@ -207,7 +218,7 @@ public class RemoteQueryServlet extends HttpServlet {
 				requestData = getRequestData(httpRequest);
 			}
 
-			// copy String parameters
+			// Copy String parameters
 			Map<String, List<String>> param = requestData.getParameters();
 			for (Entry<String, List<String>> paramEntry : param.entrySet()) {
 				String name = paramEntry.getKey();
@@ -225,7 +236,7 @@ public class RemoteQueryServlet extends HttpServlet {
 					request.put(REQUEST, name, value);
 				}
 			}
-			// copy File parameters
+			// Copy File parameters
 
 			//
 			//
@@ -287,7 +298,8 @@ public class RemoteQueryServlet extends HttpServlet {
 			// RQ SESSION parameters are written (back) to the HTTP session.
 			//
 
-			if (!Utils.isBlank(accessServiceId)) {
+			if (!Utils.isBlank(accessServiceId)
+			    && !publicServiceIds.contains(serviceId)) {
 				request.setServiceId(accessServiceId);
 				MainQuery accessRq = new MainQuery();
 				Result r = accessRq.run(request);
@@ -298,12 +310,16 @@ public class RemoteQueryServlet extends HttpServlet {
 						session.setAttribute(entry.getKey(), entry.getValue());
 					}
 				} else {
-					returnAsJsonString(JsonUtils.exception(exception), httpResponse);
+					returnAsJsonString(callback, JsonUtils.exception(exception),
+					    httpResponse);
 					return;
 				}
-			} else {
+			} else if (Utils.isBlank(accessServiceId)) {
 				logger
-				    .debug("No accessServiceId defined. No accessService will be processing.");
+				    .debug("No accessServiceId defined. No accessService will be processed.");
+			} else if (publicServiceIds.contains(publicServiceIds)) {
+				logger.debug("ServiceId " + serviceId
+				    + " is a public service. No accessService will be processed.");
 			}
 
 			//
@@ -333,9 +349,9 @@ public class RemoteQueryServlet extends HttpServlet {
 
 			if (result != null) {
 				String s = JsonUtils.toJson(result);
-				returnAsJsonString(s, httpResponse);
+				returnAsJsonString(callback, s, httpResponse);
 			} else {
-				returnAsJsonString(JsonUtils.toJson("empty"), httpResponse);
+				returnAsJsonString(callback, JsonUtils.toJson("empty"), httpResponse);
 			}
 		} catch (Exception e) {
 			logger.error(Utils.getStackTrace(e));
@@ -344,15 +360,24 @@ public class RemoteQueryServlet extends HttpServlet {
 		}
 	}
 
-	public static void returnAsJsonString(String s, HttpServletResponse response) {
+	public static void returnAsJsonString(String callback, String s,
+	    HttpServletResponse response) {
 		try {
+
 			byte[] document = s.getBytes(ENCODING);
 			response.setContentType("application/json");
 			response.setContentLength(document.length);
 			response.setCharacterEncoding(ENCODING);
 
 			OutputStream out = response.getOutputStream();
-			out.write(document);
+
+			if (Utils.isBlank(callback)) {
+				out.write(document);
+			} else {
+				out.write((callback + "(").getBytes());
+				out.write(document);
+				out.write(")".getBytes());
+			}
 			out.flush();
 		} catch (Exception e) {
 			logger.error(Utils.getStackTrace(e));
