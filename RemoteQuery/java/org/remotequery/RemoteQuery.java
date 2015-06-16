@@ -601,8 +601,10 @@ public class RemoteQuery {
 					log.system("Access to " + serviceId + " for " + userId + " : ok",
 					    logger);
 				} else {
-					log.warn("No access to " + serviceId + " for " + userId + " (roles: "
-					    + roles + ")", logger);
+					log.warn(
+					    "No access to " + serviceId + " for " + userId
+					        + " (service roles: " + roles + ", request roles: "
+					        + request.getRoles() + ")", logger);
 					return new Result(log);
 				}
 				//
@@ -3669,9 +3671,9 @@ public class RemoteQuery {
 			if (method.getParameterTypes().length != 0) {
 				return null;
 			}
-//			if (String.class.equals(method.getReturnType()) == false) {
-//				return null;
-//			}
+			// if (String.class.equals(method.getReturnType()) == false) {
+			// return null;
+			// }
 			String methodName = method.getName();
 
 			if (!methodName.startsWith("get") || !(methodName.length() > 3)
