@@ -260,6 +260,7 @@ public class RemoteQuery {
 		static {
 			commands.put("switch", SwitchProcessor.class);
 			commands.put("userMessage", UserMessage.class);
+			commands.put("foreach", ForeachProcessor.class);
 		}
 
 		String statements;
@@ -281,7 +282,7 @@ public class RemoteQuery {
 
 		public Result process() {
 			pLog.warn(request.getServiceId()
-			    + " -> JsonProcessor not yet implemented !!!", rqLogger);
+			    + " -> JsonProcessor still in BETA !!!", rqLogger);
 
 			answer = new JsonAnswer();
 			List statementList = JsonUtils.toObject(statements, List.class);
@@ -336,6 +337,12 @@ public class RemoteQuery {
 			return new JsonAnswer();
 		}
 
+		public JsonAnswer seriousErrorAnswer(String message) {
+			JsonAnswer ja = new JsonAnswer();
+			ProcessLog.Current().error(message, rqLogger);
+			return ja;
+		}
+
 		public JsonAnswer processStatementMap(Map<String, Object> statement) {
 			try {
 				for (Entry<String, Class> e : commands.entrySet()) {
@@ -359,7 +366,13 @@ public class RemoteQuery {
 
 		//
 		//
-		// SQ JSON PROCESSORS (FEATURES)
+		// RQ JSON PROCESSORS (FEATURES)
+		//
+		//
+
+		//
+		//
+		// RQ JSON PROCESSOR SWITCH
 		//
 		//
 
@@ -373,30 +386,86 @@ public class RemoteQuery {
 			public JsonAnswer run(Object o) {
 				try {
 					Map statement = (Map) o;
-					Map switchStatement = (Map) statement.get("switch");
-					Object conditionStatement = switchStatement.get("condition");
-					if (conditionStatement == null) {
-						context.pLog.warn("Missing condition for switch statement");
-						return new JsonAnswer();
+					Object switchStatement = statement.get("switch");
+					if (switchStatement == null) {
+						return context
+						    .seriousErrorAnswer("Serious Error in *switch* statement : statement is null!");
 					}
-					JsonAnswer ca = context.processStatement(conditionStatement);
-					String value = ca.result != null ? ca.result.getSingleValue() : null;
+					JsonAnswer janswer = context.processStatement(switchStatement);
+					String value = janswer.result != null ? janswer.result
+					    .getSingleValue() : null;
 					String caseKey = "case:" + value;
-					Object caseStatement = switchStatement.get(caseKey);
-					Object nullStatement = switchStatement.get("null");
-					Object defaultStatement = switchStatement.get("default");
+					Object caseStatement = statement.get(caseKey);
+					Object nullStatement = statement.get("null");
+					Object defaultStatement = statement.get("default");
 					if (caseStatement != null && value != null) {
 						return context.processStatement(caseStatement);
 					} else if (nullStatement != null && value == null) {
 						return context.processStatement(nullStatement);
+					} else if (defaultStatement != null) {
+						return context.processStatement(defaultStatement);
 					}
-					return context.processStatement(defaultStatement);
+				} catch (Exception e) {
+					context.pLog.error("Serious Error in *switch* statement : " + e,
+					    rqLogger);
+				}
+				return context.seriousErrorAnswer();
+			}
+		}
+
+		//
+		//
+		// RQ JSON PROCESSOR FOREACH -begin-
+		//
+		//
+
+		public static class ForeachProcessor implements IJsonProcessor {
+			private final JsonProcessor context;
+
+			public ForeachProcessor(JsonProcessor context) {
+				this.context = context;
+
+			}
+
+			public JsonAnswer run(Object o) {
+				JsonAnswer lastAnswer = null;
+				try {
+					Map statement = (Map) o;
+					Map foreachStatement = (Map) statement.get("foreach");
+					Object parametersStatement = foreachStatement.get("parameters");
+					Object indexName = foreachStatement.get("index-name");
+					indexName = indexName == null ? "index" : indexName;
+					Object doStatement = foreachStatement.get("do");
+					if (parametersStatement == null) {
+						context.pLog.warn("Missing parameters for foreach statement");
+						return new JsonAnswer();
+					}
+					JsonAnswer ca = context.processStatement(parametersStatement);
+					if (ca.result != null) {
+						for (int index = 0; index < ca.result.size; index++) {
+							Map<String, String> paramters = ca.result.getRowAsMap(index);
+							for (String key : paramters.keySet()) {
+								context.request.put(key, paramters.get(key));
+							}
+							context.request.put("" + indexName, "" + index);
+							JsonAnswer doAnswer = context.processStatement(doStatement);
+							lastAnswer = doAnswer;
+							// doAnswer.childOf(context.answer)
+						}
+					}
+					return lastAnswer;
 				} catch (Exception e) {
 					context.pLog.error("Serious Error in *switch* statement ", rqLogger);
 				}
 				return context.seriousErrorAnswer();
 			}
 		}
+
+		//
+		//
+		// RQ JSON PROCESSOR USER MESSAGE -begin-
+		//
+		//
 
 		public static class UserMessage implements IJsonProcessor {
 			private final JsonProcessor context;
@@ -422,7 +491,15 @@ public class RemoteQuery {
 				}
 				return new JsonAnswer();
 			}
+			
 		}
+
+
+		//
+		//
+		// RQ JSON PROCESSOR STRING -begin-
+		//
+		//
 
 		public static class StringProcessor implements IJsonProcessor {
 			private final JsonProcessor parent;
@@ -615,7 +692,7 @@ public class RemoteQuery {
 				    + serviceEntry, logger);
 
 				String statements = serviceEntry.getStatements();
-
+				statements = Utils.trim(statements);
 				if (statements.startsWith("[") && statements.endsWith("]")) {
 					JsonProcessor jp = new JsonProcessor(request, serviceEntry, result,
 					    statements);
@@ -1922,16 +1999,19 @@ public class RemoteQuery {
 			return exception;
 		}
 
-		public Map<String, String> getFirstRowAsMap() {
+		public Map<String, String> getRowAsMap(int index) {
 			Map<String, String> map = new HashMap<String, String>();
-			if (table != null && table.size() > 0) {
-				List<String> row = table.get(0);
+			if (table != null && table.size() > index) {
+				List<String> row = table.get(index);
 				for (int i = 0; i < header.size(); i++) {
 					map.put(header.get(i), row.get(i));
 				}
-
 			}
 			return map;
+		}
+
+		public Map<String, String> getFirstRowAsMap() {
+			return getRowAsMap(0);
 		}
 
 		public String getSingleValue() {
@@ -3047,6 +3127,13 @@ public class RemoteQuery {
 
 		public static boolean isEmpty(String str) {
 			return str == null || str.length() == 0;
+		}
+
+		public static String trim(String str) {
+			if (str == null) {
+				return str;
+			}
+			return str.trim();
 		}
 
 		public static boolean isBlank(String str) {
