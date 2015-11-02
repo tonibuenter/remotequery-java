@@ -88,6 +88,8 @@ public class RemoteQueryServlet extends HttpServlet {
 	private String servletName = "";
 	private String webRoot = "";
 	private String accessServiceId = "";
+	private Set<String> headerParameters = new HashSet<String>();
+
 	private Set<String> publicServiceIds = new HashSet<String>();
 	private String requestDataHandler = "";
 
@@ -108,6 +110,11 @@ public class RemoteQueryServlet extends HttpServlet {
 		webRoot = this.getServletContext().getRealPath("/");
 		//
 		accessServiceId = config.getInitParameter("accessServiceId");
+		//
+		s = config.getInitParameter("headerParameters");
+		if (!Utils.isBlank(s)) {
+			headerParameters = Utils.asSet(Utils.tokenize(s));
+		}
 		//
 		s = config.getInitParameter("publicServiceIds");
 		if (!Utils.isBlank(s)) {
@@ -202,7 +209,7 @@ public class RemoteQueryServlet extends HttpServlet {
 			//
 			//
 
-			RequestData requestData = null;
+			IRequestData requestData = null;
 			if (!Utils.isBlank(requestDataHandler)) {
 				try {
 					IRequestDataHandler rdh = (IRequestDataHandler) Class.forName(
@@ -240,7 +247,7 @@ public class RemoteQueryServlet extends HttpServlet {
 
 			//
 			//
-			// Setting RQ HEADER parameters from the HTTP request headers.
+			// Reading RQ HEADER parameters from the HTTP request headers.
 			//
 			//
 
@@ -249,8 +256,14 @@ public class RemoteQueryServlet extends HttpServlet {
 			while (e.hasMoreElements()) {
 				String name = (String) e.nextElement();
 				String value = httpRequest.getHeader(name);
-				request.put(HEADER, name, value);
-				logger.debug("http header: " + name + ":" + value);
+				if (headerParameters.contains(name)) {
+					request.put(HEADER, name, value);
+					logger.debug("http header: " + name + ":" + value);
+				} else {
+					if (logger.isDebugEnabled()) {
+						logger.debug("http header: " + name + ":" + value);
+					}
+				}
 			}
 
 			//
@@ -300,6 +313,10 @@ public class RemoteQueryServlet extends HttpServlet {
 
 			if (!Utils.isBlank(accessServiceId)
 			    && !publicServiceIds.contains(serviceId)) {
+				logger
+				    .debug("ServiceId "
+				        + serviceId
+				        + " is  not a public service and a access service is defined (servlet parameter accessServiceId). Access service will be call first.");
 				request.setServiceId(accessServiceId);
 				MainQuery accessRq = new MainQuery();
 				Result r = accessRq.run(request);
@@ -314,12 +331,12 @@ public class RemoteQueryServlet extends HttpServlet {
 					    httpResponse);
 					return;
 				}
-			} else if (Utils.isBlank(accessServiceId)) {
-				logger
-				    .debug("No accessServiceId defined. No accessService will be processed.");
 			} else if (publicServiceIds.contains(publicServiceIds)) {
 				logger.debug("ServiceId " + serviceId
-				    + " is a public service. No accessService will be processed.");
+				    + " is a public service. No access service will be processed.");
+			} else if (Utils.isBlank(accessServiceId)) {
+				logger
+				    .debug("Servlet Parameter accessServiceId is not defined. No access service will be processed.");
 			}
 
 			//
@@ -348,7 +365,10 @@ public class RemoteQueryServlet extends HttpServlet {
 			//
 
 			if (result != null) {
+				// prevent circular references
+				result.subResult = null;
 				String s = JsonUtils.toJson(result);
+
 				returnAsJsonString(callback, s, httpResponse);
 			} else {
 				returnAsJsonString(callback, JsonUtils.toJson("empty"), httpResponse);
@@ -384,7 +404,7 @@ public class RemoteQueryServlet extends HttpServlet {
 		}
 	}
 
-	public static class RequestData implements Serializable {
+	public static class RequestData implements Serializable, IRequestData {
 
 		private final Map<String, List<String>> parameters = new HashMap<String, List<String>>();
 		/**
@@ -433,7 +453,11 @@ public class RemoteQueryServlet extends HttpServlet {
 	}
 
 	public interface IRequestDataHandler {
-		RequestData process(HttpServletRequest httpRequest) throws Exception;
+		IRequestData process(HttpServletRequest httpRequest) throws Exception;
+	}
+
+	public interface IRequestData {
+		Map<String, List<String>> getParameters();
 	}
 
 }

@@ -67,8 +67,12 @@ import com.google.gson.reflect.TypeToken;
  */
 public class RemoteQuery {
 
-	private static final Logger rqLogger = LoggerFactory
-	    .getLogger(RemoteQuery.class);
+	private static Logger rqLogger = LoggerFactory.getLogger(RemoteQuery.class);
+	private static Logger rqMainLogger = rqLogger;
+	private static Logger rqDebugLogger = LoggerFactory
+	    .getLogger(RemoteQuery.class.getName() + ".sql");
+	private static Logger sqlLogger = LoggerFactory.getLogger(RemoteQuery.class
+	    .getName() + ".sql");
 
 	/**
 	 * "DEFAULT_DATASOURCE" is the default data source name.
@@ -100,6 +104,7 @@ public class RemoteQuery {
 		public static final String java = "java";
 		public static final String sql = "sql";
 		// combination
+		public static final String parameters = "parameters";
 		public static final String serviceId = "serviceId";
 		public static final String include = "include";
 		// parameter / result statements
@@ -107,8 +112,9 @@ public class RemoteQuery {
 		public static final String set_if_empty = "set-if-empty";
 		public static final String set_if_null = "set-if-null";
 		public static final String set_null = "set-null";
-		public static final String foreach = "foreach";
-		public static final String join_result_with = "join-result-with";
+		//
+		public static final String debugOn = "debugOn";
+		public static final String debugOff = "debugOff";
 		//
 		public static final String tx_begin = "tx-begin";
 		public static final String tx_commit = "tx-commit";
@@ -256,11 +262,14 @@ public class RemoteQuery {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static class JsonProcessor {
 
-		public static Map<String, Class> commands = new HashMap<String, Class>();
+		public static Map<String, Class<? extends IJsonProcessor>> commands = new HashMap<String, Class<? extends IJsonProcessor>>();
 		static {
+			commands.put("add-role", AddRoleProcessor.class);
 			commands.put("switch", SwitchProcessor.class);
 			commands.put("userMessage", UserMessage.class);
 			commands.put("foreach", ForeachProcessor.class);
+			commands.put("union", UnionProcessor.class);
+			commands.put("join", JoinProcessor.class);
 		}
 
 		String statements;
@@ -281,8 +290,8 @@ public class RemoteQuery {
 		}
 
 		public Result process() {
-			pLog.warn(request.getServiceId()
-			    + " -> JsonProcessor still in BETA !!!", rqLogger);
+			pLog.warn(request.getServiceId() + " -> JsonProcessor still in BETA !!!",
+			    rqLogger);
 
 			answer = new JsonAnswer();
 			List statementList = JsonUtils.toObject(statements, List.class);
@@ -345,13 +354,14 @@ public class RemoteQuery {
 
 		public JsonAnswer processStatementMap(Map<String, Object> statement) {
 			try {
-				for (Entry<String, Class> e : commands.entrySet()) {
+				for (Entry<String, Class<? extends IJsonProcessor>> e : commands
+				    .entrySet()) {
 					String name = e.getKey();
-					Class claxx = commands.get(name);
+					Class<? extends IJsonProcessor> claxx = commands.get(name);
 					if (statement.containsKey(name)) {
-						Constructor constructor = claxx
+						Constructor<? extends IJsonProcessor> constructor = claxx
 						    .getDeclaredConstructor(JsonProcessor.class);
-						IJsonProcessor p = (IJsonProcessor) constructor.newInstance(this);
+						IJsonProcessor p = constructor.newInstance(this);
 						return p.run(statement);
 					}
 				}
@@ -369,6 +379,27 @@ public class RemoteQuery {
 		// RQ JSON PROCESSORS (FEATURES)
 		//
 		//
+
+		//
+		//
+		// RQ JSON PROCESSOR SWITCH
+		//
+		//
+
+		public static class AddRoleProcessor implements IJsonProcessor {
+			private final JsonProcessor context;
+
+			public AddRoleProcessor(JsonProcessor context) {
+				this.context = context;
+			}
+
+			public JsonAnswer run(Object o) {
+				Map<String, String> map = (Map) o;
+				String role = (String) map.get("add-role");
+				context.request.addRole(role);
+				return new JsonAnswer();
+			}
+		}
 
 		//
 		//
@@ -428,7 +459,7 @@ public class RemoteQuery {
 			}
 
 			public JsonAnswer run(Object o) {
-				JsonAnswer lastAnswer = null;
+				JsonAnswer lastAnswer = new JsonAnswer();
 				try {
 					Map statement = (Map) o;
 					Map foreachStatement = (Map) statement.get("foreach");
@@ -456,6 +487,84 @@ public class RemoteQuery {
 					return lastAnswer;
 				} catch (Exception e) {
 					context.pLog.error("Serious Error in *switch* statement ", rqLogger);
+				}
+				return context.seriousErrorAnswer();
+			}
+		}
+
+		//
+		//
+		// RQ JSON PROCESSOR UNION -begin-
+		//
+		//
+
+		public static class UnionProcessor implements IJsonProcessor {
+			private final JsonProcessor context;
+
+			public UnionProcessor(JsonProcessor context) {
+				this.context = context;
+			}
+
+			public JsonAnswer run(Object o) {
+				JsonAnswer uAnswer = null;
+				try {
+					Map statement = (Map) o;
+					List unionStatementList = (List) statement.get("union");
+					for (int i = 0; i < unionStatementList.size(); i++) {
+						JsonAnswer ca = context.processStatement(unionStatementList.get(i));
+						if (uAnswer == null) {
+							uAnswer = ca;
+						} else {
+							uAnswer.result.rowsAffected += ca.result.rowsAffected;
+							// NOT IMPLEMENTED
+							uAnswer.result.append(ca.result);
+						}
+					}
+					ProcessLog.Current().warn("not yet implemented");
+					return uAnswer;
+				} catch (Exception e) {
+					context.pLog.error("Serious Error in *union* statement ", rqLogger);
+				}
+				return context.seriousErrorAnswer();
+			}
+		}
+
+		//
+		//
+		// RQ JSON PROCESSOR JOIN -begin-
+		//
+		//
+
+		public static class JoinProcessor implements IJsonProcessor {
+			private final JsonProcessor context;
+
+			public JoinProcessor(JsonProcessor context) {
+				this.context = context;
+			}
+
+			public JsonAnswer run(Object o) {
+				JsonAnswer uAnswer = null;
+				Result result = null;
+				try {
+					Map statement = (Map) o;
+					List joinStatementList = (List) statement.get("join");
+					String joinKey = (String) statement.get("join-key");
+					String joinColumn = (String) statement.get("join-column");
+					for (int i = 0; i < joinStatementList.size(); i++) {
+						JsonAnswer ca = context.processStatement(joinStatementList.get(i));
+						if (uAnswer == null) {
+							uAnswer = ca;
+							result = ca.result;
+						} else {
+							uAnswer.result.rowsAffected += ca.result.rowsAffected;
+							// NOT IMPLEMENTED
+							result.join(joinKey, joinColumn, uAnswer.result);
+						}
+					}
+					ProcessLog.Current().warn("not yet implemented");
+					return uAnswer;
+				} catch (Exception e) {
+					context.pLog.error("Serious Error in *join* statement ", rqLogger);
 				}
 				return context.seriousErrorAnswer();
 			}
@@ -491,9 +600,8 @@ public class RemoteQuery {
 				}
 				return new JsonAnswer();
 			}
-			
-		}
 
+		}
 
 		//
 		//
@@ -624,9 +732,6 @@ public class RemoteQuery {
 		 */
 		private static final long serialVersionUID = 1L;
 
-		private static final Logger logger = LoggerFactory
-		    .getLogger(MainQuery.class);
-
 		private final Map<String, Serializable> processStore = new HashMap<String, Serializable>();
 
 		public void put(String key, Serializable value) {
@@ -640,23 +745,26 @@ public class RemoteQuery {
 		public Result run(Request request) {
 			Result result = null;
 			ProcessLog log = ProcessLog.Current();
-			log.incrRecursion();
+
 			String serviceId = request.getServiceId();
 			String userId = request.getUserId();
 			if (Utils.isEmpty(userId)) {
 				log.warn(
 				    "Request object has no userId set. Process continues with userId="
-				        + ANONYMOUS, logger);
+				        + ANONYMOUS, rqLogger);
 				request.setUserId(ANONYMOUS);
 				userId = request.getUserId();
 			}
 			// TODO better in the process object ?
+			log.incrRecursion();
 			try {
 				//
+
 				ServiceEntry serviceEntry = ServiceRepository.getInstance().get(
 				    serviceId);
+				log.serviceEntry_Start(serviceEntry);
 				if (serviceEntry == null) {
-					log.error("No ServiceEntry found for " + serviceId, logger);
+					log.error("No ServiceEntry found for " + serviceId, rqLogger);
 					return new Result(log);
 				}
 				//
@@ -676,12 +784,12 @@ public class RemoteQuery {
 				}
 				if (hasAccess) {
 					log.system("Access to " + serviceId + " for " + userId + " : ok",
-					    logger);
+					    rqLogger);
 				} else {
 					log.warn(
 					    "No access to " + serviceId + " for " + userId
 					        + " (service roles: " + roles + ", request roles: "
-					        + request.getRoles() + ")", logger);
+					        + request.getRoles() + ")", rqLogger);
 					return new Result(log);
 				}
 				//
@@ -689,10 +797,11 @@ public class RemoteQuery {
 				//
 
 				log.system("ServiceEntry found for userId=" + userId + " is : "
-				    + serviceEntry, logger);
+				    + serviceEntry, rqLogger);
 
 				String statements = serviceEntry.getStatements();
 				statements = Utils.trim(statements);
+				log.system("Statements (trimmed) " + statements, rqLogger);
 				if (statements.startsWith("[") && statements.endsWith("]")) {
 					JsonProcessor jp = new JsonProcessor(request, serviceEntry, result,
 					    statements);
@@ -720,9 +829,11 @@ public class RemoteQuery {
 				// }
 
 			} catch (Exception e) {
-				log.error(e, logger);
+				log.error(e, rqLogger);
 			} finally {
 				// ParameterSupport.release(parameterSupport);
+				log.decrRecursion();
+				log.serviceEntry_End();
 			}
 			if (result == null) {
 				// TODO Default result object ?
@@ -760,20 +871,20 @@ public class RemoteQuery {
 				int recursion = log.getRecursionValue();
 				if (recursion > MAX_RECURSION) {
 					log.error("Recursion limit reached " + MAX_RECURSION
-					    + ". Stop processing.", logger);
+					    + ". Stop processing.", rqLogger);
 					return currentResult;
 				}
 
 				serviceStmt = serviceStmt.trim();
 				if (Utils.isEmpty(serviceStmt)) {
-					log.warn("Empty serviceStmt -> no processing.", logger);
+					log.warn("Empty serviceStmt -> no processing.", rqLogger);
 					return currentResult;
 				}
 
 				String[] pair = Utils.parseCommandValue(serviceStmt);
 
-				String cmd = pair[0];
-				String stmt = pair[1];
+				String cmd = pair[0].trim();
+				String stmt = pair[1].trim();
 
 				//
 				// plain SQL fall back case
@@ -783,26 +894,12 @@ public class RemoteQuery {
 					stmt = serviceStmt;
 				}
 				//
-				// join-result-with
-				//
-				if (MLT.join_result_with.equals(cmd)) {
-					pair = Utils.parseCommandValue(stmt);
-					String joinKey = pair[0];
-					pair = Utils.parseCommandValue(pair[1]);
-					String joinCol = pair[0];
-					String subServiceStmt = pair[1];
-					Result result2 = processSingleStatement(request, currentResult,
-					    serviceEntry, subServiceStmt);
-					currentResult.join(joinKey, joinCol, result2);
-					return currentResult;
-				}
-				//
 				// include
 				//
 				if (cmd.equals(MLT.include)) {
 					ServiceEntry se2 = ServiceRepository.getInstance().get(stmt);
 					if (se2 == null) {
-						log.warn("Tried to include " + stmt + ". Skipping.", logger);
+						log.warn("Tried to include " + stmt + ". Skipping.", rqLogger);
 						return currentResult;
 					}
 					String includeServiceStmt = se2.getStatements();
@@ -833,6 +930,31 @@ public class RemoteQuery {
 					return currentResult;
 				}
 				//
+				// debug
+				//
+				if (cmd.startsWith(MLT.debugOn)) {
+					rqLogger = rqDebugLogger;
+					return currentResult;
+				}
+				if (cmd.startsWith(MLT.debugOff)) {
+					rqLogger = rqMainLogger;
+					return currentResult;
+				}
+				//
+				// parameters
+				//
+				if (cmd.equals(MLT.parameters)) {
+					Result r = new Result();
+					processSql(serviceEntry, stmt, request, r);
+					if (r.size > 0) {
+						Map<String, String> paramters = r.getRowAsMap(0);
+						for (String key : paramters.keySet()) {
+							request.put(key, paramters.get(key));
+						}
+					}
+					return currentResult;
+				}
+				//
 				// serviceId
 				//
 				if (cmd.equals(MLT.serviceId)) {
@@ -847,7 +969,7 @@ public class RemoteQuery {
 			} catch (Exception e) {
 				log.error(
 				    "ServiceStmt for " + serviceStmt + " failed. Exception: "
-				        + e.getMessage(), logger);
+				        + e.getMessage(), rqLogger);
 
 			} finally {
 				log.decrRecursion();
@@ -863,6 +985,9 @@ public class RemoteQuery {
 			if (serviceStmt.startsWith(MLT.java)) {
 				return true;
 			}
+			if (serviceStmt.startsWith(MLT.parameters)) {
+				return true;
+			}
 			if (serviceStmt.startsWith(MLT.serviceId)) {
 				return true;
 			}
@@ -876,6 +1001,12 @@ public class RemoteQuery {
 				return true;
 			}
 			if (serviceStmt.startsWith(MLT.tx_commit)) {
+				return true;
+			}
+			if (serviceStmt.startsWith(MLT.debugOn)) {
+				return true;
+			}
+			if (serviceStmt.startsWith(MLT.debugOff)) {
 				return true;
 			}
 			return false;
@@ -896,24 +1027,12 @@ public class RemoteQuery {
 				}
 				return;
 			}
-			// String ls = "";
-			// if (cmd.startsWith(MLT.set_if_empty)) {
-			// ls = cmd.substring(MLT.set_if_empty.length());
-			// } else if (cmd.startsWith(MLT.set_if_null)) {
-			// ls = cmd.substring(MLT.set_if_null.length());
-			// } else {
-			// ls = cmd.substring(MLT.set.length());
-			// }
-			// Integer level = parseLevel(ls);
-			// if (level == null) {
-			// logger.error("Syntax error int set clause: " + cmd + " (stmt : " + stmt
-			// + "). Skipping.");
-			// return;
-			// }
 
 			String[] nv = Utils.tokenize(stmt, '=');
 			String n = nv[0];
 			String v = nv.length > 1 ? nv[1] : null;
+			n = Utils.trim(n);
+			v = Utils.trim(v);
 			String requestValue = request.getValue(n);
 			// set_if_null
 			if (cmd.equals(MLT.set_if_null)) {
@@ -956,7 +1075,7 @@ public class RemoteQuery {
 				}
 				return Integer.parseInt(ls);
 			} catch (Exception e) {
-				logger.error(Utils.getStackTrace(e));
+				rqLogger.error(Utils.getStackTrace(e));
 			}
 			return null;
 		}
@@ -969,13 +1088,13 @@ public class RemoteQuery {
 			Connection connection = null;
 			ProcessLog pLog = ProcessLog.Current();
 			try {
-
+				rqLogger.debug("Process Java :: start with " + className);
 				Object serviceObject = Class.forName(className).newInstance();
 
 				if (!(serviceObject instanceof IQuery)) {
 					ProcessLog.Current().error(
 					    "Class " + className + " is not an instance of "
-					        + IQuery.class.getName(), logger);
+					        + IQuery.class.getName(), rqLogger);
 					return null;
 				}
 
@@ -996,7 +1115,7 @@ public class RemoteQuery {
 				}
 				result = service.run(request);
 			} catch (Exception e) {
-				pLog.error(e, logger);
+				pLog.error(e, rqLogger);
 			} finally {
 				Utils.closeQuietly(connection);
 			}
@@ -1014,7 +1133,7 @@ public class RemoteQuery {
 				Exception e = new Exception(
 				    "No DataSource found ServiceEntry.getDatasourceName="
 				        + serviceEntry.getDatasourceName() + "!");
-				log.error(e.getMessage(), logger);
+				log.error(e.getMessage(), rqLogger);
 				irl.setException(e);
 				return;
 			}
@@ -1039,18 +1158,20 @@ public class RemoteQuery {
 		    IResultListener irl) {
 			String serviceId = request.getServiceId();
 			serviceId = Utils.isBlank(serviceId) ? "-serviceId-" : serviceId;
-			ProcessLog log = ProcessLog.Current();
+			ProcessLog pLog = ProcessLog.Current();
 
 			PreparedStatement ps = null;
 			ResultSet rs = null;
 
 			QueryAndParams qap = null;
 
-			log.system("sql before conversion: " + sql);
+			pLog.system("sql before conversion: " + sql);
+			sqlLogger.debug("**************************************");
+			sqlLogger.debug("Start sql (in service : " + serviceId + ")\n" + sql);
 
 			qap = convertQuery(sql);
 			sql = qap.questionMarkQuery;
-			log.system("sql after conversion: " + sql);
+			pLog.system("sql after conversion: " + sql);
 
 			//
 			// PREPARE SERVICE_STMT
@@ -1061,12 +1182,15 @@ public class RemoteQuery {
 			for (String attributeName : qap.parameters) {
 				String attributeValue = request.getValue(attributeName);
 				if (attributeValue == null) {
-					log.warn("processSql:No value provided for parameter name:"
+					pLog.warn("processSql:No value provided for parameter name:"
 					    + attributeName + " (serviceId:" + request.getServiceId()
-					    + "). Will use empty string.", logger);
+					    + "). Will use empty string.", rqLogger);
 					paramObjects.add("");
+					sqlLogger.debug("sql-param " + attributeName + " : ");
 				} else {
 					paramObjects.add(attributeValue);
+					sqlLogger
+					    .debug("sql-param " + attributeName + " : " + attributeValue);
 				}
 			}
 			//
@@ -1082,6 +1206,9 @@ public class RemoteQuery {
 				int index = 0;
 				for (Object v : paramObjects) {
 					ps.setObject(++index, v);
+					if (rqLogger.isDebugEnabled()) {
+						// rqLogger.debug("index: " + index + " value: " + v);
+					}
 				}
 				boolean hasResultSet = ps.execute();
 				if (hasResultSet) {
@@ -1090,30 +1217,34 @@ public class RemoteQuery {
 					irl.setName(serviceId);
 				} else {
 					int rowsAffected = ps.getUpdateCount();
-					log.system("ServiceEntry : " + serviceId + " 	rowsAffected:"
+					pLog.system("ServiceEntry : " + serviceId + "; rowsAffected : "
 					    + rowsAffected);
 					irl.setRowsAffected(rowsAffected);
+					sqlLogger.debug("sql-rows-affected : " + rowsAffected);
 				}
 			}
 
 			catch (SQLException e) {
 				String warnMsg = "Warning for " + serviceId + " (parameters:"
 				    + qap.parameters + ") execption msg: " + e.getMessage();
-				log.warn(warnMsg);
-				logger.warn(warnMsg);
+				pLog.warn(warnMsg, rqLogger);
 			}
 
 			catch (Exception e) {
 				String errorMsg = "Error for " + serviceId + " (parameters:"
 				    + qap.parameters + ") execption msg: " + e.getMessage();
-				log.error(errorMsg, logger);
-				log.error(qap == null ? "-no qap-" : "parameterNameQuery="
+				pLog.error(errorMsg, rqLogger);
+				pLog.error(qap == null ? "-no qap-" : "parameterNameQuery="
 				    + qap.parameterNameQuery + ", questionMarkQuery="
-				    + qap.questionMarkQuery + ", parameters=" + qap.parameters, logger);
+				    + qap.questionMarkQuery + ", parameters=" + qap.parameters,
+				    rqLogger);
 			} finally {
 				Utils.closeQuietly(rs);
 				Utils.closeQuietly(ps);
 			}
+
+			sqlLogger.debug("End sql ");
+			sqlLogger.debug("**************************************");
 
 		}
 
@@ -1287,7 +1418,7 @@ public class RemoteQuery {
 				List requestList = JsonUtils.toObject(requestArray, List.class);
 				MainQuery mainQuery = new MainQuery();
 				for (int i = 0; i < requestList.size(); i++) {
-					pLog = ProcessLog.newOnThread(request.getUserId());
+					pLog = ProcessLog.Current(new ProcessLog(request.getUserId()));
 					requestC = request.deepCopy();
 					requestC.remove("requestArray");
 					Object r = requestList.get(i);
@@ -1500,6 +1631,10 @@ public class RemoteQuery {
 		public ProcessLog() {
 		}
 
+		public ProcessLog(String userId) {
+			this.userId = userId;
+		}
+
 		public void incrRecursion() {
 			recursion++;
 		}
@@ -1671,15 +1806,65 @@ public class RemoteQuery {
 			return TL.get();
 		}
 
+		public static ProcessLog Current(ProcessLog pLog) {
+			TL.set(pLog);
+			return TL.get();
+		}
+
 		public static void RemoveCurrent() {
 			TL.remove();
 		}
 
-		public static ProcessLog newOnThread(String userId) {
-			ProcessLog rl = new ProcessLog();
-			TL.set(rl);
-			return TL.get();
+		//
+		// public static ProcessLog newOnThread(String userId) {
+		// ProcessLog rl = new ProcessLog();
+		// TL.set(rl);
+		// return TL.get();
+		// }
+
+		//
+		// DEBUG CONTEXT -start-
+		//
+
+		public DebugContext debugContext;
+		public transient DebugContext current;
+
+		public static class DebugContext {
+			public static int SE = 0;
+
+			public int type;
+			public String name;
+			public List<String[]> contents;
+			public Map<String, String> parameters;
+			public List<DebugContext> children = new ArrayList<DebugContext>();
+			public transient DebugContext parent;
+
+			public DebugContext(int type) {
+				this.type = type;
+			}
+
 		}
+
+		public void serviceEntry_Start(ServiceEntry se) {
+			if (current == null) {
+				return;
+			}
+			DebugContext dc = new DebugContext(DebugContext.SE);
+			dc.parent = this.current;
+			dc.name = se.getServiceId();
+			this.current = dc;
+		}
+
+		public void serviceEntry_End() {
+			if (current == null) {
+				return;
+			}
+			this.current = this.current.parent;
+		}
+
+		//
+		// DEBUG CONTEXT -end-
+		//
 
 	}
 
@@ -1757,6 +1942,10 @@ public class RemoteQuery {
 			return null;
 		}
 
+		public void setParameters(Map<String, String> parameters) {
+			this.put(parameters);
+		}
+
 		public Map<String, String> getParameters(int level) {
 			Map<String, String> map = parametersTreeMap.get(level);
 			if (map == null) {
@@ -1786,8 +1975,13 @@ public class RemoteQuery {
 			return null;
 		}
 
+		public String getValue(String name, String defaultValue) {
+			String r = getValue(name);
+			return r == null ? defaultValue : r;
+		}
+
 		// TODO junit
-		public Map<String, String> getMapSnapshot() {
+		public Map<String, String> getParameterSnapshhot() {
 			Map<String, String> map = new HashMap<String, String>();
 			Set<Integer> keys = parametersTreeMap.keySet();
 
@@ -1820,6 +2014,16 @@ public class RemoteQuery {
 
 		public String put(String key, String value) {
 			return put(defaultLevel, key, value);
+		}
+
+		public void put(Map<String, String> map) {
+			put(defaultLevel, map);
+		}
+
+		public void put(int level, Map<String, String> map) {
+			for (Entry<String, String> e : map.entrySet()) {
+				put(level, e.getKey(), e.getValue());
+			}
 		}
 
 		// public IRoleProvider getRoleProvider() {
@@ -1947,12 +2151,17 @@ public class RemoteQuery {
 		private List<String> header = new ArrayList<String>();
 		private String exception = null;
 		private ProcessLog processInfo = null;
-		private Result subResult = null;
+		public Result subResult = null;
 
 		public static boolean USE_CAMEL_CASE_FOR_RESULT_HEADER = true;
 
 		public Result(String... header) {
 			this.header = Arrays.asList(header);
+		}
+
+		public void append(Result result) {
+			// TODO Auto-generated method stub
+
 		}
 
 		public Result(int from, int totalCount, List<String> header,
@@ -2202,7 +2411,8 @@ public class RemoteQuery {
 						try {
 							m = claxx.getMethod("set" + setGetName, String.class);
 						} catch (Exception e) {
-							logger.debug("Did not find method: " + setGetName + ": ->" + e);
+							// logger.debug("Did not find method: " + setGetName + ": ->" +
+							// e);
 						}
 						if (m != null) {
 							break;
@@ -3607,6 +3817,7 @@ public class RemoteQuery {
 				//
 				int counter = 0;
 				irl.setHeader(header);
+				sqlLogger.debug("sql-result-header " + Arrays.toString(header));
 				irl.setFrom(-1);
 				String[] row = null;
 				while (rs.next()) {
@@ -3632,6 +3843,8 @@ public class RemoteQuery {
 							}
 						}
 						irl.addRow(row);
+						sqlLogger.debug("sql-result-row " + counter + " : "
+						    + Arrays.toString(row));
 					} else {
 						//
 					}
@@ -3660,6 +3873,10 @@ public class RemoteQuery {
 		//
 		// MAP UTILS
 		//
+
+		public static <E, F> boolean isEmpty(Map<E, F> c) {
+			return c == null || c.size() == 0;
+		}
 
 		public static Map<String, String> asMap(Object obj) throws Exception {
 			Map<String, String> values = new HashMap<String, String>();
@@ -3907,7 +4124,14 @@ public class RemoteQuery {
 		}
 
 		public static <E> E toObject(String json, Class<E> claxx) {
-			return new Gson().fromJson(json, claxx);
+			try {
+				return new Gson().fromJson(json, claxx);
+			} catch (Exception e) {
+				logger.warn(
+				    "Could not convert json string to object. Class:"
+				        + claxx.getSimpleName() + ", json string:" + json, e);
+			}
+			return null;
 		}
 
 		public static <E> E toObjectSilently(String json, Class<E> claxx) {
@@ -4044,7 +4268,7 @@ public class RemoteQuery {
 		}
 
 		public E newInstance(Request request) {
-			return newInstance(request.getMapSnapshot());
+			return newInstance(request.getParameterSnapshhot());
 		}
 
 		private Result _process(String serviceId,
@@ -4106,6 +4330,24 @@ public class RemoteQuery {
 		public E get(String serviceId, E object) throws Exception {
 			List<E> result = this.search(serviceId, object);
 			return !Utils.isEmpty(result) ? result.get(0) : null;
+		}
+
+		public Map<String, String> getMap(String serviceId,
+		    Map<String, String> parameters) throws Exception {
+			Request request = new Request();
+			request.setUserId(userId);
+			request.setRoles(roles);
+			request.setServiceId(serviceId);
+			for (Entry<String, String> e : parameters.entrySet()) {
+				request.put(e.getKey(), e.getValue());
+			}
+
+			MainQuery mq = new MainQuery();
+			Result r = mq.run(request);
+			if (r.size > 0) {
+				return r.getRowAsMap(0);
+			}
+			return new HashMap<String, String>();
 		}
 
 		public E get(String serviceId) {
