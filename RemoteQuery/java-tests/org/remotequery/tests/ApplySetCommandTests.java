@@ -34,7 +34,7 @@ public class ApplySetCommandTests {
 		String stmt = "a=124";
 		MainQuery.applySetCommand(r, cmd, stmt);
 		
-		Assert.assertEquals("123", r.getValue("a"));
+		Assert.assertEquals("124", r.getValue("a"));
 	}
 	@Test
 	public void test4() {
