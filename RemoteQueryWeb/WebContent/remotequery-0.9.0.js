@@ -3,6 +3,10 @@
   var url = 'remoteQuery';
   var REMOTE_QUERY_NAME = root['REMOTE_QUERY_NAME'];
 
+  //
+
+  var noSessionHandler, noSessionFn;
+
   if (typeof REMOTE_QUERY_NAME !== 'string') {
     REMOTE_QUERY_NAME = 'rQ';
   }
@@ -20,7 +24,8 @@
       'RegisterService' : 'RegisterService'
     },
     'toList' : toList,
-    'toMap' : toMap
+    'toMap' : toMap,
+    'noSession' : settingNoSessionFn
   };
 
   function callRq(serviceId, arg1, arg2) {
@@ -40,9 +45,11 @@
       'async' : true,
       'cache' : false,
       'type' : 'POST',
-      'success' : function() {
-        if (callback !== undefined) {
-          callback.apply(this, arguments);
+      'success' : function(arg0) {
+        if (noSessionHandler(arg0)) {
+          if (callback !== undefined) {
+            callback.apply(this, arguments);
+          }
         }
       }
     });
@@ -67,8 +74,10 @@
       'error' : function(e) {
         alert('error ' + e);
       },
-      'success' : function(data) {
-        cb(data);
+      'success' : function(arg0) {
+        if (noSessionHandler(arg0)) {
+          cb.apply(this, arguments);
+        }
       }
     });
   }
@@ -92,6 +101,25 @@
         }
       }
     }
+  }
+
+  noSessionHandler = function(arg0) {
+    if (arg0 && arg0.exception === 'NOSESSION') {
+      if (_.isFunction(noSessionFn)) {
+        noSessionFn.apply(this, arguments);
+        return false;
+      }
+      alert('No Session. Please refresh or relogin again.');
+      return false;
+    }
+    return true;
+  };
+
+  function settingNoSessionFn(arg0) {
+    if (_.isFunction(arg0)) {
+      noSessionFn = arg0;
+    }
+    return noSessionFn;
   }
 
   function toList(serviceData) {

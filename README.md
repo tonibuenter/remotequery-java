@@ -38,7 +38,8 @@ Essential RQ components for Java
 
 + [RemoteQuery.java] (https://github.com/tonibuenter/RemoteQuery/blob/master/RemoteQuery/java/org/remotequery/RemoteQuery.java)
 + [RemoteQueryServlet.java](https://github.com/tonibuenter/RemoteQuery/blob/master/RemoteQuery/java/org/remotequery/RemoteQueryServlet.java)
-+ *gson-2.2.4.jar* [See RemoteQuery/java_libs] (https://github.com/tonibuenter/RemoteQuery/tree/master/RemoteQuery/java_libs) or on Google Code
++ *gson-2.2.4.jar* [See RemoteQuery/java_libs] (https://github.com/tonibuenter/RemoteQuery/tree/master/RemoteQuery/java-libs) or on Google Code
++ *slf4j-api-1.7.9.jar* [See RemoteQuery/java_libs] (https://github.com/tonibuenter/RemoteQuery/tree/master/RemoteQuery/java-libs)
 
 
 

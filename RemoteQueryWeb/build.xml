@@ -1,16 +1,17 @@
 <project name="RemoteQueryWeb-Targets" default="CO-RemoteQuery">
 
 	<target name="CO-RemoteQuery">
-		<echo message="Copy Java Content" />
+		<echo message="Copy Java Content from RemoteQuery" />
 		<copy todir="src" overwrite="true">
 			<fileset dir="../RemoteQuery/java" />
 		</copy>
 	</target>
 
+	<!--
 	<target name="-updateRQ-">
 		<echo message="Update RQ ..." />
 		<get src="https://github.com/tonibuenter/RemoteQuery/raw/master/RemoteQuery/java/org/remotequery/RemoteQuery.java" dest="/Users/tonibuenter/_data/git/RemoteQuery/RemoteQueryWeb/src/org/remotequery/">
 		</get>
 	</target>
-
+-->
 </project>

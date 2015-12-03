@@ -74,6 +74,8 @@ public class RemoteQuery {
 	private static Logger sqlLogger = LoggerFactory.getLogger(RemoteQuery.class
 	    .getName() + ".sql");
 
+	public static Map<String, IProcessFactory> ScriptQueries = new HashMap<String, RemoteQuery.IProcessFactory>();
+
 	/**
 	 * "DEFAULT_DATASOURCE" is the default data source name.
 	 */
@@ -226,6 +228,19 @@ public class RemoteQuery {
 	public static interface IQuery extends Serializable {
 
 		Result run(Request request);
+
+	}
+
+	public static interface IProcessFactory extends Serializable {
+
+		IProcess create(Request request, ServiceEntry serviceEntry, Result result,
+		    String statements);
+
+	}
+
+	public static interface IProcess extends Serializable {
+
+		Result process();
 
 	}
 
@@ -802,6 +817,27 @@ public class RemoteQuery {
 				String statements = serviceEntry.getStatements();
 				statements = Utils.trim(statements);
 				log.system("Statements (trimmed) " + statements, rqLogger);
+				//
+				// REGISTERED SCRIPTING
+				//
+				for (Entry<String, IProcessFactory> entry : ScriptQueries.entrySet()) {
+					if (statements.startsWith(entry.getKey())) {
+						IProcessFactory fac = entry.getValue();
+						try {
+							IProcess process = fac.create(request, serviceEntry, result,
+							    statements);
+							return process.process();
+						} catch (Exception e) {
+							log.error(e, rqLogger);
+						} finally {
+							//
+						}
+						return null;
+					}
+				}
+				//
+				// JSON PROCESSOR
+				//
 				if (statements.startsWith("[") && statements.endsWith("]")) {
 					JsonProcessor jp = new JsonProcessor(request, serviceEntry, result,
 					    statements);
