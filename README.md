@@ -3,17 +3,17 @@ Welome to RemoteQuery!
 ======================
 
 
-In one sentence: RemoteQuery is a tiny utility which enables easily create SQL statements 
-as JSON rest-like services. Next to SQL plain Java, Groovy can be used. 
+RemoteQuery is a tiny utility which helps to create SQL statements 
+as JSON rest-like services. Next to SQL, plain Java and Groovy can be used. 
 
-A service is as easy defined as choosing a service id, a list of roles that can access the service and an SQL statement:
+To create a service you need to choose a service id, a list of roles that can access the service and an SQL statement:
 ```
 SERVICE_ID = Sales_Overview
 ROLES      = SALE,ADMIN
 
 select * from T_SALES
 ```
-To make thing useful with large project service statement composition, parameter control and much more is supported.
+To make thing more useful for large projects, service statements can be created with composition, parameter control and much more is supported.
 
 + [RemoteQuery (Intro Slides)] (RemoteQuery.pdf?raw=true)
 + [RemoteQuery Tech Stack Promotion] (RemoteQuery%20Tech%20Stack%20Promotion.pdf?raw=true)
