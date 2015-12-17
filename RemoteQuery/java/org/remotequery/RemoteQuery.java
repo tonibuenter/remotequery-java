@@ -112,6 +112,7 @@ public class RemoteQuery {
 		// parameter / result statements
 		public static final String set = "set";
 		public static final String set_if_empty = "set-if-empty";
+		public static final String copy_over = "copy-over";
 		public static final String set_if_null = "set-if-null";
 		public static final String set_null = "set-null";
 		//
@@ -963,6 +964,16 @@ public class RemoteQuery {
 				//
 				if (cmd.startsWith(MLT.set)) {
 					applySetCommand(request, cmd, stmt);
+					return currentResult;
+				}
+				//
+				// copy-over
+				//
+				if (cmd.startsWith(MLT.copy_over)) {
+					String[] s = stmt.split("=");
+					if (s.length > 1) {
+						request.put(s[0], request.getValue(pair[1]));
+					}
 					return currentResult;
 				}
 				//
