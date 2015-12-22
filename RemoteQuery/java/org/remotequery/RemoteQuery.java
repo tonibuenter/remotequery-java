@@ -2601,6 +2601,10 @@ public class RemoteQuery {
 			return -1;
 		}
 
+		public static boolean isEmpty(Result r) {
+			return r != null && r.table != null && r.table.size() > 0;
+		}
+
 		public static Result union(Result p1, Result p2) {
 			if (p1 == null) {
 				return p2;
