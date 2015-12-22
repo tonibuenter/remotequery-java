@@ -733,6 +733,16 @@ public class RemoteQuery {
 	}
 
 	/**
+	 * Convenience method for running a main query.
+	 * 
+	 * @author tonibuenter
+	 */
+	public static Result runMain(Request request) {
+		MainQuery mq = new MainQuery();
+		return mq.run(request);
+	}
+
+	/**
 	 * MainQuery is the main class the provides the processing of a RemoteQuery
 	 * request. It takes care of the service statement parsing and processing.
 	 * 
@@ -847,23 +857,6 @@ public class RemoteQuery {
 					result = processStatementList(request, serviceEntry, result,
 					    statements);
 				}
-				//
-				// String[] statementList = Utils.tokenize(statements,
-				// STATEMENT_DELIMITER, STATEMENT_ESCAPE);
-				//
-				// // parameterSupport = ParameterSupport.begin(con, sqRequest,
-				// sqEntry);
-				// for (String statement : statementList) {
-				// Result result2 = processSingleStatement(request, result,
-				// serviceEntry, statement);
-				// if (result2 != null) {
-				// if (result != null) {
-				// result2.setSubResult(result);
-				// }
-				// result = result2;
-				// }
-				//
-				// }
 
 			} catch (Exception e) {
 				log.error(e, rqLogger);
