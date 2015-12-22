@@ -2240,6 +2240,30 @@ public class RemoteQuery {
 			addRow(row);
 		}
 
+		/**
+		 * If the table list is empty it add an empty list. Then all entries in the
+		 * map are added as new header (column names) and values of the first row;
+		 * 
+		 * @param map
+		 * @return
+		 */
+		public Result addColumns(Map<String, String> map) {
+			if (table.size() == 0) {
+				table.add(new ArrayList<String>());
+			}
+			for (Entry<String, String> e : map.entrySet()) {
+				addColumn(e.getKey(), e.getValue());
+			}
+			return this;
+		}
+
+		public Result addColumn(String head, String value) {
+			List<String> row = table.get(0);
+			header.add(head);
+			row.add(value);
+			return this;
+		}
+
 		public String getName() {
 			return name;
 		}
