@@ -6,7 +6,10 @@ import static org.remotequery.RemoteQuery.LevelConstants.INITIAL;
 import static org.remotequery.RemoteQuery.LevelConstants.REQUEST;
 import static org.remotequery.RemoteQuery.LevelConstants.SESSION;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -15,16 +18,19 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.apache.commons.io.IOUtils;
 import org.remotequery.RemoteQuery.JsonUtils;
 import org.remotequery.RemoteQuery.MainQuery;
 import org.remotequery.RemoteQuery.ProcessLog;
@@ -102,26 +108,58 @@ public class RemoteQueryServlet extends HttpServlet {
 		super.init(config);
 		String s;
 		logger.info("RemoteQueryServlet starting ...");
-		config.getServletContext().getAttributeNames();
+
+		ServletContext sc = config.getServletContext();
+		//
+		// APP PROPERTIES
+		//
+		Properties appProperties = new Properties();
+
+		String appPropertiesFile = System
+		    .getProperty("REMOTEQUERY_APP_PROPERTIES_FILE");
+		if (!Utils.isBlank(appPropertiesFile)) {
+			System.out
+			    .println("FOUND REMOTEQUERY_APP_PROPERTIES_FILE from system properties : "
+			        + appPropertiesFile);
+		}
+		if (Utils.isBlank(appPropertiesFile)) {
+			appPropertiesFile = sc.getInitParameter("appPropertiesFile");
+		}
+		if (Utils.isBlank(appPropertiesFile)) {
+			logger
+			    .error("No value for appPropertiesFile defined in system properties and servlet context init parameters. RemoteQueryServlet will not continue.");
+			return;
+		}
+		InputStream in = null;
+		try {
+			in = new FileInputStream(new File(appPropertiesFile));
+			appProperties.load(in);
+		} catch (Exception e) {
+			logger.error("Can not read appProperties file: " + appPropertiesFile
+			    + ". RemoteQueryServlet will not continue.");
+			return;
+		} finally {
+			IOUtils.closeQuietly(in);
+		}
 
 		//
 		servletName = config.getServletName();
 		//
 		webRoot = this.getServletContext().getRealPath("/");
 		//
-		accessServiceId = config.getInitParameter("accessServiceId");
+		accessServiceId = appProperties.getProperty("accessServiceId");
 		//
-		s = config.getInitParameter("headerParameters");
+		s = appProperties.getProperty("headerParameters");
 		if (!Utils.isBlank(s)) {
 			headerParameters = Utils.asSet(Utils.tokenize(s));
 		}
 		//
-		s = config.getInitParameter("publicServiceIds");
+		s = appProperties.getProperty("publicServiceIds");
 		if (!Utils.isBlank(s)) {
 			publicServiceIds = Utils.asSet(Utils.tokenize(s));
 		}
 		//
-		requestDataHandler = config.getInitParameter("requestDataHandler");
+		requestDataHandler = appProperties.getProperty("requestDataHandler");
 
 		logger.info("RemoteQueryServlet started");
 	}
