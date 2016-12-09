@@ -3,6 +3,33 @@
   var url = 'remoteQuery';
   var REMOTE_QUERY_NAME = root['REMOTE_QUERY_NAME'];
 
+  var memoFn = (function() {
+    var cache = {};
+    var funPerServiceId = {};
+
+    function memocall(serviceId, parameters, cb) {
+      if (cache[serviceId]) {
+        cb(cache[serviceId]);
+      } else {
+        if (_.isArray(funPerServiceId[serviceId])) {
+          funPerServiceId[serviceId].push(cb);
+        } else {
+          funPerServiceId[serviceId] = [ cb ];
+          callRq(serviceId, parameters, function(data) {
+            _.each(funPerServiceId[serviceId], function(fn, index) {
+              fn(data);
+            });
+            funPerServiceId[serviceId] = false;
+          });
+        }
+      }
+    }
+
+    return {
+      'call' : memocall
+    };
+  })();
+
   //
 
   var noSessionHandler, noSessionFn;
@@ -25,11 +52,20 @@
     },
     'toList' : toList,
     'toMap' : toMap,
-    'noSession' : settingNoSessionFn
+    'noSession' : settingNoSessionFn,
+    'memo' : memoFn
   };
 
+  /**
+   * @memberOf rQ
+   */
   function callRq(serviceId, arg1, arg2) {
     var parameters, callback;
+    
+    if(_.isArray(serviceId)){
+      return callRqMulti.apply(this, arguments);
+    }
+    
     if (typeof arg1 === 'function') {
       parameters = {};
       callback = arg1;
@@ -55,6 +91,9 @@
     });
   }
 
+  /**
+   * @memberOf rQ
+   */
   function callRqForm(form$, serviceId, arg2, arg3) {
     var params, cb;
     if (typeof arg3 === 'function') {
@@ -82,6 +121,9 @@
     });
   }
 
+  /**
+   * @memberOf rQ
+   */
   function callRqMulti(requestArray, mainCb) {
     var requestArrayStr = JSON.stringify(requestArray);
     callRq('MultiService', {
@@ -102,7 +144,11 @@
       }
     }
   }
+  root[REMOTE_QUERY_NAME].callRqMulti = callRqMulti;
 
+  /**
+   * @memberOf rQ
+   */
   noSessionHandler = function(arg0) {
     if (arg0 && arg0.exception === 'NOSESSION') {
       if (_.isFunction(noSessionFn)) {
@@ -115,6 +161,9 @@
     return true;
   };
 
+  /**
+   * @memberOf rQ
+   */
   function settingNoSessionFn(arg0) {
     if (_.isFunction(arg0)) {
       noSessionFn = arg0;
@@ -122,22 +171,39 @@
     return noSessionFn;
   }
 
+  /**
+   * @memberOf rQ
+   */
   function toList(serviceData) {
-    var list;
-    list = [];
+    var i, j, list = [], table, header, head, row, obj;
     if (_.isObject(serviceData) && _.isArray(serviceData.table)) {
-      $.each(serviceData.table, function(rowIndex, row) {
-        var obj = {};
+      header = serviceData.header;
+      table = serviceData.table;
+
+      for (i = 0; i < table.length; i++) {
+        obj = {};
         list.push(obj);
-        $.each(serviceData.header, function(colIndex, head) {
-          obj[head] = row[colIndex];
-        });
-      });
-      list.header = serviceData.header;
+        row = table[i];
+        for (j = 0; j < header.length; j++) {
+          head = header[j];
+          obj[head] = row[j];
+        }
+      }
+      // $.each(serviceData.table, function(rowIndex, row) {
+      // var obj = {};
+      // list.push(obj);
+      // $.each(serviceData.header, function(colIndex, head) {
+      // obj[head] = row[colIndex];
+      // });
+      // });
+      // list.header = serviceData.header;
     }
     return list;
   }
 
+  /**
+   * @memberOf rQ
+   */
   function toMap(serviceData, keyColumns) {
     var map = {}, keys, keyIndexes = [], i;
     var rowCounter, row, currentMap;
@@ -175,6 +241,9 @@
     return map;
   }
 
+  /**
+   * @memberOf rQ
+   */
   function toMap2(list, attributeName) {
     var map = {}, i, o;
     for (i = 0; i < list.length; i++) {
@@ -186,5 +255,147 @@
     return map;
   }
   root[REMOTE_QUERY_NAME].toMap2 = toMap2;
+
+  /**
+   * @memberOf rQ
+   */
+  function sortBy(serviceData, headerName, asc) {
+    asc = _.isBoolean(asc) ? asc : true;
+    var array, index;
+
+    if (!_.isUndefined(serviceData.table)) {
+      array = serviceData.table;
+      index = _.indexOf(serviceData.header, headerName);
+      array.sort(sortByHead);
+    } else {
+      array = serviceData;
+      array.sort(sortByKey);
+    }
+
+    function sortByHead(e1, e2) {
+      var r = 0;
+      var v1 = e1[index];
+      var v2 = e2[index];
+      if (v1 < v2) {// sort string ascending
+        r = -1;
+      } else if (v1 > v2) {
+        r = 1;
+      }
+      return asc ? r : -1 * r;
+    }
+
+    function sortByKey(e1, e2) {
+      var r = 0;
+      var v1 = e1[headerName];
+      var v2 = e2[headerName];
+      if (!_.isString(v1) || !_.isString(v2)) {
+        return 0;
+      }
+      if (v1 < v2) {// sort string ascending
+        r = -1;
+      } else if (v1 > v2) {
+        r = 1;
+      }
+      return asc ? r : -1 * r;
+    }
+
+  }
+  root[REMOTE_QUERY_NAME].sortBy = sortBy;
+
+  /**
+   * @memberOf rQ
+   */
+  function firstAsObject(serviceData) {
+    var i, header, head, res = {};
+    if (serviceData && serviceData.header && serviceData.table
+        && serviceData.table.length) {
+      header = serviceData.header;
+      for (i = 0; i < header.length; i++) {
+        head = serviceData.header[i];
+        res[head] = serviceData.table[0][i];
+      }
+    }
+    return res;
+  }
+  root[REMOTE_QUERY_NAME].firstAsObject = firstAsObject;
+
+  /**
+   * @memberOf rQ
+   */
+  function toHierMap(serviceData, keyColumns) {
+    var map = {}, keys, keyIndexes = [], i, j;
+    var rowCounter, row, currentMap;
+    var t, isFirst;
+    if (_.isArray(keyColumns)) {
+      keys = keyColumns;
+    } else {
+      keys = keyColumns.split('.');
+    }
+    if (serviceData.table && serviceData.header) {
+      for (i = 0; i < keys.length; i++) {
+        var keyColumn = keys[i];
+        for (j = 0; j < serviceData.header.length; j++) {
+          if (serviceData.header[j] == keyColumn) {
+            keyIndexes.push(j);
+          }
+        }
+      }
+      // new and fast
+      for (rowCounter = 0; rowCounter < serviceData.table.length; rowCounter++) {
+        row = serviceData.table[rowCounter];
+        currentMap = map;
+        for (i = 0; i < keys.length; i++) {
+          var keyIndex = keyIndexes[i];
+          var keyName = row[keyIndex];
+          if (!currentMap[keyName]) {
+            currentMap[keyName] = {};
+          }
+          currentMap = currentMap[keyName];
+        }
+        if (_.size(currentMap) === 0) {
+          t = currentMap;
+          isFirst = true;
+        } else {
+          currentMap._list.push(t = {});
+          isFirst = false;
+        }
+        for (i = 0; i < serviceData.header.length; i++) {
+          t[serviceData.header[i]] = row[i];
+        }
+        if (isFirst) {
+          t._list = [ _.clone(t) ];
+        }
+      }
+    }
+    return map;
+  }
+  root[REMOTE_QUERY_NAME].toHierMap = toHierMap;
+
+  /**
+   * @memberOf rQ
+   */
+  function toListMap(arg0, name) {
+
+    var list, i, o, map = {};
+
+    if (_.isObject(arg0)) {
+      list = toList(arg0);
+    } else if (_.isArray(arg0)) {
+      list = arg0;
+    } else if (_.isFunction(arg0)) {
+      list = arg0.apply(this, arguments);
+    } else {
+      list = [];
+    }
+    for (i = 0; i < list.length; i++) {
+      o = list[i];
+      if (o && o[name]) {
+        map[o[name]] = map[o[name]] || [];
+        map[o[name]].push(o);
+      }
+    }
+    return map;
+  }
+  root[REMOTE_QUERY_NAME].toListMap = toListMap;
 
 })(this);
