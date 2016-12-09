@@ -3,17 +3,19 @@ package org.remotequery.tests;
 import org.junit.Assert;
 import org.junit.Test;
 import org.remotequery.RemoteQuery.Utils;
+import org.remotequery.RemoteQuery.MLTokenizer.Command;
 
 public class UtilsTests {
 
 	@Test
 	public void test1() {
 
-		String p[];
+		
 		String statement = "set:a=b//:sdlkfjdslf";
-		p = Utils.parseCommandValue(statement);
-		Assert.assertEquals(p[0], "set");
-		Assert.assertEquals(p[1], "a=b//:sdlkfjdslf");
+		Command p = Utils.parseCommandValue(statement);
+		
+		Assert.assertEquals(p.tokens.get(0), "set");
+		Assert.assertEquals(p.statement, "a=b//:sdlkfjdslf");
 		
 		//
 		//
@@ -21,8 +23,7 @@ public class UtilsTests {
 		
 		statement = "setsakf asöasf ls";
 		p = Utils.parseCommandValue(statement);
-		Assert.assertEquals(p[0], statement);
-		Assert.assertEquals(p[1], "");
+		Assert.assertEquals(p.statement, statement);
 		
 		//
 		//
@@ -30,7 +31,7 @@ public class UtilsTests {
 		
 		statement = "set-if-empty:a=asdfs fds";
 		p = Utils.parseCommandValue(statement);
-		Assert.assertEquals(p[0], "set-if-empty");
-		Assert.assertEquals(p[1], "a=asdfs fds");
+		Assert.assertEquals(p.tokens.get(0), "set-if-empty");
+		Assert.assertEquals(p.statement, "a=asdfs fds");
 	}
 }

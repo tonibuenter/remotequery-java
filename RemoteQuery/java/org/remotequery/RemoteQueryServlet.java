@@ -51,8 +51,8 @@ import org.slf4j.LoggerFactory;
  */
 public class RemoteQueryServlet extends HttpServlet {
 	/**
-     * 
-     */
+	   * 
+	   */
 	private static final long serialVersionUID = 1L;
 
 	/**
@@ -118,16 +118,16 @@ public class RemoteQueryServlet extends HttpServlet {
 		String appPropertiesFile = System
 		    .getProperty("REMOTEQUERY_APP_PROPERTIES_FILE");
 		if (!Utils.isBlank(appPropertiesFile)) {
-			System.out
-			    .println("FOUND REMOTEQUERY_APP_PROPERTIES_FILE from system properties : "
+			System.out.println(
+			    "FOUND REMOTEQUERY_APP_PROPERTIES_FILE from system properties : "
 			        + appPropertiesFile);
 		}
 		if (Utils.isBlank(appPropertiesFile)) {
 			appPropertiesFile = sc.getInitParameter("appPropertiesFile");
 		}
 		if (Utils.isBlank(appPropertiesFile)) {
-			logger
-			    .error("No value for appPropertiesFile defined in system properties and servlet context init parameters. RemoteQueryServlet will not continue.");
+			logger.error(
+			    "No value for appPropertiesFile defined in system properties and servlet context init parameters. RemoteQueryServlet will not continue.");
 			return;
 		}
 		InputStream in = null;
@@ -182,8 +182,8 @@ public class RemoteQueryServlet extends HttpServlet {
 		// ANONYMOUS is set.
 		//
 
-		String userId = httpRequest.getUserPrincipal() != null ? httpRequest
-		    .getUserPrincipal().getName() : RemoteQuery.ANONYMOUS;
+		String userId = httpRequest.getUserPrincipal() != null
+		    ? httpRequest.getUserPrincipal().getName() : RemoteQuery.ANONYMOUS;
 		HttpSession session = httpRequest.getSession();
 
 		String callback = httpRequest.getParameter("callback");
@@ -231,8 +231,8 @@ public class RemoteQueryServlet extends HttpServlet {
 
 			request.put(INITIAL, WebConstants.$SERVICEID, serviceId);
 
-			request.put(INITIAL, WebConstants.$CURRENT_TIME_MILLIS, ""
-			    + currentTimeMillis);
+			request.put(INITIAL, WebConstants.$CURRENT_TIME_MILLIS,
+			    "" + currentTimeMillis);
 
 			request.put(INITIAL, WebConstants.$TIMESTAMP,
 			    Utils.toIsoDateTimeSec(currentTimeMillis));
@@ -250,8 +250,8 @@ public class RemoteQueryServlet extends HttpServlet {
 			IRequestData requestData = null;
 			if (!Utils.isBlank(requestDataHandler)) {
 				try {
-					IRequestDataHandler rdh = (IRequestDataHandler) Class.forName(
-					    requestDataHandler).newInstance();
+					IRequestDataHandler rdh = (IRequestDataHandler) Class
+					    .forName(requestDataHandler).newInstance();
 					requestData = rdh.process(httpRequest);
 				} catch (Exception e1) {
 					logger.warn("Exception in IRequestDataHandler creation: "
@@ -272,8 +272,8 @@ public class RemoteQueryServlet extends HttpServlet {
 				if (values != null) {
 					if (values.size() > 1) {
 						value = Utils.joinTokens(values);
-						logger.debug("paramEntry (multi value joined!): " + name + ":"
-						    + value);
+						logger.debug(
+						    "paramEntry (multi value joined!): " + name + ":" + value);
 					} else {
 						value = values.get(0);
 						logger.debug("paramEntry: " + name + ":" + value);
@@ -351,10 +351,8 @@ public class RemoteQueryServlet extends HttpServlet {
 
 			if (!Utils.isBlank(accessServiceId)
 			    && !publicServiceIds.contains(serviceId)) {
-				logger
-				    .debug("ServiceId "
-				        + serviceId
-				        + " is  not a public service and a access service is defined (servlet parameter accessServiceId). Access service will be call first.");
+				logger.debug("ServiceId " + serviceId
+				    + " is  not a public service and a access service is defined (servlet parameter accessServiceId). Access service will be call first.");
 				request.setServiceId(accessServiceId);
 				MainQuery accessRq = new MainQuery();
 				Result r = accessRq.run(request);
@@ -373,8 +371,8 @@ public class RemoteQueryServlet extends HttpServlet {
 				logger.debug("ServiceId " + serviceId
 				    + " is a public service. No access service will be processed.");
 			} else if (Utils.isBlank(accessServiceId)) {
-				logger
-				    .debug("Servlet Parameter accessServiceId is not defined. No access service will be processed.");
+				logger.debug(
+				    "Servlet Parameter accessServiceId is not defined. No access service will be processed.");
 			}
 
 			//
@@ -386,16 +384,25 @@ public class RemoteQueryServlet extends HttpServlet {
 			long startTime = System.currentTimeMillis();
 			MainQuery mainRq = new MainQuery();
 			Result result = mainRq.run(request);
-			pLog.system("Request time used (ms):"
-			    + (System.currentTimeMillis() - startTime), logger);
+			pLog.system(
+			    "Request time used (ms):" + (System.currentTimeMillis() - startTime),
+			    logger);
 
 			//
 			// RQ SESSION parameters are written (back) to the HTTP session.
 			//
 
 			Map<String, String> newSessionMap = request.getParameters(SESSION);
-			for (Entry<String, String> sessionEntry : newSessionMap.entrySet()) {
-				session.setAttribute(sessionEntry.getKey(), sessionEntry.getValue());
+			// for (Entry<String, String> sessionEntry : newSessionMap.entrySet()) {
+			// session.setAttribute(sessionEntry.getKey(), sessionEntry.getValue());
+			// }
+
+			if (!Utils.isBlank(session.getId())) {
+				for (Entry<String, String> sessionEntry : newSessionMap.entrySet()) {
+					session.setAttribute(sessionEntry.getKey(), sessionEntry.getValue());
+				}
+			} else {
+				logger.warn("HttpSession session.getId is blank : session invalid");
 			}
 
 			//
@@ -411,8 +418,10 @@ public class RemoteQueryServlet extends HttpServlet {
 			} else {
 				returnAsJsonString(callback, JsonUtils.toJson("empty"), httpResponse);
 			}
+		} catch (IllegalStateException ie) {
+			logger.warn(ie.getMessage());
 		} catch (Exception e) {
-			logger.error(Utils.getStackTrace(e));
+			logger.error(e.getMessage(), e);
 		} finally {
 			ProcessLog.RemoveCurrent();
 		}
@@ -438,7 +447,7 @@ public class RemoteQueryServlet extends HttpServlet {
 			}
 			out.flush();
 		} catch (Exception e) {
-			logger.error(Utils.getStackTrace(e));
+			logger.error(e.getMessage(), e);
 		}
 	}
 
@@ -446,8 +455,8 @@ public class RemoteQueryServlet extends HttpServlet {
 
 		private final Map<String, List<String>> parameters = new HashMap<String, List<String>>();
 		/**
-     * 
-     */
+		 * 
+		 */
 		private static final long serialVersionUID = 1L;
 
 		public void add(String name, String value) {

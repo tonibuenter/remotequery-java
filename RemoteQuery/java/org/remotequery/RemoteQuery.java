@@ -48,6 +48,7 @@ import java.util.logging.Level;
 
 import javax.sql.DataSource;
 
+import org.remotequery.RemoteQuery.MLTokenizer.Command;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,8 +61,6 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.reflect.TypeToken;
 
 /**
- * TODOs set-0, set-1, ... set-initial, set-parameter:, set-session, ...
- * set-application, ...
  * 
  * @author tonibuenter
  */
@@ -979,10 +978,11 @@ public class RemoteQuery {
 					return currentResult;
 				}
 
-				String[] pair = Utils.parseCommandValue(serviceStmt);
+//				String[] pair = Utils.parseCommandValue(serviceStmt);
+				Command pair = Utils.parseCommandValue(serviceStmt);
 
-				String cmd = pair[0].trim();
-				String stmt = pair[1].trim();
+				String cmd = pair.tokens.get(0);
+				String stmt = pair.statement;
 
 				String className = MltClassNames.get(cmd);
 				if (!Utils.isEmpty(className)) {
@@ -1097,6 +1097,9 @@ public class RemoteQuery {
 
 		public static boolean startsWithMLT(String serviceStmt) {
 			if (serviceStmt.startsWith(MLT.java)) {
+				return true;
+			}
+			if (serviceStmt.startsWith("class")) {
 				return true;
 			}
 			if (serviceStmt.startsWith(MLT.parameters)) {
@@ -1288,7 +1291,7 @@ public class RemoteQuery {
 
 			qap = convertQuery(sql);
 			sql = qap.questionMarkQuery;
-			pLog.system("sql after conversion: " + sql);
+			// pLog.system("sql after conversion: " + sql);
 
 			//
 			// PREPARE SERVICE_STMT
@@ -2656,7 +2659,7 @@ public class RemoteQuery {
 					colIndex++;
 				}
 			} catch (Exception e) {
-				logger.error(Utils.getStackTrace(e));
+				logger.error(e.getMessage(),e);
 			}
 			return list;
 		}
@@ -3464,7 +3467,21 @@ public class RemoteQuery {
 			return IsoTimeTL.get().parse(date);
 		}
 
-		public static String[] parseCommandValue(String statement) {
+		public static Command parseCommandValue(String statement) {
+			return MLTokenizer.tokenize(statement, '\'', " \n\t:", '\\', true);
+
+			// String[] pair = { "", "" };
+			// int indexOf = statement.indexOf(':');
+			// if (indexOf == -1) {
+			// pair[0] = statement;
+			// } else {
+			// pair[0] = statement.substring(0, indexOf);
+			// pair[1] = statement.substring(indexOf + 1);
+			// }
+			// return pair;
+		}
+
+		public static String[] parseCommandValue_old(String statement) {
 			String[] pair = { "", "" };
 			int indexOf = statement.indexOf(':');
 			if (indexOf == -1) {
@@ -4794,6 +4811,97 @@ public class RemoteQuery {
 				} catch (Exception e1) {
 					// TODO
 				}
+		}
+
+	}
+
+	public static class MLTokenizer {
+
+		public static class Command {
+			public List<String> tokens;
+
+			public Command(List<String> tokens, String statement) {
+				super();
+				this.tokens = tokens;
+				this.statement = statement;
+			}
+
+			public String statement;
+		}
+
+		public static Command tokenize(String s, char quote, String separators,
+		    char esc, boolean stripQuotes) {
+
+			List<String> list = new ArrayList<String>();
+			String reminder = null;
+			boolean prot = false;
+			boolean escaped = false;
+			String text = "";
+			for (int current = 0; current < s.length(); current++) {
+				char c = s.charAt(current);
+				if (escaped) {
+					text += c;
+					escaped = false;
+					continue;
+				}
+				if (c == esc) {
+					escaped = true;
+					continue;
+				}
+				if (c == quote) {
+					prot = !prot;
+					text += c;
+					continue;
+				} else if (separators.contains("" + s.charAt(current)) && !prot) {
+					addText(list, text, stripQuotes);
+					if (reminder == null) {
+						reminder = s.substring(current);
+						reminder = trimLeft(reminder, separators, esc);
+					}
+					text = "";
+				} else {
+					text += c;
+				}
+			}
+			addText(list, text, stripQuotes);
+			return new Command(list, reminder);
+		}
+
+		public static String trimLeft(String s, String separators, char esc) {
+			if (s == null) {
+				return "";
+			}
+			for (int current = 0; current < s.length(); current++) {
+				char c = s.charAt(current);
+
+				if (c == esc) {
+					return s.substring(Math.min(current + 1, s.length() - 1));
+				} else if (separators.contains("" + c)) {
+					continue;
+				}
+				return s.substring(current);
+			}
+			return "";
+		}
+
+		public static void addText(List<String> list, String text,
+		    boolean stripQuotes) {
+			if (text != null) {
+				text = text.trim();
+				if (stripQuotes) {
+					if (text.startsWith("'")) {
+						text = text.substring(1);
+					}
+					if (text.endsWith("'")) {
+						text = text.substring(0, text.length() - 1);
+					}
+					text = text.trim();
+				}
+
+				if (text.length() > 0) {
+					list.add(text);
+				}
+			}
 		}
 
 	}
