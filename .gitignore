@@ -4,3 +4,4 @@ bin
 *.class
 local
 .DS_Store
+z/*
