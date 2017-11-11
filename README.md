@@ -1,64 +1,72 @@
 
-Welome to RemoteQuery!
-======================
+![Players of the RemoteQuery](https://docs.google.com/drawings/d/e/2PACX-1vQsPlanMiS2yX50Qxo3qR4Eb2di8tXoW3387qDHBcaJtvpu18WlyTY-k9Gfcvk8bCVCEhC9akweRta2/pub?w=378&amp;h=94)
 
 
-RemoteQuery is a tiny utility which helps to create SQL statements 
-as JSON rest-like services. Next to SQL, plain Java and Groovy can be used. 
 
-To create a service you need to choose a service id, a list of roles that can access the service and an SQL statement:
+# RemoteQuery (RQ)
+
+
+RemoteQuery (RQ) is a very simple but powerful tool for secure service creation, combination and publication. 
+
+It focuses on SQL and Java based implementation. The highlights:
+
++ An SQL statement with a name is a RQ service
++ Any RQ service can be protected with a list of roles
++ A Java class implementing the RQ IQuery interfase is a RQ service
++ The RQ Servlet directly maps HTTP parameters to SQ named parameters
+
+## Example RemoteQuery Web
+
+Let us assume we have server side the following RQ service entry : 
+
 ```
-SERVICE_ID = Sales_Overview
-ROLES      = SALE,ADMIN
-
-select * from T_SALES
+serviceId   : Address.search
+statements  : select FIRST_NAME, LAST_NAME, CITY from T_ADDRESS where FIRST_NAME like :nameFilter or LAST_NAME like :nameFilter
 ```
-To make thing more useful for large projects, service statements can be created with composition, parameter control and much more is supported.
 
-+ [RemoteQuery (Intro Slides)] (RemoteQuery.pdf?raw=true)
-+ [RemoteQuery Tech Stack Promotion] (RemoteQuery%20Tech%20Stack%20Promotion.pdf?raw=true)
+The the following URL:
 
+```
+http://hostname/remoteQuery/Address.search?nameFilter=Jo%
+```
+ 
+returns JSON:
 
-About RemoteQuery Repository
-----------------------------
+```json
+{
+  "header" : ["firstName", "lastName", "city"],
+  "table" : [
+        ["John", "Maier", "Zuerich"],
+        ["Mary", "Johnes", "Zuerich"]
+  ]
+}
+```
 
-The RemoteQuery repository contains the projects *RemoteQuery* and *RemoteQueryWeb*. 
-RemoteQuery is often abbreviated as 'RQ' or 'rQ'.
-
-RemoteQuery (RQ)
-----------------
-
-The RemoteQuery (RQ) project is the main project. It includes the RemoteQuery class and the RemoteQueryServlet (Java web component).
-Currently the Java implementation is ready for use.
-
-It is planned to have RemoteQuery for ASP.NET and PHP ready end of this year.
-
-[See RemoteQuery/README.rd](https://github.com/tonibuenter/RemoteQuery/blob/master/RemoteQuery/README.md)
-
-
-RemoteQueryWeb
---------------
-
-RemoteQueryWeb is a sample Java web project for using RQ in a Java Servlet-base web application.
+## Example RemoteQuery Standalone Java
 
 
-Essential RQ components for Java
---------------------------------
+```java
 
-+ [RemoteQuery.java] (https://github.com/tonibuenter/RemoteQuery/blob/master/RemoteQuery/java/org/remotequery/RemoteQuery.java)
-+ [RemoteQueryServlet.java](https://github.com/tonibuenter/RemoteQuery/blob/master/RemoteQuery/java/org/remotequery/RemoteQueryServlet.java)
-+ *gson-2.2.4.jar* [See RemoteQuery/java_libs] (https://github.com/tonibuenter/RemoteQuery/tree/master/RemoteQuery/java-libs) or on Google Code
-+ *slf4j-api-1.7.9.jar* [See RemoteQuery/java_libs] (https://github.com/tonibuenter/RemoteQuery/tree/master/RemoteQuery/java-libs)
+public static class Address {
+  public String firstName;
+  public String lastName;
+  public String city;
+}
 
+Result result = new Request().setServiceId("Address.search").put("nameFilter", "Jo%").addRole("APP_USER").run();
 
+// convert to a POJO
+List<Address> list = result.asList(Address.class)
 
-Quick Start for the RemoteQueryWeb application with Java/Eclipse
-----------------------------------------------------------------
-
-+ Download the **RemoteQuery** (Download ZIP button)
-+ Import the sub folder **RemoteQueryWeb** with Eclipse as existing projects
-+ You may possibly set the JDK in the project
-+ Deploy the RemoteQueryWeb to Apache Tomcat or JEE server
-+ ... all done ...
+```
 
 
+## Quick Start
+
+See [QuickStart](docs/quickstart.md)
+
+## RemoteQuery on the Web
+
+RemoteQuery is a standalone component that can be used as a web backend service delivery. Part of the distribution a RemoteQuery servlet is provided with a default implementation.
+
+See (docs/remotequery_web.md)
