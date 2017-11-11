@@ -5,7 +5,7 @@ import org.junit.Test;
 import org.remotequery.RemoteQuery.Utils;
 import org.remotequery.RemoteQuery.MLTokenizer.Command;
 
-public class UtilsTests {
+public class Test_Utils {
 
 	@Test
 	public void test1() {
@@ -23,7 +23,7 @@ public class UtilsTests {
 		
 		statement = "setsakf asöasf ls";
 		p = Utils.parseCommandValue(statement);
-		Assert.assertEquals(p.statement, statement);
+		Assert.assertEquals(p.statement, "asöasf ls");
 		
 		//
 		//

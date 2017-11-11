@@ -1,0 +1,13 @@
+----------------------------------------------------------------
+Fri Nov 10 18:16:20 CET 2017:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance a816c00e-015f-a6ee-ac43-00000df7cdd0 
+on database directory /private/var/folders/3h/nz7mytcs5sg29v1p5l9l49200000gn/T/remoteQueryTestDb4417112915494059600/test with class loader sun.misc.Launcher$AppClassLoader@1efde7ba 
+Loaded from file:/Users/tonibuenter/_proj/RemoteQuery/RemoteQuery/java-tests-libs/derby-10.12.1.1.jar
+java.vendor=Oracle Corporation
+java.runtime.version=1.7.0_79-b15
+user.dir=/Users/tonibuenter/_proj/RemoteQuery/RemoteQuery
+os.name=Mac OS X
+os.arch=x86_64
+os.version=10.11.6
+derby.system.home=null
+Database Class Loader started - derby.database.classpath=''

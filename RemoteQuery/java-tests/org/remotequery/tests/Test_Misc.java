@@ -7,7 +7,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class SortTests {
+public class Test_Misc {
 	@Test
 	public void sort1() {
 		Integer[] i1 = { 8, 4, 1, 3 };

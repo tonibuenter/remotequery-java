@@ -32,7 +32,7 @@
 
   //
 
-  var noSessionHandler, noSessionFn;
+  var noSessionHandler, noSessionFn, parameterWrapperFn;
 
   if (typeof REMOTE_QUERY_NAME !== 'string') {
     REMOTE_QUERY_NAME = 'rQ';
@@ -53,25 +53,32 @@
     'toList' : toList,
     'toMap' : toMap,
     'noSession' : settingNoSessionFn,
+    'parameterWrapper' : settingParameterWrapperFn,
     'memo' : memoFn
   };
 
   /**
    * @memberOf rQ
    */
-  function callRq(serviceId, arg1, arg2) {
-    var parameters, callback;
-    
-    if(_.isArray(serviceId)){
+  function callRq(serviceId, arg1, arg2, arg3) {
+    var parameters, callback, errorCb;
+
+    if (_.isArray(serviceId)) {
       return callRqMulti.apply(this, arguments);
     }
-    
+
     if (typeof arg1 === 'function') {
       parameters = {};
       callback = arg1;
+      errorCb = arg2;
     } else {
       parameters = arg1;
       callback = arg2;
+      errorCb = arg3;
+    }
+
+    if (_.isFunction(parameterWrapperFn)) {
+      parameters = parameterWrapperFn(parameters);
     }
 
     $.ajax({
@@ -86,6 +93,11 @@
           if (callback !== undefined) {
             callback.apply(this, arguments);
           }
+        }
+      },
+      'error' : function(arg0) {
+        if (_.isFunction(errorCb)) {
+          errorCb.apply(this, arguments);
         }
       }
     });
@@ -169,6 +181,13 @@
       noSessionFn = arg0;
     }
     return noSessionFn;
+  }
+  
+  function settingParameterWrapperFn(arg0) {
+    if (_.isFunction(arg0)) {
+      parameterWrapperFn = arg0;
+    }
+    return parameterWrapperFn;
   }
 
   /**

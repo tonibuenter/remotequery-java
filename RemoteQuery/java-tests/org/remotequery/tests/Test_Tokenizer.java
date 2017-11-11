@@ -4,7 +4,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.remotequery.RemoteQuery.Utils;
 
-public class TokenizerTests {
+public class Test_Tokenizer {
 
 	@Test
 	public void commaListTest() {

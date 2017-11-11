@@ -1,130 +1,72 @@
-RemoteQuery
-===========
 
-RemoteQuery is a very simple but powerful tool for service creation and combination. 
-It focuses on SQL and Java based implementation. The following point show the main parts:
+![Players of the RemoteQuery](https://docs.google.com/drawings/d/e/2PACX-1vQsPlanMiS2yX50Qxo3qR4Eb2di8tXoW3387qDHBcaJtvpu18WlyTY-k9Gfcvk8bCVCEhC9akweRta2/pub?w=378&amp;h=94)
 
-+ A simple SQL select is already a RQ service
-+ Any RQ service can be protected with a list of access roles
-+ A program implementing the RQ interface is already an RQ service
-+ The RQ Servlet enables SQ services as REST services
-+ Any SQL statement with named parameter is SQ service
+
+
+# RemoteQuery (RQ)
+
+
+RemoteQuery (RQ) is a very simple but powerful tool for secure service creation, combination and publication. 
+
+It focuses on SQL and Java based implementation. The highlights:
+
++ An SQL statement with a name is a RQ service
++ Any RQ service can be protected with a list of roles
++ A Java class implementing the RQ IQuery interfase is a RQ service
 + The RQ Servlet directly maps HTTP parameters to SQ named parameters
 
-Example
--------
+## Example RemoteQuery Web
 
-Let us assume we have server side the following RQ Entry : 
+Let us assume we have server side the following RQ service entry : 
+
 ```
-SERVICE_ID   : 'SearchAddress'
-SERVICE_STMT : 'addressSearch select * from T_ADDRESS where city like :searchString'
+serviceId   : Address.search
+statements  : select FIRST_NAME, LAST_NAME, CITY from T_ADDRESS where FIRST_NAME like :nameFilter or LAST_NAME like :nameFilter
 ```
 
-The URL :
+The the following URL:
+
 ```
-http://hostname/remoteQuery/SearchAddress?searchString=Zuer%
+http://hostname/remoteQuery/Address.search?nameFilter=Jo%
 ```
  
-will get a list of addresses in the RQ result format :
+returns JSON:
 
-```
+```json
 {
-  header : ['firstName', 'lastName', .... , 'city']
-  table : [
-  			['Hans', ' Maier', ... , 'Zuerich'],
-  			[...]
-  ] 
+  "header" : ["firstName", "lastName", "city"],
+  "table" : [
+        ["John", "Maier", "Zuerich"],
+        ["Mary", "Johnes", "Zuerich"]
+  ]
 }
 ```
 
-
-Classes and Libs
-----------------
-This folder hosts the essential RQ program components:
-- RemoteQuery
-- RemoteQueryServlet (for a web application)
-- Google GSON library
-
-RemoteQueryWeb
-==============
+## Example RemoteQuery Standalone Java
 
 
-Servlet Configurations (web.xml)
---------------------------------
+```java
 
-Let me explain the configuration with a real world Example:
+public static class Address {
+  public String firstName;
+  public String lastName;
+  public String city;
+}
 
-	<servlet>
-		<servlet-name>RemoteQueryServlet</servlet-name>
-		<servlet-class>org.remotequery.RemoteQueryServlet</servlet-class>
-		<init-param>
-			<param-name>accessServiceId</param-name>
-			<param-value>RQUserAction</param-value>
-		</init-param>
-	<init-param>
-			<param-name>publicServiceIds</param-name>
-			<param-value>VIP.selectAllLabels,VIP.selectLanguages</param-value>
-		</init-param>
-		<init-param>
-			<param-name>headerParameters</param-name>
-			<param-value>JSESSION</param-value>
-		</init-param>
-		<init-param>
-			<param-name>requestDataHandler</param-name>
-			<param-value>org.jground.anakapa.web.RqFileRequestHandler</param-value>
-		</init-param>
-		<load-on-startup>1</load-on-startup>
-	</servlet>
+Result result = new Request().setServiceId("Address.search").put("nameFilter", "Jo%").addRole("APP_USER").run();
 
-	<servlet-mapping>
-		<servlet-name>RemoteQueryServlet</servlet-name>
-		<url-pattern>/remoteQuery/*</url-pattern>
-	</servlet-mapping>
+// convert to a POJO
+List<Address> list = result.asList(Address.class)
+
+```
 
 
+## Quick Start
 
-RemoteQueryServlet
------------------- 
-This is the RQ servlet name used for the mapping
-/remoteQuery/*
+See [QuickStart](docs/quickstart.md)
 
-This mapping pattern is actually the default. So, when using the JavaScript client libraries from 
-RemoteQueryWeb no changes have to be made for accessing the server.
+## RemoteQuery on the Web
 
+RemoteQuery is a standalone component that can be used as a web backend service delivery. Part of the distribution a RemoteQuery servlet is provided with a default implementation.
 
-Parameter accessServiceId (not mandatory)
-------------------------- 
-
-The value of accessServiceId parameter is the name of RQ service responsible for the authentication and authorization.
-It will be call before every other request.
-
-
-Parameter publicServiceIds (not mandatory)
-------------------------- 
-The value of the 'publicServiceIds' parameter contains a list of RQ services. No access service will be called.
-
-
-Parameter 'headerParameters' (not mandatory)
-------------------------------
-The value of the 'headerParameters' parameter contains a list of header names. Their name and value are used for the RQ request parameters. If the 
-'headerParameters' parameter is not defined, no header are read for the RQ request.
-
-
-Parameter 'requestDataHandler' (not mandatory)
-------------------------------
-In case of specific requirements for handling the HTTP request the class of the parameter value is used. This class has to implement the 
-IRequestDataHandler interface.
-Here the definition.
-
-	public interface IRequestDataHandler {
-		IRequestData process(HttpServletRequest httpRequest) throws Exception;
-	}
-
-	public interface IRequestData {
-		Map<String, List<String>> getParameters();
-	}
-
-
-
-
-
+See (docs/remotequery_web.md)
