@@ -5,6 +5,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.remotequery.RemoteQuery;
 import org.remotequery.RemoteQuery.CommandNode;
+import org.remotequery.RemoteQuery.ProcessLog;
 import org.remotequery.RemoteQuery.Request;
 import org.remotequery.RemoteQuery.Result;
 import org.remotequery.RemoteQuery.ServiceEntry;
@@ -326,6 +327,19 @@ public class Test_Commands {
 		Assert.assertNotNull(total1);
 		Assert.assertEquals("1", total1);
 
+	}
+
+	@Test
+	public void test_command_example() throws Exception {
+		ServiceEntry se = ServiceRepositoryHolder.get().get("Test.Command.example");
+		Assert.assertNotNull(se);
+		ProcessLog.Current(new ProcessLog());
+		Request request = new Request().setServiceId("Test.Command.example");
+		Result result = request.run();
+		Assert.assertEquals("403", result.processLog.statusCode);
+		request.addRole("APP_ADMIN");
+		result = request.run();
+		Assert.assertEquals("world", result.table.get(0).get(0));
 	}
 
 	public static void assertSameStruct(CommandNode expected, CommandNode actual) {

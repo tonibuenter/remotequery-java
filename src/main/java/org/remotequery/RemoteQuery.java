@@ -75,6 +75,7 @@ public class RemoteQuery {
 
 	public static int MAX_RECURSION = 40;
 	public static int MAX_INCLUDES = 100;
+	public static int MAX_WHILE = 10000;
 
 	public static final char DEFAULT_DEL = ',';
 	public static final char DEFAULT_ESC = '\\';
@@ -126,6 +127,7 @@ public class RemoteQuery {
 			Registry.put("class", new JavaCommand());
 			Registry.put("if", new IfCommand());
 			Registry.put("switch", new SwitchCommand());
+			Registry.put("while", new WhileCommand());
 			Registry.put("foreach", new ForeachCommand());
 			Registry.put("then", new NoOpCommand());
 			Registry.put("else", new NoOpCommand());
@@ -3846,6 +3848,26 @@ public class RemoteQuery {
 
 			for (Map<String, String> map : list) {
 				iRequest.put(map);
+				for (CommandNode child : commandNode.children) {
+					Result r = RemoteQuery.processCommandBlock(child, iRequest, currentResult, serviceEntry);
+					currentResult = r == null ? currentResult : r;
+				}
+			}
+			return currentResult;
+		}
+	}
+
+	public static class WhileCommand implements ICommand {
+
+		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
+			int counter = 0;
+			while (counter < MAX_WHILE) {
+				String whileCondition = request.get(commandNode.parameter);
+				Request iRequest = request.deepCopy();
+				if (Utils.isBlank(whileCondition)) {
+					break;
+				}
+				counter++;
 				for (CommandNode child : commandNode.children) {
 					Result r = RemoteQuery.processCommandBlock(child, iRequest, currentResult, serviceEntry);
 					currentResult = r == null ? currentResult : r;

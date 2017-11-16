@@ -77,7 +77,7 @@ More on : [QuickStart](docs/quickstart.md)
 
 RemoteQuery is a standalone component that can be used as a web backend service delivery. Part of the distribution a RemoteQuery servlet is provided with a default implementation.
 
-See (docs/remotequery_web.md)
+See [RemoteQuery Web](docs/remotequery_web.md)
 
 
 ## Service Query and Manual

@@ -1,7 +1,7 @@
 ----------------------------------------------------------------
-Thu Nov 16 09:52:42 CET 2017:
-Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance a816c00e-015f-c407-be5e-00000df86eb0 
-on database directory /private/var/folders/3h/nz7mytcs5sg29v1p5l9l49200000gn/T/remoteQueryTestDb4273669572586623819/test with class loader sun.misc.Launcher$AppClassLoader@2f78743b 
+Thu Nov 16 19:03:45 CET 2017:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance a816c00e-015f-c600-3c80-00000e217838 
+on database directory /private/var/folders/3h/nz7mytcs5sg29v1p5l9l49200000gn/T/remoteQueryTestDb6551150113222759468/test with class loader sun.misc.Launcher$AppClassLoader@5374d4c9 
 Loaded from file:/Users/tonibuenter/_proj/ws/remote-query/java-tests-libs/derby-10.12.1.1.jar
 java.vendor=Oracle Corporation
 java.runtime.version=1.7.0_79-b15

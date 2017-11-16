@@ -161,3 +161,13 @@ parameters:select count(*) as "TOTAL1" from JGROUND.T_APP_PROPERTIES where NAME 
 delete from JGROUND.T_APP_PROPERTIES where NAME like :prefix
 ;
 
+
+
+--
+-- SERVICE_ID = Test.Command.example
+-- ROLES      = APP_ADMIN
+
+set:name=hello
+;
+select VALUE from JGROUND.T_APP_PROPERTIES where NAME = :name
+
