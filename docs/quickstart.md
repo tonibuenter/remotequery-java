@@ -2,80 +2,124 @@
 
 ## Eclipse Project
 
-Clone this repository and you get Eclipse project.
+Download or clone this repository and you get Eclipse project (Dynamic Web).
 
-Check out the `java-test` folder with the JUnit classes. 
+Run JUnit in `src/test/java`. The code in `TestCentral.java` shows how RemoteQuery is initialized:
 
-Setup of RemoteQuery best seen in `TestCentral.java`:
+1. **DataBase** : Derby with embedded driver
+2. **DataSource** : Apache BasicDataSource
+3. **DB Objects** : Create tables, insert bootstrap service entry
+4. **Initialize RemoteQuery** : Register data source and service repository
+5. **Load RQ Services** : Read service definition from rq.sql files
+
 
 ```java
  
-    //
-    // EMBEDDED DERBY PARAMETERS
-    //
+      //
+      // 1. DataBase : Derby with embedded driver
+      //
 
-    Path tmpDbPath = Files.createTempDirectory("remoteQueryTestDb");
-    logger.info("Will try to temporary db in folder: " + tmpDbPath.toAbsolutePath());
+      Path tmpDbPath = Files.createTempDirectory("remoteQueryTestDb");
+      logger.info("Will try to temporary db in folder: " + tmpDbPath.toAbsolutePath());
 
-    String dbdriver = "org.apache.derby.jdbc.EmbeddedDriver";
-    String dburl = "jdbc:derby:" + tmpDbPath.toAbsolutePath() + "/test;create=true";
-    String dbuserid = "derby";
-    String dbpasswd = "derby";
+      String dbdriver = "org.apache.derby.jdbc.EmbeddedDriver";
+      String dburl = "jdbc:derby:" + tmpDbPath.toAbsolutePath() + "/test;create=true";
+      String dbuserid = "derby";
+      String dbpasswd = "derby";
 
-    //
-    // APACHE DATASOURCE
-    //
+      //
+      // 2. DataSource : Apache BasicDataSource
+      //
 
-    BasicDataSource basicDataSource = new BasicDataSource();
-    basicDataSource.setDriverClassName(dbdriver);
-    basicDataSource.setUrl(dburl);
-    basicDataSource.setUsername(dbuserid);
-    basicDataSource.setPassword(dbpasswd);
-    Connection connection = basicDataSource.getConnection();
-    logger.info("Got connection: " + connection);
+      BasicDataSource basicDataSource = new BasicDataSource();
+      basicDataSource.setDriverClassName(dbdriver);
+      basicDataSource.setUrl(dburl);
+      basicDataSource.setUsername(dbuserid);
+      basicDataSource.setPassword(dbpasswd);
+      Connection connection = basicDataSource.getConnection();
+      logger.info("Got connection: " + connection);
 
-    //
-    // INIT DATABASE (create db objects, load bootstap service entry)
-    //
+      //
+      // 3. DB Objects : Create tables, insert bootstrap service entry
+      //
 
-    String sqlfileNames[] = { "init_01_bootstrap.sql" };
-    for (String sqlfileName : sqlfileNames) {
-      Reader input = new InputStreamReader(
-          TestCentral.class.getResourceAsStream("/org/remotequery/tests/" + sqlfileName), "UTF-8");
-      String sqlText = IOUtils.toString(input);
-      input.close();
-      RemoteQueryUtils2.processSqlText(connection, sqlText, sqlfileName);
-    }
+      for (String sqlfileName : sqlfileNames) {
+        Reader input = new InputStreamReader(
+            TestCentral.class.getResourceAsStream("/org/remotequery/tests/" + sqlfileName), "UTF-8");
+        String sqlText = IOUtils.toString(input);
+        input.close();
+        RemoteQueryUtils.processSqlText(connection, sqlText, sqlfileName);
+      }
 
-    //
-    // INIT REMOTE QUERY (DataSourceEntry, ServiceRepository, ...)
-    //
+      //
+      // 4. Initialize RemoteQuery : Register data source and service repository
+      //
 
-    logger.info("Try to init RemoteQuery.DataSourceEntry...");
-    new RemoteQuery2.DataSourceEntry(basicDataSource);
+      logger.info("Register default data source...");
+      DataSources.register(basicDataSource);
 
-    logger.info("Try to init RemoteQuery.ServiceRepository...");
-    ServiceRepositoryHolder.setInstance(new ServiceRepositorySql(basicDataSource, "JGROUND.T_RQ_SERVICE"));
+      logger.info("Register default ...");
+      ServiceRepositorySql serviceRepository = new ServiceRepositorySql(basicDataSource, "JGROUND.T_RQ_SERVICE");
+      ServiceRepositoryHolder.set(serviceRepository);
 
-    //
-    // LOAD RQ Services from rq.sql files
-    //
+      //
+      // 5. Load RQ Services : Read service definition from rq.sql files
+      //
 
-    String rqSqlfileNames[] = { "init_02_commands.rq.sql", "init_10_system_services.rq.sql",
-        "init_20_address_services.rq.sql" };
-    for (String fileName : rqSqlfileNames) {
-      Reader input = new InputStreamReader(
-          TestCentral.class.getResourceAsStream("/org/remotequery/tests/" + fileName), "UTF-8");
-      String rqSqlText = IOUtils.toString(input);
-      input.close();
-      RemoteQueryUtils2.processRqSqlText(connection, rqSqlText, "RQService.save", fileName);
-    }
+      for (String fileName : rqSqlfileNames) {
+        Reader input = new InputStreamReader(
+            TestCentral.class.getResourceAsStream("/org/remotequery/tests/" + fileName), "UTF-8");
+        String rqSqlText = IOUtils.toString(input);
+        input.close();
+        RemoteQueryUtils.processRqSqlText(connection, rqSqlText, "RQService.save", fileName);
+      }
 
-    connection.close();
- 
+
  
 ```
 
+
+## Remarks to 4. Initialize RemoteQuery
+
+In case of multiple data sources they can be registered by a name. The given name for registration corresponds with the service entry data source attribute. In case of a registration without a name or empty name or **RemoteQuery.DEFAULT\_DATASOURCE** as name, the data source is used as default data source for service entries also with empty dataSource attribute or with **RemoteQuery.DEFAULT\_DATASOURCE**.
+
+### Class ServiceRepositorySql
+
+The class ServiceRepositorySql is a convenience class for reading  service entries from a table or view. 
+
+It requires a data source and a table or view name:
+```java
+new ServiceRepositorySql(basicDataSource, "JGROUND.T_RQ_SERVICE")
+```
+
+In the above example the table JGROUND.T\_RQ\_SERVICE is provided.
+
+This table or view is expected to return the following columns with the query:
+
+```sql
+select * from JGROUND.T_RQ_SERVICE where SERVICE_ID = ?
+```
+
+The columns expected are
+
+* SERVICE_ID : Service id
+* STATEMENTS : RQ statements
+* ROLES : Comma separated list of role names, could be empty
+* DATASOURCE : Name of the datasource, could be empty
+
+
+The table used in the example above is:
+
+```sql
+create table JGROUND.T_RQ_SERVICE (
+   SERVICE_ID varchar(256),
+   STATEMENTS varchar(4000),
+   ROLES varchar(4000),
+   DATASOURCE varchar(512),
+   primary key (SERVICE_ID)
+);
+
+```
 
 
 

@@ -3,12 +3,12 @@ package org.remotequery.tests;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.remotequery.RemoteQuery2;
-import org.remotequery.RemoteQuery2.CommandNode;
-import org.remotequery.RemoteQuery2.Request;
-import org.remotequery.RemoteQuery2.Result;
-import org.remotequery.RemoteQuery2.ServiceEntry;
-import org.remotequery.RemoteQuery2.ServiceRepositoryHolder;
+import org.remotequery.RemoteQuery;
+import org.remotequery.RemoteQuery.CommandNode;
+import org.remotequery.RemoteQuery.Request;
+import org.remotequery.RemoteQuery.Result;
+import org.remotequery.RemoteQuery.ServiceEntry;
+import org.remotequery.RemoteQuery.ServiceRepositoryHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,9 +28,9 @@ public class Test_Commands {
 
 	@Test
 	public void test_command_set() throws Exception {
-		ServiceEntry se = ServiceRepositoryHolder.getInstance().get("Test.Command.set");
+		ServiceEntry se = ServiceRepositoryHolder.get().get("Test.Command.set");
 		Assert.assertNotNull(se);
-		CommandNode cb = RemoteQuery2.prepareCommandBlock(se);
+		CommandNode cb = RemoteQuery.prepareCommandBlock(se);
 		Assert.assertEquals("serviceRoot", cb.cmd);
 		Assert.assertEquals(2, cb.children.size());
 		Assert.assertEquals("set", cb.children.get(0).cmd);
@@ -39,9 +39,9 @@ public class Test_Commands {
 
 	@Test
 	public void test_command_if() throws Exception {
-		ServiceEntry se = ServiceRepositoryHolder.getInstance().get("Test.Command.if");
+		ServiceEntry se = ServiceRepositoryHolder.get().get("Test.Command.if");
 		Assert.assertNotNull(se);
-		CommandNode cb = RemoteQuery2.prepareCommandBlock(se);
+		CommandNode cb = RemoteQuery.prepareCommandBlock(se);
 
 		CommandNode cbExpected = new CommandNode("serviceRoot").append(new CommandNode("parameters"),
 				new CommandNode("if").append(
@@ -78,9 +78,9 @@ public class Test_Commands {
 		// COMMAND
 		//
 
-		ServiceEntry se = ServiceRepositoryHolder.getInstance().get(serviceId);
+		ServiceEntry se = ServiceRepositoryHolder.get().get(serviceId);
 		Assert.assertNotNull(se);
-		CommandNode cb = RemoteQuery2.prepareCommandBlock(se);
+		CommandNode cb = RemoteQuery.prepareCommandBlock(se);
 
 		CommandNode cbExpected = new CommandNode("serviceRoot").append(
 				//
@@ -125,9 +125,9 @@ public class Test_Commands {
 		// Command Block
 		//
 
-		ServiceEntry se = ServiceRepositoryHolder.getInstance().get(serviceId);
+		ServiceEntry se = ServiceRepositoryHolder.get().get(serviceId);
 		Assert.assertNotNull(se);
-		CommandNode cb = RemoteQuery2.prepareCommandBlock(se);
+		CommandNode cb = RemoteQuery.prepareCommandBlock(se);
 
 		CommandNode cbExpected = new CommandNode("serviceRoot").append(
 				//
@@ -197,9 +197,9 @@ public class Test_Commands {
 		// Command Block
 		//
 
-		ServiceEntry se = ServiceRepositoryHolder.getInstance().get(serviceId);
+		ServiceEntry se = ServiceRepositoryHolder.get().get(serviceId);
 		Assert.assertNotNull(se);
-		CommandNode cb = RemoteQuery2.prepareCommandBlock(se);
+		CommandNode cb = RemoteQuery.prepareCommandBlock(se);
 
 		CommandNode cbExpected = new CommandNode("serviceRoot").append(
 				//
@@ -267,9 +267,9 @@ public class Test_Commands {
 		// Command Block
 		//
 
-		ServiceEntry se = ServiceRepositoryHolder.getInstance().get(serviceId);
+		ServiceEntry se = ServiceRepositoryHolder.get().get(serviceId);
 		Assert.assertNotNull(se);
-		CommandNode cb = RemoteQuery2.prepareCommandBlock(se);
+		CommandNode cb = RemoteQuery.prepareCommandBlock(se);
 
 		CommandNode cbExpected = new CommandNode("serviceRoot").append(
 				//

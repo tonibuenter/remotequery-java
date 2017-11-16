@@ -9,7 +9,7 @@ import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.remotequery.RemoteQuery.Utils;
+import org.remotequery.z_RemoteQuery.Utils;
 
 public class DefaultWebSecurity implements IWebSecurity {
 

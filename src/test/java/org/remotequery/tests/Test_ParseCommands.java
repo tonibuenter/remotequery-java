@@ -3,7 +3,7 @@ package org.remotequery.tests;
 import org.apache.commons.lang3.tuple.Triple;
 import org.junit.Assert;
 import org.junit.Test;
-import org.remotequery.RemoteQuery2.Utils;
+import org.remotequery.RemoteQuery.Utils;
 
 public class Test_ParseCommands {
 	@Test
@@ -16,7 +16,8 @@ public class Test_ParseCommands {
 		_parse_("serviceId:This_and that", "serviceId", "This_and that", "serviceId:This_and that");
 		_parse_("Select * from ldsfkds", "sql", "Select * from ldsfkds", "Select * from ldsfkds");
 		_parse_("settti: * from ldsfkds", "sql", "settti: * from ldsfkds", "settti: * from ldsfkds");
-		_parse_("if : select * from ldsfkds", "if", "select * from ldsfkds", "if : select * from ldsfkds");
+		_parse_(" if : parameter 123 ", "if", "parameter 123", "if : parameter 123");
+		_parse_("if para3", "if", "para3", "if para3");
 		_parse_("then", "then", "", "then");
 		//
 		String t = "set : a b'\"";

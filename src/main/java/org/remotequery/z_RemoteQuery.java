@@ -11,9 +11,11 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Reader;
 import java.io.Serializable;
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -45,8 +47,7 @@ import java.util.logging.Level;
 
 import javax.sql.DataSource;
 
-import org.apache.commons.lang3.tuple.ImmutableTriple;
-import org.apache.commons.lang3.tuple.Triple;
+import org.remotequery.z_RemoteQuery.MLTokenizer.Command;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,17 +57,21 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
+import com.google.gson.reflect.TypeToken;
 
 /**
  * 
  * @author tonibuenter
  */
-public class RemoteQuery2 {
+public class z_RemoteQuery {
 
-	private static Logger logger = LoggerFactory.getLogger(RemoteQuery2.class);
-	private static Logger rqMainLogger = logger;
-	private static Logger rqDebugLogger = LoggerFactory.getLogger(RemoteQuery2.class.getName() + ".rq");
-	private static Logger sqlLogger = LoggerFactory.getLogger(RemoteQuery2.class.getName() + ".sql");
+	private static Logger rqLogger = LoggerFactory.getLogger(z_RemoteQuery.class);
+	private static Logger rqMainLogger = rqLogger;
+	private static Logger rqDebugLogger = LoggerFactory.getLogger(z_RemoteQuery.class.getName() + ".rq");
+	private static Logger sqlLogger = LoggerFactory.getLogger(z_RemoteQuery.class.getName() + ".sql");
+
+	public static Map<String, IProcessFactory> ScriptQueries = new HashMap<String, z_RemoteQuery.IProcessFactory>();
+	public static Map<String, String> MltClassNames = new HashMap<String, String>();
 
 	/**
 	 * "DEFAULT_DATASOURCE" is the default data source name.
@@ -78,74 +83,59 @@ public class RemoteQuery2 {
 	 */
 	public static String ENCODING = "UTF-8";
 
-	public static int MAX_RECURSION = 40;
+	public static int MAX_RECURSION = 20;
 
 	public static final char DEFAULT_DEL = ',';
 	public static final char DEFAULT_ESC = '\\';
 
 	public static final String ANONYMOUS = "ANONYMOUS";
 
-	public static char STATEMENT_DELIMITER = ';';
-	public static char STATEMENT_ESCAPE = '\\';
-
 	public static String COL_STATEMENTS = "STATEMENTS";
 	public static String COL_ROLES = "ROLES";
 	public static String COL_SERVICE_ID = "SERVICE_ID";
-
 	/**
 	 * Version 2.0
 	 */
 	public static String COL_DATASOURCE = "DATASOURCE";
 
-	public static class Commands {
+	public static class MLT {
 
-		public static final Set<String> BlockIn = new HashSet<String>();
-		static {
-			BlockIn.add("if");
-			BlockIn.add("switch");
-			BlockIn.add("while");
-			BlockIn.add("foreach");
-		}
-
-		public static final Set<String> BlockOut = new HashSet<String>();
-		static {
-			BlockOut.add("fi");
-			BlockOut.add("done");
-			BlockOut.add("end");
-		}
-
-		public static final Map<String, Object> Register = new HashMap<String, Object>();
-		static {
-			Register.put("serviceRoot", new ServiceRootCommand());
-			Register.put("sql", new SqlCommand());
-			Register.put("set", new SetCommand());
-			Register.put("set-if-empty", new SetIfEmptyCommand());
-			Register.put("copy-over", new CopyOverCommand());
-			Register.put("copy-over-if-empty", new CopyOverIfEmptyCommand());
-			Register.put("parameters", new ParametersCommand());
-			Register.put("parameters-if-empty", new ParametersIfEmptyCommand());
-			Register.put("serviceId", new ServiceIdCommand());
-			Register.put("java", new JavaCommand());
-			Register.put("class", new JavaCommand());
-			Register.put("if", new IfCommand());
-			Register.put("switch", new SwitchCommand());
-			Register.put("foreach", new ForeachCommand());
-			Register.put("then", new NoOpCommand());
-			Register.put("else", new NoOpCommand());
-			Register.put("case", new NoOpCommand());
-			Register.put("default", new NoOpCommand());
-			Register.put("break", new NoOpCommand());
-			Register.put("fi", new NoOpCommand());
-			Register.put("do", new NoOpCommand());
-			Register.put("done", new NoOpCommand());
-			Register.put("end", new NoOpCommand());
-		}
-
-		public static boolean isCmd(String cmd) {
-			return BlockIn.contains(cmd) || BlockOut.contains(cmd) || Register.containsKey(cmd);
-		}
+		// code indication
+		public static final String java = "java";
+		public static final String sql = "sql";
+		// combination
+		public static final String serviceId = "serviceId";
+		// parameter / result statements
+		public static final String set = "set";
+		public static final String set_if_empty = "set-if-empty";
+		public static final String copy_over = "copy-over";
+		public static final String set_if_null = "set-if-null";
+		public static final String set_null = "set-null";
+		public static final String parameters_if_empty = "parameters-if-empty";
+		public static final String parameters = "parameters";
+		//
+		public static final String debugOn = "debugOn";
+		public static final String debugOff = "debugOff";
+		//
+		public static final String tx_begin = "tx-begin";
+		public static final String tx_commit = "tx-commit";
 
 	}
+
+	public static class Params {
+		public static String serviceId = "serviceId";
+		public static String statements = "statements";
+		public static String roles = "roles";
+	}
+
+	public static class DBColumns {
+		public static String serviceId = "serviceId";
+		public static String statements = "statements";
+		public static String roles = "roles";
+	}
+
+	public static char STATEMENT_DELIMITER = ';';
+	public static char STATEMENT_ESCAPE = '\\';
 
 	/**
 	 * The DataSourceEntry class main responsibility is to provide a data source
@@ -213,24 +203,464 @@ public class RemoteQuery2 {
 
 	}
 
-	/**
-	 * 
-	 * @author tonibuenter
-	 * 
-	 */
-	public static interface IQuery {
-
+	public static interface IQuery extends Serializable {
+		
 		public Result run(Request request);
+		
+	}
+
+	public static interface IProcessFactory extends Serializable {
+
+		IProcess create(Request request, ServiceEntry serviceEntry, Result result, String statements);
 
 	}
 
+	public static interface IProcess extends Serializable {
+
+		Result process();
+
+	}
+
+	//
+	//
+	// PROCESSING JSON STATEMENTS
+	//
+	//
+
+	public static class JsonAnswer {
+		public Result result;
+		boolean returnFlag;
+
+		public JsonAnswer(Result result) {
+			this.result = result;
+		}
+
+		public JsonAnswer() {
+		}
+
+		String getSingleValue() {
+			if (result != null) {
+				return result.getSingleValue();
+			}
+			return null;
+		}
+
+	}
+
+	public interface IJsonProcessor {
+		JsonAnswer run(Object statement);
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static class JsonProcessor {
+
+		public static Map<String, Class<? extends IJsonProcessor>> commands = new HashMap<String, Class<? extends IJsonProcessor>>();
+
+		static {
+			commands.put("add-role", AddRoleProcessor.class);
+			commands.put("switch", SwitchProcessor.class);
+			commands.put("userMessage", UserMessage.class);
+			commands.put("foreach", ForeachProcessor.class);
+			commands.put("union", UnionProcessor.class);
+			commands.put("join", JoinProcessor.class);
+		}
+
+		String statements;
+		ServiceEntry serviceEntry;
+		Request request;
+		JsonAnswer answer;
+		final ProcessLog pLog;
+		List<Result> results;
+
+		public JsonProcessor(Request request, ServiceEntry serviceEntry, Result result, String statements) {
+			super();
+			this.serviceEntry = serviceEntry;
+			this.statements = statements;
+			this.request = request;
+			pLog = ProcessLog.Current();
+			results = new ArrayList<Result>();
+		}
+
+		public Result process() {
+			pLog.warn(request.getServiceId() + " -> JsonProcessor still in BETA !!!", rqLogger);
+
+			answer = new JsonAnswer();
+			List statementList = JsonUtils.toObject(statements, List.class);
+			JsonAnswer aResult = processStatementList(statementList);
+			if (aResult.result == null) {
+				aResult.result = new Result(pLog);
+			} else {
+				aResult.result.setProcessLog(pLog);
+			}
+			return aResult.result;
+		}
+
+		public JsonAnswer processStatementList(List statements) {
+			JsonAnswer a = new JsonAnswer();
+			for (Object statement : statements) {
+				a = processStatement(statement);
+				if (answer.returnFlag) {
+					return a;
+				}
+			}
+			return a;
+		}
+
+		public JsonAnswer processStatement(Object statement) {
+			JsonAnswer a = null;
+
+			if (statement == null) {
+				a = new JsonAnswer();
+			}
+			if (statement instanceof String) {
+				a = (new StringProcessor(this).run(statement));
+			} else if (statement instanceof Map) {
+				a = processStatementMap((Map) statement);
+			} else if (statement instanceof List) {
+				a = processStatementList((List) statement);
+			}
+			return a;
+		}
+
+		public Result processServiceQuery(String statement) {
+			Result prevPagingResult = answer != null ? answer.result : null;
+			try {
+				return MainQuery.processStatementList(request, serviceEntry, prevPagingResult, statement);
+			} catch (Exception e) {
+				pLog.error("tried to run " + statement, rqLogger);
+			}
+			return null;
+		}
+
+		public JsonAnswer seriousErrorAnswer() {
+			return new JsonAnswer();
+		}
+
+		public JsonAnswer seriousErrorAnswer(String message) {
+			JsonAnswer ja = new JsonAnswer();
+			ProcessLog.Current().error(message, rqLogger);
+			return ja;
+		}
+
+		public JsonAnswer processStatementMap(Map<String, Object> statement) {
+			try {
+				for (Entry<String, Class<? extends IJsonProcessor>> e : commands.entrySet()) {
+					String name = e.getKey();
+					Class<? extends IJsonProcessor> claxx = commands.get(name);
+					if (statement.containsKey(name)) {
+						Constructor<? extends IJsonProcessor> constructor = claxx
+								.getDeclaredConstructor(JsonProcessor.class);
+						IJsonProcessor p = constructor.newInstance(this);
+						return p.run(statement);
+					}
+				}
+			} catch (Exception e) {
+				rqLogger.error(e.toString());
+			}
+			pLog.warn("Can not process map statements (keys: " + statement.keySet() + ")!", rqLogger);
+			return new JsonAnswer();
+
+		}
+
+		//
+		//
+		// RQ JSON PROCESSORS (FEATURES)
+		//
+		//
+
+		//
+		//
+		// RQ JSON PROCESSOR SWITCH
+		//
+		//
+
+		public static class AddRoleProcessor implements IJsonProcessor {
+			private final JsonProcessor context;
+
+			public AddRoleProcessor(JsonProcessor context) {
+				this.context = context;
+			}
+
+			public JsonAnswer run(Object o) {
+				Map<String, String> map = (Map) o;
+				String role = (String) map.get("add-role");
+				context.request.addRole(role);
+				return new JsonAnswer();
+			}
+		}
+
+		//
+		//
+		// RQ JSON PROCESSOR SWITCH
+		//
+		//
+
+		public static class SwitchProcessor implements IJsonProcessor {
+			private final JsonProcessor context;
+
+			public SwitchProcessor(JsonProcessor context) {
+				this.context = context;
+			}
+
+			public JsonAnswer run(Object o) {
+				try {
+					Map statement = (Map) o;
+					Object switchStatement = statement.get("switch");
+					if (switchStatement == null) {
+						return context.seriousErrorAnswer("Serious Error in *switch* statement : statement is null!");
+					}
+					JsonAnswer janswer = context.processStatement(switchStatement);
+					String value = janswer.result != null ? janswer.result.getSingleValue() : null;
+					String caseKey = "case:" + value;
+					Object caseStatement = statement.get(caseKey);
+					Object nullStatement = statement.get("null");
+					Object defaultStatement = statement.get("default");
+					if (caseStatement != null && value != null) {
+						return context.processStatement(caseStatement);
+					} else if (nullStatement != null && value == null) {
+						return context.processStatement(nullStatement);
+					} else if (defaultStatement != null) {
+						return context.processStatement(defaultStatement);
+					}
+				} catch (Exception e) {
+					context.pLog.error("Serious Error in *switch* statement : " + e, rqLogger);
+				}
+				return context.seriousErrorAnswer();
+			}
+		}
+
+		//
+		//
+		// RQ JSON PROCESSOR FOREACH -begin-
+		//
+		//
+
+		public static class ForeachProcessor implements IJsonProcessor {
+			private final JsonProcessor context;
+
+			public ForeachProcessor(JsonProcessor context) {
+				this.context = context;
+
+			}
+
+			public JsonAnswer run(Object o) {
+				JsonAnswer lastAnswer = new JsonAnswer();
+				try {
+					Map statement = (Map) o;
+					Map foreachStatement = (Map) statement.get("foreach");
+					Object parametersStatement = foreachStatement.get("parameters");
+					Object indexName = foreachStatement.get("index-name");
+					indexName = indexName == null ? "index" : indexName;
+					Object doStatement = foreachStatement.get("do");
+					if (parametersStatement == null) {
+						context.pLog.warn("Missing parameters for foreach statement");
+						return new JsonAnswer();
+					}
+					JsonAnswer ca = context.processStatement(parametersStatement);
+					if (ca.result != null) {
+						for (int index = 0; index < ca.result.size; index++) {
+							Map<String, String> paramters = ca.result.getRowAsMap(index);
+							for (String key : paramters.keySet()) {
+								context.request.put(key, paramters.get(key));
+							}
+							context.request.put("" + indexName, "" + index);
+							JsonAnswer doAnswer = context.processStatement(doStatement);
+							lastAnswer = doAnswer;
+							// doAnswer.childOf(context.answer)
+						}
+					}
+					return lastAnswer;
+				} catch (Exception e) {
+					context.pLog.error("Serious Error in *switch* statement ", rqLogger);
+				}
+				return context.seriousErrorAnswer();
+			}
+		}
+
+		//
+		//
+		// RQ JSON PROCESSOR UNION -begin-
+		//
+		//
+
+		public static class UnionProcessor implements IJsonProcessor {
+			private final JsonProcessor context;
+
+			public UnionProcessor(JsonProcessor context) {
+				this.context = context;
+			}
+
+			public JsonAnswer run(Object o) {
+				JsonAnswer uAnswer = null;
+				try {
+					Map statement = (Map) o;
+					List unionStatementList = (List) statement.get("union");
+					for (int i = 0; i < unionStatementList.size(); i++) {
+						JsonAnswer ca = context.processStatement(unionStatementList.get(i));
+						if (uAnswer == null) {
+							uAnswer = ca;
+						} else {
+							uAnswer.result.rowsAffected += ca.result.rowsAffected;
+							// NOT IMPLEMENTED
+							uAnswer.result.append(ca.result);
+						}
+					}
+					ProcessLog.Current().warn("not yet implemented");
+					return uAnswer;
+				} catch (Exception e) {
+					context.pLog.error("Serious Error in *union* statement ", rqLogger);
+				}
+				return context.seriousErrorAnswer();
+			}
+		}
+
+		//
+		//
+		// RQ JSON PROCESSOR JOIN -begin-
+		//
+		//
+
+		public static class JoinProcessor implements IJsonProcessor {
+			private final JsonProcessor context;
+
+			public JoinProcessor(JsonProcessor context) {
+				this.context = context;
+			}
+
+			public JsonAnswer run(Object o) {
+				JsonAnswer uAnswer = null;
+				Result result = null;
+				try {
+					Map statement = (Map) o;
+					List joinStatementList = (List) statement.get("join");
+					String joinKey = (String) statement.get("join-key");
+					String joinColumn = (String) statement.get("join-column");
+					for (int i = 0; i < joinStatementList.size(); i++) {
+						JsonAnswer ca = context.processStatement(joinStatementList.get(i));
+						if (uAnswer == null) {
+							uAnswer = ca;
+							result = ca.result;
+						} else {
+							uAnswer.result.rowsAffected += ca.result.rowsAffected;
+							// NOT IMPLEMENTED
+							result.join(joinKey, joinColumn, uAnswer.result);
+						}
+					}
+					ProcessLog.Current().warn("not yet implemented");
+					return uAnswer;
+				} catch (Exception e) {
+					context.pLog.error("Serious Error in *join* statement ", rqLogger);
+				}
+				return context.seriousErrorAnswer();
+			}
+		}
+
+		//
+		//
+		// RQ JSON PROCESSOR USER MESSAGE -begin-
+		//
+		//
+
+		public static class UserMessage implements IJsonProcessor {
+			private final JsonProcessor context;
+
+			public UserMessage(JsonProcessor context) {
+				this.context = context;
+			}
+
+			public JsonAnswer run(Object o) {
+				Map statement = (Map) o;
+				String s = "" + Utils.firstValue(statement);
+				int index = s.indexOf(":");
+				if (index == -1) {
+					context.pLog.user(ProcessLog.OK, s);
+				} else {
+					try {
+						String level = s.substring(0, index);
+						String message = s.substring(index + 1);
+						context.pLog.user(level.trim(), message.trim());
+					} catch (Exception e) {
+						context.pLog.error("Can not process userMessage : " + s);
+					}
+				}
+				return new JsonAnswer();
+			}
+
+		}
+
+		//
+		//
+		// RQ JSON PROCESSOR STRING -begin-
+		//
+		//
+
+		public static class StringProcessor implements IJsonProcessor {
+			private final JsonProcessor parent;
+
+			public StringProcessor(JsonProcessor parent) {
+				this.parent = parent;
+			}
+
+			public JsonAnswer run(Object o) {
+				String statement = (String) o;
+				return new JsonAnswer(parent.processServiceQuery(statement));
+			}
+		}
+
+	}
+
+	//
+	//
+	// END OF JSON STATEMENT PROCESSING
+	//
+	//
+
 	/**
+	 * This class provides a convenient access to the ServiceEntry and the
+	 * connection defined by the ServieEntrys data source name. The connection
+	 * is automatically returned to the DataSource after the run mehod. The
+	 * class can be used for any IQuery implementation.
 	 * 
 	 * @author tonibuenter
 	 * 
 	 */
-	public interface ICommand {
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry);
+	public static abstract class AbstractQuery implements IQuery {
+
+		private static final long serialVersionUID = 1L;
+		protected Connection connection;
+		protected ServiceEntry serviceEntry;
+		protected Map<String, String> initParameters = new HashMap<String, String>();
+
+		public Connection getConnection() {
+			return connection;
+		}
+
+		public void setConnection(Connection connection) {
+			this.connection = connection;
+		}
+
+		public ServiceEntry getServiceEntry() {
+			return serviceEntry;
+		}
+
+		public void setServiceEntry(ServiceEntry serviceEntry) {
+			this.serviceEntry = serviceEntry;
+		}
+
+		public void setInitParameters(String s) {
+
+			String[] ps1 = Utils.tokenize(s, ':');
+			for (int i = 0; i < ps1.length; i++) {
+				String[] ps2 = Utils.tokenize(ps1[i], '=');
+				if (ps2.length == 1) {
+					initParameters.put(ps2[0], "");
+				}
+				if (ps2.length == 2) {
+					initParameters.put(ps2[0], ps2[1]);
+				}
+			}
+		}
+
 	}
 
 	/**
@@ -271,79 +701,6 @@ public class RemoteQuery2 {
 
 	}
 
-	public static int buildCommandBlockTree(CommandNode root, List<String> statementList, int pointer) {
-
-		while (pointer < statementList.size()) {
-			CommandNode commandNode = null;
-
-			Triple<String, String, String> t = Utils.parseStatement(statementList.get(pointer));
-			pointer++;
-
-			if (t == null) {
-				continue;
-			}
-
-			String cmd = t.getLeft();
-			String parameter = t.getMiddle();
-			String statement = t.getRight();
-
-			if (Utils.isBlank(cmd)) {
-				continue;
-			}
-
-			commandNode = new CommandNode(cmd, parameter, statement);
-			root.children.add(commandNode);
-
-			if (Commands.BlockOut.contains(cmd)) {
-				return pointer;
-			}
-
-			if (Commands.BlockIn.contains(cmd)) {
-				pointer = buildCommandBlockTree(commandNode, statementList, pointer);
-			}
-		}
-		return pointer;
-	}
-
-	public static List<String> resolveIncludes(String statements, Map<String, Integer> recursionCounter) {
-		List<String> statementList = Utils
-				.asList(Utils.tokenize(statements.trim(), STATEMENT_DELIMITER, STATEMENT_ESCAPE));
-		List<String> resolvedList = new ArrayList<String>(statementList.size());
-		for (String stmt : statementList) {
-			stmt = Utils.trim(stmt);
-			if (stmt.startsWith("include:")) {
-				String serviceId = "";
-				try {
-					serviceId = stmt.substring("include:".length());
-					ServiceEntry se = ServiceRepositoryHolder.getInstance().get(serviceId);
-					String includeStatements = se.statements;
-					Integer counter = recursionCounter.get(serviceId) == null ? 0 : recursionCounter.get(serviceId);
-					counter++;
-					if (counter < 1000) {
-						recursionCounter.put(serviceId, counter);
-						List<String> resolvedList2 = resolveIncludes(includeStatements, recursionCounter);
-						resolvedList.addAll(resolvedList2);
-					} else {
-						throw new Exception("include command overflow " + serviceId);
-					}
-				} catch (Exception e) {
-					ProcessLog.Current().error(e, rqMainLogger);
-					resolvedList.add("systemMessage:include-of-error-serviceId=" + serviceId);
-				}
-			} else {
-				resolvedList.add(stmt);
-			}
-		}
-		return resolvedList;
-	}
-
-	public static CommandNode prepareCommandBlock(ServiceEntry serviceEntry) {
-		List<String> statementList = resolveIncludes(serviceEntry.statements, new HashMap<String, Integer>());
-		CommandNode commandNode = new CommandNode("serviceRoot", serviceEntry.serviceId, "");
-		buildCommandBlockTree(commandNode, statementList, 0);
-		return commandNode;
-	}
-
 	/**
 	 * Convenience method for running a main query.
 	 * 
@@ -370,247 +727,6 @@ public class RemoteQuery2 {
 		return mq.run(request);
 	}
 
-	public static Result processCommandBlock(CommandNode commandNode, Request request, Result currentResult,
-			ServiceEntry serviceEntry) {
-		ProcessLog log = ProcessLog.Current();
-		try {
-			log.incrRecursion();
-			if (log.getRecursionValue() > MAX_RECURSION) {
-				log.error("Recursion limit reached " + MAX_RECURSION + ". Stop processing.", logger);
-				return null;
-			}
-
-			//
-			Object o = Commands.Register.get(commandNode.cmd);
-
-			if (o instanceof ICommand) {
-				ICommand aq = (ICommand) o;
-				return aq.run(request, currentResult, commandNode, serviceEntry);
-			}
-			if (o instanceof IQuery) {
-				IQuery iq = (IQuery) o;
-				return iq.run(request);
-			}
-			log.error("Unknown command " + commandNode.cmd + " (in statement: " + commandNode.statement + ")", logger);
-		} catch (Exception e) {
-			log.error("Statement " + commandNode.statement + " failed. Exception: " + e.getMessage(), logger);
-		} finally {
-			log.decrRecursion();
-		}
-		return null;
-	}
-
-	public static Result processCommand(String commandString, Request request, Result currentResult,
-			ServiceEntry serviceEntry) {
-		Triple<String, String, String> t = Utils.parseStatement(commandString);
-		String cmd = t.getLeft();
-		String parameter = t.getMiddle();
-		String statement = t.getRight();
-		CommandNode commandNode = new CommandNode(cmd, parameter, statement);
-		return processCommandBlock(commandNode, request, currentResult, serviceEntry);
-	}
-
-	public static Result processJava(String className, String parameterString, Request request, Result currentResult,
-			CommandNode commandNode, ServiceEntry serviceEntry)
-			throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException {
-		Result result = null;
-		Connection connection = null;
-		ProcessLog pLog = ProcessLog.Current();
-		try {
-			logger.debug("Process Java :: start with " + className);
-			Object o = Class.forName(className).newInstance();
-
-			if (o instanceof ICommand) {
-				ICommand aq = (ICommand) o;
-				return aq.run(request, currentResult, commandNode, serviceEntry);
-			}
-			if (o instanceof IQuery) {
-				IQuery iq = (IQuery) o;
-				return iq.run(request);
-			}
-			pLog.error("Class: " + className + " is nether and IMtlCommand  nor a IQuery based class.", logger);
-
-		} catch (Exception e) {
-			pLog.error(e, logger);
-		} finally {
-			Utils.closeQuietly(connection);
-		}
-
-		return result;
-	}
-
-	public static void processSql(String sql, Request request, ServiceEntry serviceEntry, IResultListener irl) {
-		ProcessLog log = ProcessLog.Current();
-
-		DataSource ds = DataSources.getInstance().get(serviceEntry.datasourceName);
-		if (ds == null) {
-			Exception e = new Exception(
-					"No DataSource found ServiceEntry.getDatasourceName=" + serviceEntry.datasourceName + "!");
-			log.error(e.getMessage(), logger);
-			irl.setException(e);
-			return;
-		}
-		processSql(ds, sql, request, irl);
-	}
-
-	public static void processSql(DataSource ds, String sql, Request request, IResultListener irl) {
-
-		Connection con = null;
-		try {
-			con = ds.getConnection();
-			processSql(con, sql, request, irl);
-		} catch (Exception e) {
-			logger.warn(e.getMessage(), e);
-		} finally {
-			Utils.closeQuietly(con);
-		}
-	}
-
-	public static void processSql(Connection con, String sql, Request request, IResultListener irl) {
-
-		String serviceId = request.serviceId;
-		serviceId = Utils.isBlank(serviceId) ? "-n/a-" : serviceId;
-		ProcessLog pLog = ProcessLog.Current();
-
-		PreparedStatement ps = null;
-		ResultSet rs = null;
-
-		QueryAndParams qap = null;
-
-		pLog.system("sql before conversion: " + sql);
-		sqlLogger.debug("start sql **************************************");
-		sqlLogger.debug("Start sql (in service : " + serviceId + ")\n" + sql);
-
-		qap = convertQuery(sql);
-		sql = qap.questionMarkQuery;
-		// pLog.system("sql after conversion: " + sql);
-
-		//
-		// PREPARE SERVICE_STMT
-		//
-
-		List<Object> paramObjects = new ArrayList<Object>();
-
-		for (String attributeName : qap.parameters) {
-			String attributeValue = request.get(attributeName);
-			if (attributeValue == null) {
-				pLog.system("processSql:No value provided for parameter name:" + attributeName + " (serviceId:"
-						+ request.serviceId + "). Will use empty string.", logger);
-				paramObjects.add("");
-				sqlLogger.debug("sql-parameter:  " + attributeName + " : ");
-			} else {
-				paramObjects.add(attributeValue);
-				sqlLogger.debug("sql-parameter:  " + attributeName + ": " + attributeValue);
-			}
-		}
-		//
-		// DEFAULT PARAMETER
-		//
-
-		//
-		// FINALIZE SERVICE_STMT
-		//
-
-		try {
-			ps = con.prepareStatement(sql);
-			int index = 0;
-			for (Object v : paramObjects) {
-				ps.setObject(++index, v);
-			}
-			boolean hasResultSet = ps.execute();
-			if (hasResultSet) {
-				rs = ps.getResultSet();
-				Utils.buildResult(0, -1, rs, irl);
-				irl.setName(serviceId);
-			} else {
-				int rowsAffected = ps.getUpdateCount();
-				pLog.system("ServiceEntry : " + serviceId + "; rowsAffected : " + rowsAffected);
-				irl.setRowsAffected(rowsAffected);
-				sqlLogger.debug("sql-rows-affected : " + rowsAffected);
-			}
-		}
-
-		catch (SQLException e) {
-			String warnMsg = "Warning for " + serviceId + " (parameters:" + qap.parameters + ") execption message: "
-					+ e.getMessage();
-			sqlLogger.warn(warnMsg, logger);
-		}
-
-		catch (Exception e) {
-			String errorMsg = "Error for " + serviceId + " (parameters:" + qap.parameters + ") execption message: "
-					+ e.getMessage();
-			pLog.error(errorMsg, logger);
-			pLog.error(qap == null ? "-no qap-"
-					: "parameterNameQuery=" + qap.parameterNameQuery + ", questionMarkQuery=" + qap.questionMarkQuery
-							+ ", parameters=" + qap.parameters,
-					logger);
-		} finally {
-			Utils.closeQuietly(rs);
-			Utils.closeQuietly(ps);
-		}
-		sqlLogger.debug("end sql **************************************");
-
-	}
-
-	public static class QueryAndParams {
-		String parameterNameQuery;
-		String questionMarkQuery;
-		List<String> parameters = new ArrayList<String>();
-
-		@Override
-		public String toString() {
-			return "QueryAndParams [parameterNameQuery=" + parameterNameQuery + ", questionMarkQuery="
-					+ questionMarkQuery + ", parameters=" + parameters + "]";
-		}
-
-	}
-
-	public static QueryAndParams convertQuery(String query) {
-
-		StringBuffer buf = new StringBuffer(query.length());
-
-		boolean started = false;
-		boolean prot = false;
-		List<String> parameters = new ArrayList<String>();
-		StringBuffer currentParam = new StringBuffer();
-		for (char c : query.toCharArray()) {
-			if (!prot) {
-				if (started) {
-					if (Character.isJavaIdentifierPart(c)) {
-						currentParam.append(c);
-						continue;
-					} else {
-						started = false;
-						parameters.add(currentParam.toString());
-						currentParam = new StringBuffer();
-					}
-				}
-				if (!started && c == ':') {
-					started = true;
-					buf.append('?');
-					continue;
-				}
-			}
-
-			if (c == '\'') {
-				prot = !prot;
-			}
-			buf.append(c);
-		}
-
-		// end processing
-		if (started) {
-			parameters.add(currentParam.toString());
-		}
-
-		//
-		QueryAndParams qap = new QueryAndParams();
-		qap.parameterNameQuery = query;
-		qap.questionMarkQuery = buf.toString();
-		qap.parameters = parameters;
-		return qap;
-	}
-
 	/**
 	 * MainQuery is the main class the provides the processing of a RemoteQuery
 	 * request. It takes care of the service statement parsing and processing.
@@ -618,6 +734,15 @@ public class RemoteQuery2 {
 	 * @author tonibuenter
 	 */
 	public static class MainQuery implements IQuery {
+
+		// TODO idea :: how to create your own plugins like
+		// 'my-sql-extension:select
+		// %SELECTLIST% where %WHERE% clause'
+
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
 
 		private final Map<String, Serializable> processStore = new HashMap<String, Serializable>();
 
@@ -637,26 +762,26 @@ public class RemoteQuery2 {
 			String userId = request.getUserId();
 			if (Utils.isEmpty(userId)) {
 				log.warn("Request object has no userId set. Process continues with userId=" + ANONYMOUS
-						+ " (serviceId: " + request.getServiceId() + ")", logger);
+						+ " (serviceId: " + request.getServiceId() + ")", rqLogger);
 				request.setUserId(ANONYMOUS);
 				userId = request.getUserId();
 			}
-
+			// TODO better in the process object ?
 			log.incrRecursion();
 			try {
 				//
 
-				ServiceEntry serviceEntry = ServiceRepositoryHolder.getInstance().get(serviceId);
+				ServiceEntry serviceEntry = ServiceRepository.getInstance().get(serviceId);
 				log.serviceEntry_Start(serviceEntry);
 				if (serviceEntry == null) {
-					log.error("No ServiceEntry found for " + serviceId, logger);
+					log.error("No ServiceEntry found for " + serviceId, rqLogger);
 					return new Result(log);
 				}
 				//
 				// CHECK ACCESS
 				//
 				boolean hasAccess = false;
-				Set<String> roles = serviceEntry.roles;
+				Set<String> roles = serviceEntry.getRoleSet();
 				if (Utils.isEmpty(roles)) {
 					hasAccess = true;
 				} else {
@@ -668,36 +793,577 @@ public class RemoteQuery2 {
 					}
 				}
 				if (hasAccess) {
-					log.system("Access to " + serviceId + " for " + userId + " : ok", logger);
+					log.system("Access to " + serviceId + " for " + userId + " : ok", rqLogger);
 				} else {
 					log.warn("No access to " + serviceId + " for " + userId + " (service roles: " + roles
-							+ ", request roles: " + request.getRoles() + ")", logger);
-					log.statusCode = "403";
+							+ ", request roles: " + request.getRoles() + ")", rqLogger);
 					return new Result(log);
 				}
 				//
 				// START PROCESSING STATEMENTS
 				//
 
-				log.system("ServiceEntry found for userId=" + userId + " is : " + serviceEntry, logger);
+				log.system("ServiceEntry found for userId=" + userId + " is : " + serviceEntry, rqLogger);
 
-				CommandNode commandNode = prepareCommandBlock(serviceEntry);
-
-				result = processCommandBlock(commandNode, request, result, serviceEntry);
+				String statements = serviceEntry.getStatements();
+				statements = Utils.trim(statements);
+				log.system("Statements (trimmed) " + statements, rqLogger);
+				//
+				// REGISTERED SCRIPTING
+				//
+				for (Entry<String, IProcessFactory> entry : ScriptQueries.entrySet()) {
+					if (statements.startsWith(entry.getKey())) {
+						IProcessFactory fac = entry.getValue();
+						try {
+							IProcess process = fac.create(request, serviceEntry, result, statements);
+							return process.process();
+						} catch (Exception e) {
+							log.error(e, rqLogger);
+						} finally {
+							//
+						}
+						return null;
+					}
+				}
+				//
+				// JSON PROCESSOR
+				//
+				if (statements.startsWith("[") && statements.endsWith("]")) {
+					JsonProcessor jp = new JsonProcessor(request, serviceEntry, result, statements);
+					result = jp.process();
+				} else {
+					// TODO missing 'include:serviceId' processing
+					result = processStatementList(request, serviceEntry, result, statements);
+				}
 
 			} catch (Exception e) {
-				log.error(e, logger);
+				log.error(e, rqLogger);
 			} finally {
 				// ParameterSupport.release(parameterSupport);
 				log.decrRecursion();
 				log.serviceEntry_End();
 			}
 			if (result == null) {
-				// Default result object ?
+				// TODO Default result object ?
 			} else {
-				result.userId = userId;
+				result.setUserId(userId);
 			}
 			return result;
+		}
+
+		public static Result processStatementList(Request request, ServiceEntry serviceEntry, Result result,
+				String statements) {
+
+			//
+			// include resolver
+			//
+
+			List<String> statementList = resolveIncludes(statements, new HashMap<String, Integer>());
+
+			//
+			//
+			//
+			for (String statement : statementList) {
+				Result result2 = processSingleStatement(request, result, serviceEntry, statement);
+				if (result2 != null) {
+					result = result2;
+				}
+			}
+			return result;
+		}
+
+		public static List<String> resolveIncludes(String statements, Map<String, Integer> recursionCounter) {
+			List<String> statementList = Utils
+					.asList(Utils.tokenize(statements, STATEMENT_DELIMITER, STATEMENT_ESCAPE));
+			List<String> resolvedList = new ArrayList<String>(statementList.size());
+			for (String stmt : statementList) {
+				stmt = Utils.trim(stmt);
+				if (stmt.startsWith("include:")) {
+					String serviceId = "NA";
+					try {
+						serviceId = stmt.substring("include:".length());
+						ServiceEntry se = ServiceRepository.getInstance().get(serviceId);
+						String includeStatements = se.getStatements();
+						Integer counter = recursionCounter.get(serviceId) == null ? 0 : recursionCounter.get(serviceId);
+						counter++;
+						if (counter < 1000) {
+							recursionCounter.put(serviceId, counter);
+							List<String> resolvedList2 = resolveIncludes(includeStatements, recursionCounter);
+							resolvedList.addAll(resolvedList2);
+						} else {
+							throw new Exception("includes overflow " + serviceId);
+						}
+					} catch (Exception e) {
+						ProcessLog.Current().error(e, rqMainLogger);
+						resolvedList.add("systemMessage:include-of-error-serviceId=" + serviceId);
+					}
+				} else {
+					resolvedList.add(stmt);
+				}
+			}
+			return resolvedList;
+		}
+
+		public static Result processSingleStatement(Request request, Result currentResult, ServiceEntry serviceEntry,
+				String serviceStmt) {
+			ProcessLog log = ProcessLog.Current();
+			try {
+				Result result = null;
+
+				log.incrRecursion();
+				int recursion = log.getRecursionValue();
+				if (recursion > MAX_RECURSION) {
+					log.error("Recursion limit reached " + MAX_RECURSION + ". Stop processing.", rqLogger);
+					return currentResult;
+				}
+
+				serviceStmt = serviceStmt.trim();
+				if (Utils.isEmpty(serviceStmt)) {
+					log.warn("Empty serviceStmt -> no processing. (" + serviceEntry.getServiceId() + ")", rqLogger);
+					return currentResult;
+				}
+
+				// String[] pair = Utils.parseCommandValue(serviceStmt);
+				Command pair = Utils.parseCommandValue(serviceStmt);
+
+				String cmd = pair.tokens.get(0);
+				String stmt = pair.statement;
+
+				String className = MltClassNames.get(cmd);
+				if (!Utils.isEmpty(className)) {
+					request.put("CMD", cmd);
+					request.put("PARAMETER", stmt);
+					result = processJava(className, "", request, serviceEntry);
+					return result;
+				}
+
+				//
+				// plain SQL fall back case
+				//
+				if (!startsWithMLT(serviceStmt)) {
+					cmd = MLT.sql;
+					stmt = serviceStmt;
+				}
+				//
+				// java:
+				//
+				if (cmd.equals(MLT.java) || "class".equals(cmd)) {
+					result = processJava(stmt, serviceStmt, request, serviceEntry);
+					return result;
+				}
+				//
+				// sql:
+				//
+				if (cmd.equals(MLT.sql)) {
+					Result r = new Result();
+					processSql(serviceEntry, stmt, request, r);
+					return r;
+				}
+				//
+				// set, ... request parameter assignements
+				//
+				if (cmd.startsWith(MLT.set)) {
+					applySetCommand(request, cmd, stmt);
+					return currentResult;
+				}
+				//
+				// copy-over
+				//
+				if (cmd.startsWith(MLT.copy_over)) {
+					String[] s = stmt.split("=");
+					if (s.length > 1) {
+						request.put(s[0], request.get(s[1]));
+					}
+					return currentResult;
+				}
+				//
+				// debug
+				//
+				if (cmd.startsWith(MLT.debugOn)) {
+					rqLogger = rqDebugLogger;
+					return currentResult;
+				}
+				if (cmd.startsWith(MLT.debugOff)) {
+					rqLogger = rqMainLogger;
+					return currentResult;
+				}
+				//
+				// parameters
+				//
+				if (cmd.equals(MLT.parameters)) {
+					Result r = new Result();
+					processSql(serviceEntry, stmt, request, r);
+					if (r.size > 0) {
+						Map<String, String> paramters = r.getRowAsMap(0);
+						for (String key : paramters.keySet()) {
+							request.put(key, paramters.get(key));
+						}
+					}
+					return currentResult;
+				}
+				//
+				// parameters-if-empty
+				//
+				if (cmd.equals(MLT.parameters_if_empty)) {
+					Result r = new Result();
+					processSql(serviceEntry, stmt, request, r);
+					if (r.size > 0) {
+						Map<String, String> paramters = r.getRowAsMap(0);
+						for (String key : paramters.keySet()) {
+							if (Utils.isEmpty(request.get(key))) {
+								request.put(key, paramters.get(key));
+							}
+						}
+					}
+					return currentResult;
+				}
+				//
+				// serviceId
+				//
+				if (cmd.equals(MLT.serviceId)) {
+					String parentServiceId = serviceEntry.getServiceId();
+					String subServiceId = stmt;
+					request.setServiceId(subServiceId);
+					MainQuery mq = new MainQuery();
+					result = mq.run(request);
+					request.setServiceId(parentServiceId);
+					return result;
+				}
+			} catch (Exception e) {
+				log.error("ServiceStmt for " + serviceStmt + " failed. Exception: " + e.getMessage(), rqLogger);
+
+			} finally {
+				log.decrRecursion();
+			}
+			return null;
+
+		}
+
+		public static boolean startsWithMLT(String serviceStmt) {
+			if (serviceStmt.startsWith(MLT.java)) {
+				return true;
+			}
+			if (serviceStmt.startsWith("class")) {
+				return true;
+			}
+			if (serviceStmt.startsWith(MLT.parameters)) {
+				return true;
+			}
+			if (serviceStmt.startsWith(MLT.serviceId)) {
+				return true;
+			}
+			if (serviceStmt.startsWith(MLT.sql)) {
+				return true;
+			}
+			if (serviceStmt.startsWith(MLT.set)) {
+				return true;
+			}
+			if (serviceStmt.startsWith(MLT.tx_begin)) {
+				return true;
+			}
+			if (serviceStmt.startsWith(MLT.tx_commit)) {
+				return true;
+			}
+			if (serviceStmt.startsWith(MLT.debugOn)) {
+				return true;
+			}
+			if (serviceStmt.startsWith(MLT.debugOff)) {
+				return true;
+			}
+			if (serviceStmt.startsWith(MLT.copy_over)) {
+				return true;
+			}
+			return false;
+		}
+
+		public static void applySetCommand(Request request, String cmd, String stmt) {
+			if (cmd.startsWith(MLT.set_null)) {
+
+				String[] keys = Utils.tokenize(stmt, ',');
+
+				// TreeMap<Integer, Map<String, String>> ptm =
+				// request.getParametersTreeMap();
+
+				Map<String, String> ptm = request.getParameters();
+
+				for (String key : keys) {
+					if (ptm.containsKey(key)) {
+						request.remove(key);
+					}
+				}
+				return;
+			}
+
+			String[] nv = Utils.tokenize(stmt, '=');
+			String n = nv[0];
+			String v = nv.length > 1 ? nv[1] : null;
+			n = Utils.trim(n);
+			v = Utils.trim(v);
+			String requestValue = request.get(n);
+			// set_if_null
+			if (cmd.equals(MLT.set_if_null)) {
+				if (requestValue == null) {
+					request.put(n, v);
+				}
+			}
+			// set_if_empty
+			else if (cmd.equals(MLT.set_if_empty)) {
+				if (Utils.isEmpty(requestValue)) {
+					request.put(n, v);
+				}
+			}
+			// set
+			else {
+				request.put(n, v);
+			}
+
+		}
+
+		/**
+		 * Parses the input string and return
+		 * 
+		 * @param ls
+		 * @return
+		 */
+		// public static Integer parseLevel(String ls) {
+		// try {
+		// ls = ls.trim();
+		// if (ls.length() == 0) {
+		// return 0;
+		// }
+		//
+		// if (ls.startsWith("-")) {
+		// ls = ls.substring(1);
+		// }
+		// Integer l = LevelConstantNames.get(ls.toUpperCase());
+		// if (l != null) {
+		// return l;
+		// }
+		// return Integer.parseInt(ls);
+		// } catch (Exception e) {
+		// rqLogger.error(Utils.getStackTrace(e));
+		// }
+		// return null;
+		// }
+
+		private static Result processJava(String className, String classParameters, Request request,
+				ServiceEntry serviceEntry)
+				throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException {
+			Result result = null;
+			Connection connection = null;
+			ProcessLog pLog = ProcessLog.Current();
+			try {
+				rqLogger.debug("Process Java :: start with " + className);
+				Object serviceObject = Class.forName(className).newInstance();
+
+				if (!(serviceObject instanceof IQuery)) {
+					ProcessLog.Current()
+							.error("Class " + className + " is not an instance of " + IQuery.class.getName(), rqLogger);
+					return null;
+				}
+
+				IQuery service = (IQuery) serviceObject;
+				if (service instanceof AbstractQuery) {
+					AbstractQuery aqService = (AbstractQuery) service;
+					//
+					aqService.setServiceEntry(serviceEntry);
+					//
+					DataSource ds = DataSources.getInstance().get(serviceEntry.getDatasourceName());
+					if (ds != null) {
+						connection = ds.getConnection();
+						aqService.setConnection(connection);
+					}
+					//
+					aqService.setInitParameters(classParameters);
+				}
+				result = service.run(request);
+			} catch (Exception e) {
+				pLog.error(e, rqLogger);
+			} finally {
+				Utils.closeQuietly(connection);
+			}
+
+			return result;
+		}
+
+		public static void processSql(ServiceEntry serviceEntry, String sql, Request request, IResultListener irl) {
+			ProcessLog log = ProcessLog.Current();
+
+			DataSource ds = DataSources.getInstance().get(serviceEntry.getDatasourceName());
+			if (ds == null) {
+				Exception e = new Exception(
+						"No DataSource found ServiceEntry.getDatasourceName=" + serviceEntry.getDatasourceName() + "!");
+				log.error(e.getMessage(), rqLogger);
+				irl.setException(e);
+				return;
+			}
+			processSql(ds, sql, request, irl);
+		}
+
+		public static void processSql(DataSource ds, String sql, Request request, IResultListener irl) {
+
+			Connection con = null;
+			try {
+				con = ds.getConnection();
+				processSql(con, sql, request, irl);
+			} catch (Exception e) {
+				// TODO: handle exception
+			} finally {
+				Utils.closeQuietly(con);
+			}
+		}
+
+		public static void processSql(Connection con, String sql, Request request, IResultListener irl) {
+			String serviceId = request.getServiceId();
+			serviceId = Utils.isBlank(serviceId) ? "-serviceId-" : serviceId;
+			ProcessLog pLog = ProcessLog.Current();
+
+			PreparedStatement ps = null;
+			ResultSet rs = null;
+
+			QueryAndParams qap = null;
+
+			pLog.system("sql before conversion: " + sql);
+			sqlLogger.debug("**************************************");
+			sqlLogger.debug("Start sql (in service : " + serviceId + ")\n" + sql);
+
+			qap = convertQuery(sql);
+			sql = qap.questionMarkQuery;
+			// pLog.system("sql after conversion: " + sql);
+
+			//
+			// PREPARE SERVICE_STMT
+			//
+
+			List<Object> paramObjects = new ArrayList<Object>();
+
+			for (String attributeName : qap.parameters) {
+				String attributeValue = request.get(attributeName);
+				if (attributeValue == null) {
+					pLog.system("processSql:No value provided for parameter name:" + attributeName + " (serviceId:"
+							+ request.getServiceId() + "). Will use empty string.", rqLogger);
+					paramObjects.add("");
+					sqlLogger.debug("sql-param " + attributeName + " : ");
+				} else {
+					paramObjects.add(attributeValue);
+					sqlLogger.debug("sql-param " + attributeName + " : " + attributeValue);
+				}
+			}
+			//
+			// DEFAULT PARAMETER
+			//
+
+			//
+			// FINALIZE SERVICE_STMT
+			//
+
+			try {
+				ps = con.prepareStatement(sql);
+				int index = 0;
+				for (Object v : paramObjects) {
+					ps.setObject(++index, v);
+					if (rqLogger.isDebugEnabled()) {
+						// rqLogger.debug("index: " + index + " value: " + v);
+					}
+				}
+				boolean hasResultSet = ps.execute();
+				if (hasResultSet) {
+					rs = ps.getResultSet();
+					Utils.buildResult(0, -1, rs, irl);
+					irl.setName(serviceId);
+				} else {
+					int rowsAffected = ps.getUpdateCount();
+					pLog.system("ServiceEntry : " + serviceId + "; rowsAffected : " + rowsAffected);
+					irl.setRowsAffected(rowsAffected);
+					sqlLogger.debug("sql-rows-affected : " + rowsAffected);
+				}
+			}
+
+			catch (SQLException e) {
+				String warnMsg = "Warning for " + serviceId + " (parameters:" + qap.parameters + ") execption message: "
+						+ e.getMessage();
+				pLog.warn(warnMsg, rqLogger);
+			}
+
+			catch (Exception e) {
+				String errorMsg = "Error for " + serviceId + " (parameters:" + qap.parameters + ") execption message: "
+						+ e.getMessage();
+				pLog.error(errorMsg, rqLogger);
+				pLog.error(qap == null ? "-no qap-"
+						: "parameterNameQuery=" + qap.parameterNameQuery + ", questionMarkQuery="
+								+ qap.questionMarkQuery + ", parameters=" + qap.parameters,
+						rqLogger);
+			} finally {
+				Utils.closeQuietly(rs);
+				Utils.closeQuietly(ps);
+			}
+
+			sqlLogger.debug("End sql ");
+			sqlLogger.debug("**************************************");
+
+		}
+
+		//
+		// NEW
+		//
+
+		static class QueryAndParams {
+			String parameterNameQuery;
+			String questionMarkQuery;
+			List<String> parameters = new ArrayList<String>();
+
+			@Override
+			public String toString() {
+				return "QueryAndParams [parameterNameQuery=" + parameterNameQuery + ", questionMarkQuery="
+						+ questionMarkQuery + ", parameters=" + parameters + "]";
+			}
+
+		}
+
+		public static QueryAndParams convertQuery(String query) {
+
+			StringBuffer buf = new StringBuffer(query.length());
+
+			boolean started = false;
+			boolean prot = false;
+			List<String> parameters = new ArrayList<String>();
+			StringBuffer currentParam = new StringBuffer();
+			for (char c : query.toCharArray()) {
+				if (!prot) {
+					if (started) {
+						if (Character.isJavaIdentifierPart(c)) {
+							currentParam.append(c);
+							continue;
+						} else {
+							started = false;
+							parameters.add(currentParam.toString());
+							currentParam = new StringBuffer();
+						}
+					}
+					if (!started && c == ':') {
+						started = true;
+						buf.append('?');
+						continue;
+					}
+				}
+
+				if (c == '\'') {
+					prot = !prot;
+				}
+				buf.append(c);
+			}
+
+			// end processing
+			if (started) {
+				parameters.add(currentParam.toString());
+			}
+
+			//
+			QueryAndParams qap = new QueryAndParams();
+			qap.parameterNameQuery = query;
+			qap.questionMarkQuery = buf.toString();
+			qap.parameters = parameters;
+			return qap;
 		}
 
 	}
@@ -718,11 +1384,16 @@ public class RemoteQuery2 {
 
 		public static class RegisterService implements IQuery {
 
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 1L;
+
 			@Override
 			public Result run(Request request) {
 				ProcessLog pLog = ProcessLog.Current();
 				String serviceEntriesJson = request.get("serviceEntries");
-				IServiceRepository sr = ServiceRepositoryHolder.getInstance();
+				IServiceRepository sr = ServiceRepository.getInstance();
 				try {
 					if (!Utils.isBlank(serviceEntriesJson)) {
 						List<ServiceEntry> serviceEntries = JsonUtils.toList(serviceEntriesJson, ServiceEntry.class);
@@ -730,13 +1401,13 @@ public class RemoteQuery2 {
 							sr.add(serviceEntry);
 						}
 					} else {
-						String serviceId = request.get("serviceId");
-						String statements = request.get("statements");
-						String roles = request.get("roles");
+						String serviceId = request.get(Params.serviceId);
+						String statements = request.get(Params.statements);
+						String roles = request.get(Params.roles);
 						sr.add(new ServiceEntry(serviceId, statements, roles));
 					}
 				} catch (Exception e) {
-					pLog.error(e, logger);
+					pLog.error(e, rqLogger);
 				}
 				return new Result(pLog);
 			}
@@ -745,26 +1416,39 @@ public class RemoteQuery2 {
 
 		public static class ListServices implements IQuery {
 
+			/** 
+			 * 
+			 * 
+			*/
+			private static final long serialVersionUID = 1L;
+
 			@Override
 			public Result run(Request request) {
 
 				ProcessLog pLog = ProcessLog.Current();
-				IServiceRepository sr = ServiceRepositoryHolder.getInstance();
+				IServiceRepository sr = ServiceRepository.getInstance();
 				Result r = new Result(COL_SERVICE_ID, COL_STATEMENTS, COL_ROLES, COL_DATASOURCE);
 				try {
 					List<ServiceEntry> list = sr.list();
 					for (ServiceEntry se : list) {
-						r.addRowVar(se.serviceId, se.statements, Utils.joinTokens(se.roles), se.datasourceName);
+						r.addRowVar(se.getServiceId(), se.getStatements(), Utils.joinTokens(se.getRoleSet()),
+								se.getDatasourceName());
 					}
 				} catch (Exception e) {
-					pLog.error(e, logger);
+					pLog.error(e, rqLogger);
 				}
-				r.processLog = pLog;
+				r.setProcessLog(pLog);
 				return r;
 			}
 		}
 
 		public static class MultiService implements IQuery {
+
+			/** 
+			 * 
+			 * 
+			*/
+			private static final long serialVersionUID = 1L;
 
 			@SuppressWarnings("rawtypes")
 			@Override
@@ -772,9 +1456,9 @@ public class RemoteQuery2 {
 				Request requestC = null;
 				Result resultC = null;
 				ProcessLog pLog = null;
-				ProcessLog mainLog = ProcessLog.Current();
+				ProcessLog mainPlog = ProcessLog.Current();
 				Result mainResult = new Result("MultiResult");
-				mainResult.processLog = mainLog;
+				mainResult.setProcessLog(mainPlog);
 				String requestArray = request.get("requestArray");
 				List requestList = JsonUtils.toObject(requestArray, List.class);
 				MainQuery mainQuery = new MainQuery();
@@ -787,7 +1471,7 @@ public class RemoteQuery2 {
 						Map rm = (Map) r;
 						String serviceId = rm.get("serviceId") + "";
 						if (Utils.isBlank(serviceId)) {
-							pLog.error("no serviceId in request", logger);
+							pLog.error("no serviceId in request", rqLogger);
 						} else {
 							requestC.setServiceId(serviceId);
 							Object p = rm.get("parameters");
@@ -798,16 +1482,16 @@ public class RemoteQuery2 {
 									requestC.put(e.getKey() + "", e.getValue() + "");
 								}
 							} else {
-								pLog.warn("No parameter in request ", logger);
+								pLog.warn("No parameter in request ", rqLogger);
 							}
 							resultC = mainQuery.run(requestC);
-							resultC.processLog = pLog;
+							resultC.setProcessLog(pLog);
 							String rs = JsonUtils.toJson(resultC);
 							mainResult.addRowVar(rs);
 						}
 
 					} else {
-						mainLog.error("Request " + i + " is not an object : " + r);
+						mainPlog.error("Request " + i + " is not an object : " + r);
 					}
 				}
 				return mainResult;
@@ -978,7 +1662,6 @@ public class RemoteQuery2 {
 		private transient boolean silently = false;
 
 		private String state = OK;
-		public String statusCode = OK;
 		public List<LogLine> lines = new ArrayList<LogLine>();
 		private final Map<String, String> attributes = new HashMap<String, String>();
 
@@ -1217,7 +1900,7 @@ public class RemoteQuery2 {
 			}
 			DebugContext dc = new DebugContext(DebugContext.SE);
 			dc.parent = this.current;
-			dc.name = se.serviceId;
+			dc.name = se.getServiceId();
 			this.current = dc;
 			rqDebugLogger.debug("==>>> Start SE : " + dc.name);
 		}
@@ -1383,7 +2066,7 @@ public class RemoteQuery2 {
 			try {
 				return Utils.newObject(getParameterSnapshhot(), claxx);
 			} catch (Exception e) {
-				logger.error(e.getMessage(), e);
+				rqLogger.error(e.getMessage(), e);
 			}
 			return null;
 		}
@@ -1433,23 +2116,25 @@ public class RemoteQuery2 {
 	public static class Result implements IResultListener {
 
 		private static final Logger logger = LoggerFactory.getLogger(Result.class);
-		public static boolean USE_CAMEL_CASE_FOR_RESULT_HEADER = true;
 
 		//
 		// Object Level
 		//
-		public String name = "";
-		public String userId = "-";
-		public int from = 0;
-		public int totalCount = 0;
-		public int rowsAffected = 0;
-		public boolean hasMore = false;
+		private String name = "";
+		private String userId = "-";
+		private int size = 0;
+		private int from = 0;
+		private int totalCount = 0;
+		private int rowsAffected = 0;
+		private boolean hasMore = false;
 
-		public List<List<String>> table = new ArrayList<List<String>>();
-		public List<String> header = new ArrayList<String>();
-		public String exception = null;
-		public ProcessLog processLog = null;
+		private List<List<String>> table = new ArrayList<List<String>>();
+		private List<String> header = new ArrayList<String>();
+		private String exception = null;
+		private ProcessLog processLog = null;
 		public Result subResult = null;
+
+		public static boolean USE_CAMEL_CASE_FOR_RESULT_HEADER = true;
 
 		public Result(String... header) {
 			_header(header);
@@ -1481,12 +2166,9 @@ public class RemoteQuery2 {
 			update();
 		}
 
-		public int size() {
-			return table == null ? 0 : table.size();
-		}
-
 		public void update() {
-			totalCount = Math.max(from + size(), totalCount);
+			size = this.table.size();
+			totalCount = Math.max(from + size, totalCount);
 		}
 
 		@Override
@@ -1544,6 +2226,14 @@ public class RemoteQuery2 {
 			header.add(head);
 			row.add(value);
 			return this;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public String getException() {
+			return exception;
 		}
 
 		public Map<String, String> getRowAsMap(int index) {
@@ -1656,6 +2346,42 @@ public class RemoteQuery2 {
 			this.exception = e.getMessage();
 		}
 
+		public String getUserId() {
+			return userId;
+		}
+
+		public int getSize() {
+			return size;
+		}
+
+		public List<List<String>> getTable() {
+			return table;
+		}
+
+		public List<String> getHeader() {
+			return header;
+		}
+
+		public int getTotalCount() {
+			return totalCount;
+		}
+
+		public boolean getHasMore() {
+			return this.hasMore;
+		}
+
+		public int getRowsAffected() {
+			return this.rowsAffected;
+		}
+
+		public int getFrom() {
+			return from;
+		}
+
+		public void setUserId(String userId) {
+			this.userId = userId;
+		}
+
 		@Override
 		public String toString() {
 			String tableString = "[";
@@ -1667,9 +2393,8 @@ public class RemoteQuery2 {
 				tableString += row;
 			}
 			tableString += "]";
-			return "Result [name=" + name + ", userId=" + userId + ", size=" + size() + "\nfrom=" + from
-					+ ", totalCount=" + totalCount + "\n" + header + "\n" + tableString + ",\nexception=" + exception
-					+ "]";
+			return "Result [name=" + name + ", userId=" + userId + ", size=" + size + "\nfrom=" + from + ", totalCount="
+					+ totalCount + "\n" + header + "\n" + tableString + ",\nexception=" + exception + "]";
 		}
 
 		public String getSingleValue(String head) {
@@ -1701,7 +2426,7 @@ public class RemoteQuery2 {
 
 				int colIndex = 0;
 				for (String head : header) {
-
+					boolean foundHead = false;
 					if (Utils.isBlank(head)) {
 						head = "" + colIndex;
 					}
@@ -1775,7 +2500,7 @@ public class RemoteQuery2 {
 			if (index == -1) {
 				return null;
 			}
-			List<String> res = new ArrayList<String>(this.size());
+			List<String> res = new ArrayList<String>(getSize());
 			for (List<String> row : this.table) {
 				res.add(row.get(index));
 			}
@@ -1843,18 +2568,6 @@ public class RemoteQuery2 {
 			return map;
 		}
 
-		public List<Map<String, String>> asList() {
-			List<Map<String, String>> list = new ArrayList<Map<String, String>>();
-			for (List<String> row : this.table) {
-				Map<String, String> map = new HashMap<>(header.size());
-				for (int i = 0; i < header.size(); i++) {
-					map.put(header.get(i), row.get(i));
-				}
-				list.add(map);
-			}
-			return list;
-		}
-
 		public Map<String, String> asMap(String headKey, String headValue) {
 			int keyIndex = getHeaderIndex(headKey);
 			int valueIndex = getHeaderIndex(headValue);
@@ -1869,6 +2582,15 @@ public class RemoteQuery2 {
 				}
 			}
 			return map;
+		}
+
+		public ProcessLog getProcessInfo() {
+			return processLog;
+		}
+
+		public Result setProcessLog(ProcessLog processLog) {
+			this.processLog = processLog;
+			return this;
 		}
 
 		public static Result createSingleValue(String header, String value) {
@@ -1959,6 +2681,8 @@ public class RemoteQuery2 {
 
 		@Override
 		public void done() {
+			// TODO Auto-generated method stub
+
 		}
 
 		@Override
@@ -2000,12 +2724,20 @@ public class RemoteQuery2 {
 	 * 
 	 * @author tonibuenter
 	 */
-	public static class ServiceEntry {
+	public static class ServiceEntry implements Serializable {
 
-		public String serviceId;
-		public String statements;
-		public Set<String> roles;
-		public String datasourceName = DEFAULT_DATASOURCE_NAME;
+		public static final String SYSTEM_ROLENAME = "SYSTEM";
+
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+
+		private String serviceId;
+		private String statements;
+		private Set<String> roles;
+
+		private String datasourceName = DEFAULT_DATASOURCE_NAME;
 
 		public ServiceEntry(String serviceId, String statements, String roles) {
 			super();
@@ -2018,6 +2750,7 @@ public class RemoteQuery2 {
 		}
 
 		public ServiceEntry() {
+
 		}
 
 		public ServiceEntry(String serviceId, String statements, Set<String> roles) {
@@ -2027,8 +2760,28 @@ public class RemoteQuery2 {
 			this.roles = roles;
 		}
 
+		public String getServiceId() {
+			return serviceId;
+		}
+
+		public String getStatements() {
+			return statements;
+		}
+
+		public Set<String> getRoleSet() {
+			return this.roles;
+		}
+
 		public String getRoles() {
 			return Utils.joinTokens(roles);
+		}
+
+		public String getDatasourceName() {
+			return datasourceName;
+		}
+
+		public void setDatasourceName(String datasourceName) {
+			this.datasourceName = datasourceName;
 		}
 
 		@Override
@@ -2039,35 +2792,203 @@ public class RemoteQuery2 {
 
 		@Override
 		public int hashCode() {
-			return serviceId.hashCode();
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((serviceId == null) ? 0 : serviceId.hashCode());
+			return result;
 		}
 
 		@Override
 		public boolean equals(Object obj) {
-			return serviceId.equals(obj);
+			if (this == obj) {
+				return true;
+			}
+			if (obj == null) {
+				return false;
+			}
+			if (getClass() != obj.getClass()) {
+				return false;
+			}
+			ServiceEntry other = (ServiceEntry) obj;
+			if (serviceId == null) {
+				if (other.serviceId != null) {
+					return false;
+				}
+			} else if (!serviceId.equals(other.serviceId)) {
+				return false;
+			}
+			return true;
+		}
+
+		public void setServiceId(String serviceId) {
+			this.serviceId = serviceId;
+		}
+
+		public void setStatements(String statements) {
+			this.statements = statements;
+		}
+
+		public void setRoles(Set<String> roles) {
+			this.roles = roles;
 		}
 
 	}
 
-	public static class ServiceRepositoryHolder {
+	public static class ServiceRepository implements IServiceRepository {
 
-		private static IServiceRepository instance;
+		private static final Logger logger = LoggerFactory.getLogger(ServiceRepository.class);
 
-		public static IServiceRepository getInstance() {
+		private static ServiceRepository instance;
+
+		public static ServiceRepository getInstance() {
 			if (instance == null) {
 				throw new RuntimeException(
-						ServiceRepositoryHolder.class.getName() + " not yet created. Please create an instance first!");
+						ServiceRepository.class.getName() + " not yet created. Please create an instance first!");
 			}
 			return instance;
 		}
 
-		public static void setInstance(IServiceRepository instance) {
-			if (ServiceRepositoryHolder.instance != null) {
-				throw new RuntimeException(ServiceRepositoryHolder.class.getName() + " already initialized!");
+		public static void closeAll() {
+			if (instance != null) {
+				instance = null;
 			}
-			ServiceRepositoryHolder.instance = instance;
 		}
 
+		private ServiceRepositorySql sql;
+		private ServiceRepositoryJson json;
+
+		private IServiceRepository sr() {
+			if (sql != null) {
+				return sql;
+			} else if (json != null) {
+				return json;
+			} else {
+				throw new RuntimeException(
+						"No service repository initialized. Currently 'sql' and 'json' service repositories are available.");
+			}
+
+		}
+
+		/**
+		 * Creates a ServiceRepository and assign the static instance with it.
+		 * 
+		 * @param ds
+		 *            datasource for ServiceEntries.
+		 * @param tableName
+		 *            table name (including possible schema prefix)
+		 */
+		public ServiceRepository(DataSource ds, String tableName) {
+			logger.debug("try to create ServiceRepositorySql");
+			sql = new ServiceRepositorySql(ds, tableName);
+			instance = this;
+		}
+
+		/**
+		 * Creates a JsonServiceRepository and assign the static instance with
+		 * it.
+		 * 
+		 * @param jsonString
+		 */
+		public ServiceRepository(String jsonString) {
+			logger.info("Try to create ServiceRepositoryJson ...");
+			json = new ServiceRepositoryJson(jsonString);
+			instance = this;
+		}
+
+		@Override
+		public ServiceEntry get(String serviceId) throws SQLException, Exception {
+			IServiceRepository sr = sr();
+			return sr.get(serviceId);
+		}
+
+		@Override
+		public void add(ServiceEntry serviceEntry) throws Exception {
+			IServiceRepository sr = sr();
+			sr.add(serviceEntry);
+		}
+
+		@Override
+		public List<ServiceEntry> list() throws Exception {
+			return sr().list();
+		}
+	}
+
+	public static class ServiceRepositoryJson implements IServiceRepository {
+
+		private static final Logger logger = LoggerFactory.getLogger(ServiceRepositoryJson.class);
+
+		private static ServiceRepositoryJson instance;
+
+		public static ServiceRepositoryJson getInstance() {
+			if (instance == null) {
+				throw new RuntimeException(
+						ServiceRepositoryJson.class.getName() + " not yet created. Please create an instance first!");
+			}
+			return instance;
+		}
+
+		private List<ServiceEntry> entries;
+
+		/**
+		 * Creating a ServiceRepositoryJson object
+		 * 
+		 * @param string
+		 *            file path or json string
+		 * @param charsetName
+		 *            ENCODING for reading the file
+		 */
+		@SuppressWarnings("unchecked")
+		public ServiceRepositoryJson(String string, String charsetName) {
+			File f = new File(string);
+			String jsonString;
+			if (f.exists()) {
+				jsonString = Utils.readFileToString(f, charsetName);
+			} else {
+				jsonString = string;
+			}
+			if (Utils.isBlank(jsonString)) {
+				entries = new ArrayList<ServiceEntry>();
+			}
+			Type tt = new TypeToken<List<ServiceEntry>>() {
+			}.getType();
+			entries = (List<ServiceEntry>) JsonUtils.toObject(jsonString, tt);
+			logger.debug("found " + entries.size() + " service entries.");
+		}
+
+		/**
+		 * Creating a ServiceRepositoryJson object
+		 * 
+		 * @param string
+		 *            file path or json string
+		 */
+		public ServiceRepositoryJson(String string) {
+			this(string, null);
+		}
+
+		public ServiceEntry get(String serviceId) throws SQLException {
+			for (ServiceEntry sid : entries) {
+				if (sid.getServiceId().equals(serviceId)) {
+					return sid;
+				}
+			}
+			return null;
+		}
+
+		@Override
+		public void add(ServiceEntry serviceEntry) {
+			ProcessLog pLog = ProcessLog.Current();
+			if (entries.contains(serviceEntry)) {
+				pLog.warn("ServiceEntry " + serviceEntry.getServiceId() + " will be replaced by new ServiceEntry.",
+						logger);
+				entries.remove(serviceEntry);
+			}
+			entries.add(serviceEntry);
+		}
+
+		@Override
+		public List<ServiceEntry> list() {
+			return this.entries;
+		}
 	}
 
 	public static class ServiceRepositorySql implements IServiceRepository {
@@ -2122,7 +3043,7 @@ public class RemoteQuery2 {
 					String serviceId = rs.getString(COL_SERVICE_ID);
 					String statements = rs.getString(COL_STATEMENTS);
 					String roles = rs.getString(COL_ROLES);
-					se = new RemoteQuery2.ServiceEntry(serviceId, statements, roles);
+					se = new z_RemoteQuery.ServiceEntry(serviceId, statements, roles);
 					logger.info("Found " + se);
 					result.add(se);
 				}
@@ -2155,7 +3076,7 @@ public class RemoteQuery2 {
 				String sql = "insert into " + tableName + " (" + COL_SERVICE_ID + ", " + COL_STATEMENTS + ", "
 						+ COL_ROLES + ", " + COL_DATASOURCE + ") values (?,?,?,?)";
 				con = getConnection();
-				Utils.runQuery(con, sql, se.serviceId, se.statements, se.getRoles(), se.datasourceName);
+				Utils.runQuery(con, sql, se.getServiceId(), se.getStatements(), se.getRoles(), se.getDatasourceName());
 			} finally {
 				returnConnection(con);
 			}
@@ -2344,38 +3265,30 @@ public class RemoteQuery2 {
 			return IsoTimeTL.get().parse(date);
 		}
 
-		public static Triple<String, String, String> parseStatement(String statement) {
-			statement = statement.trim();
-			if (statement.isEmpty()) {
-				return null;
-			}
+		public static Command parseCommandValue(String statement) {
+			return MLTokenizer.tokenize(statement, '\'', " \n\t:", '\\', true);
 
-			String cmd = statement;
-			String parameters = "";
+			// String[] pair = { "", "" };
+			// int indexOf = statement.indexOf(':');
+			// if (indexOf == -1) {
+			// pair[0] = statement;
+			// } else {
+			// pair[0] = statement.substring(0, indexOf);
+			// pair[1] = statement.substring(indexOf + 1);
+			// }
+			// return pair;
+		}
 
-			int endCmd = statement.length();
-			for (int i = 0; i < statement.length(); i++) {
-				char ch = statement.charAt(i);
-				if (Character.isWhitespace(ch) || ch == ':') {
-					cmd = statement.substring(0, i);
-					endCmd = i;
-					break;
-				}
+		public static String[] parseCommandValue_old(String statement) {
+			String[] pair = { "", "" };
+			int indexOf = statement.indexOf(':');
+			if (indexOf == -1) {
+				pair[0] = statement;
+			} else {
+				pair[0] = statement.substring(0, indexOf);
+				pair[1] = statement.substring(indexOf + 1);
 			}
-
-			for (int i = endCmd; i < statement.length(); i++) {
-				char ch = statement.charAt(i);
-				if (Character.isWhitespace(ch) || ch == ':') {
-					continue;
-				}
-				parameters = statement.substring(i);
-				break;
-			}
-
-			if (Commands.isCmd(cmd)) {
-				return new ImmutableTriple<String, String, String>(cmd, parameters, statement);
-			}
-			return new ImmutableTriple<String, String, String>("sql", statement, statement);
+			return pair;
 		}
 
 		public static Date parseDateTime(String date) throws ParseException {
@@ -2838,6 +3751,62 @@ public class RemoteQuery2 {
 			return new Integer(-1);
 		}
 
+		// TODO not yet done
+		public static void processRqQueryText(String rqServices) {
+
+			Map<String, String> parameters = new HashMap<String, String>();
+			String query = "";
+			BufferedReader in = new BufferedReader(new StringReader(rqServices));
+			String line = null;
+			boolean startParameter = false;
+			boolean startQuery = false;
+			try {
+				while ((line = in.readLine()) != null) {
+					line = line.trim();
+					if (line.length() == 0) {
+						continue;
+					}
+
+					// comment
+					if (line.startsWith("--")) {
+						if (!startParameter) {
+							//
+							// execute collected
+							//
+							if (startQuery) {
+								parameters.put("SERVICE_STMT", query);
+								// saveServicequery(parameters);
+								startQuery = false;
+
+							}
+							startParameter = true;
+
+							parameters = new HashMap<String, String>();
+						}
+						// processParameter(parameters, line.substring(2));
+						continue;
+					}
+					startParameter = false;
+					if (!startQuery) {
+						startQuery = true;
+						query = line + '\n';
+					} else {
+						query += line + '\n';
+					}
+
+				}
+				if (startQuery) {
+					parameters.put("SERVICE_STMT", query);
+					// saveServicequery(parameters);
+					startQuery = false;
+
+				}
+			} catch (IOException e) {
+				logger.error(e.getMessage());
+			}
+
+		}
+
 		public static String sqlValueToString(Object value, int sqlType) throws IllegalArgumentException,
 				SecurityException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
 
@@ -3112,7 +4081,7 @@ public class RemoteQuery2 {
 				bis.close();
 				bais.close();
 			} catch (Exception e1) {
-				logger.error(e1 + "");
+				rqLogger.error(e1 + "");
 			}
 			return object;
 		}
@@ -3412,7 +4381,7 @@ public class RemoteQuery2 {
 		}
 
 		public ObjectStore(Class<E> resultClass) {
-			this(resultClass, RemoteQuery2.ANONYMOUS, new HashSet<String>());
+			this(resultClass, z_RemoteQuery.ANONYMOUS, new HashSet<String>());
 		}
 
 		public E asObject(Map<String, String> params) {
@@ -3498,7 +4467,7 @@ public class RemoteQuery2 {
 
 			MainQuery mq = new MainQuery();
 			Result r = mq.run(request);
-			if (r.size() > 0) {
+			if (r.size > 0) {
 				return r.getRowAsMap(0);
 			}
 			return new HashMap<String, String>();
@@ -3572,10 +4541,10 @@ public class RemoteQuery2 {
 			} catch (Exception e) {
 			}
 			if (field == null && getMethod == null) {
-				logger.info("No read access to property : " + property + " in class " + claxx.getSimpleName());
+				rqLogger.info("No read access to property : " + property + " in class " + claxx.getSimpleName());
 			}
 			if (field == null && setMethod == null) {
-				logger.info("No write access to property : " + property + " in class " + claxx.getSimpleName());
+				rqLogger.info("No write access to property : " + property + " in class " + claxx.getSimpleName());
 			}
 		}
 
@@ -3614,43 +4583,54 @@ public class RemoteQuery2 {
 
 	public static class MLTokenizer {
 
-		// public static Command tokenize(String s, char quote, String
-		// separators, char esc, boolean stripQuotes) {
-		//
-		// List<String> list = new ArrayList<String>();
-		// String reminder = null;
-		// boolean prot = false;
-		// boolean escaped = false;
-		// String text = "";
-		// for (int current = 0; current < s.length(); current++) {
-		// char c = s.charAt(current);
-		// if (escaped) {
-		// text += c;
-		// escaped = false;
-		// continue;
-		// }
-		// if (c == esc) {
-		// escaped = true;
-		// continue;
-		// }
-		// if (c == quote) {
-		// prot = !prot;
-		// text += c;
-		// continue;
-		// } else if (separators.contains("" + s.charAt(current)) && !prot) {
-		// addText(list, text, stripQuotes);
-		// if (reminder == null) {
-		// reminder = s.substring(current);
-		// reminder = trimLeft(reminder, separators, esc);
-		// }
-		// text = "";
-		// } else {
-		// text += c;
-		// }
-		// }
-		// addText(list, text, stripQuotes);
-		// return new Command(list, reminder);
-		// }
+		public static class Command {
+			public List<String> tokens;
+
+			public Command(List<String> tokens, String statement) {
+				super();
+				this.tokens = tokens;
+				this.statement = statement;
+			}
+
+			public String statement;
+		}
+
+		public static Command tokenize(String s, char quote, String separators, char esc, boolean stripQuotes) {
+
+			List<String> list = new ArrayList<String>();
+			String reminder = null;
+			boolean prot = false;
+			boolean escaped = false;
+			String text = "";
+			for (int current = 0; current < s.length(); current++) {
+				char c = s.charAt(current);
+				if (escaped) {
+					text += c;
+					escaped = false;
+					continue;
+				}
+				if (c == esc) {
+					escaped = true;
+					continue;
+				}
+				if (c == quote) {
+					prot = !prot;
+					text += c;
+					continue;
+				} else if (separators.contains("" + s.charAt(current)) && !prot) {
+					addText(list, text, stripQuotes);
+					if (reminder == null) {
+						reminder = s.substring(current);
+						reminder = trimLeft(reminder, separators, esc);
+					}
+					text = "";
+				} else {
+					text += c;
+				}
+			}
+			addText(list, text, stripQuotes);
+			return new Command(list, reminder);
+		}
 
 		public static String trimLeft(String s, String separators, char esc) {
 			if (s == null) {
@@ -3689,293 +4669,7 @@ public class RemoteQuery2 {
 		}
 
 	}
-
-	public static class CommandNode {
-
-		public String statement;
-		public String cmd;
-		public String parameter;
-		public List<CommandNode> children;
-		public int pointer = 0;
-
-		public CommandNode(String cmd, String parameter, String statement) {
-			super();
-			this.cmd = cmd;
-			this.parameter = parameter;
-			this.statement = statement;
-			this.children = new ArrayList<CommandNode>();
-		}
-
-		public CommandNode(String cmd) {
-			this(cmd, "", "");
-		}
-
-		public CommandNode append(CommandNode... cbChildren) {
-			for (CommandNode cbChild : cbChildren) {
-				children.add(cbChild);
-			}
-			return this;
-		}
-
-		public String toString() {
-			StringBuffer sb = new StringBuffer();
-			this._toString("", sb);
-			return sb.toString();
-		}
-
-		private void _toString(String indent, StringBuffer sb) {
-			sb.append(indent + this.cmd + " -> " + parameter + "\n");
-			for (CommandNode child : this.children) {
-				child._toString(" " + indent, sb);
-			}
-		}
-
-	}
-
-	//
-	//
-	// BUILD IN COMMANDS -start-
-	//
-	//
-
-	public static class SqlCommand implements ICommand {
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
-			Result r = new Result();
-			processSql(commandNode.parameter, request, serviceEntry, r);
-			return r;
-		}
-	}
-
-	public static class SetCommand implements ICommand {
-
-		public boolean overwrite = true;
-
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
-			String[] nv = Utils.tokenize(commandNode.parameter, '=');
-			String n = nv[0];
-			String v = nv.length > 1 ? nv[1] : null;
-			n = Utils.trim(n);
-			v = Utils.trim(v);
-			String requestValue = request.get(n);
-
-			if (overwrite || Utils.isBlank(requestValue)) {
-				request.put(n, v);
-			}
-			return currentResult;
-		}
-	}
-
-	public static class SetIfEmptyCommand extends SetCommand {
-		{
-			overwrite = false;
-		}
-	}
-
-	public static class CopyOverCommand implements ICommand {
-
-		public boolean overwrite = true;
-
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
-			String[] nv = Utils.tokenize(commandNode.parameter, '=');
-			String n = nv[0];
-			String v = nv.length > 1 ? nv[1] : null;
-			n = Utils.trim(n);
-			v = Utils.trim(v);
-			String requestValue = request.get(n);
-			v = request.get(v);
-			if (overwrite || Utils.isBlank(requestValue)) {
-				request.put(n, v);
-			}
-			return currentResult;
-		}
-	}
-
-	public static class CopyOverIfEmptyCommand extends CopyOverCommand {
-		{
-			overwrite = false;
-		}
-	}
-
-	public static class ParametersCommand implements ICommand {
-
-		protected boolean overwrite = true;
-
-		@Override
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
-
-			CommandNode iCb = null;
-
-			Triple<String, String, String> t = Utils.parseStatement(commandNode.parameter);
-			String cmd = t.getLeft();
-			String parameter = t.getMiddle();
-			String statement = t.getRight();
-			iCb = new CommandNode(cmd, parameter, statement);
-
-			Result iResult = processCommandBlock(iCb, request, currentResult, serviceEntry);
-
-			if (iResult == null) {
-				return currentResult;
-			}
-
-			Map<String, String> paramters = iResult.size() > 0 ? iResult.getRowAsMap(0) : new HashMap<String, String>();
-
-			for (String key : iResult.header) {
-				if (Utils.isEmpty(request.get(key)) || overwrite) {
-					request.put(key, paramters.get(key));
-				}
-			}
-
-			return currentResult;
-		}
-
-	}
-
-	public static class ParametersIfEmptyCommand extends ParametersCommand {
-		{
-			overwrite = false;
-		}
-	}
-
-	public static class ServiceIdCommand implements ICommand {
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
-			Request iRequest = request.deepCopy().setServiceId(commandNode.parameter);
-			Result result = iRequest.run();
-			return result;
-		}
-	}
-
-	public static class JavaCommand implements ICommand {
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
-			try {
-				return processJava(commandNode.parameter, commandNode.statement, request, currentResult, commandNode,
-						serviceEntry);
-			} catch (Exception e) {
-				logger.error(e.getMessage(), e);
-			}
-			return currentResult;
-		}
-	}
-
-	public static class ServiceRootCommand implements ICommand {
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
-			for (CommandNode cbChild : commandNode.children) {
-				Result r = processCommandBlock(cbChild, request, currentResult, serviceEntry);
-				currentResult = r != null ? r : currentResult;
-			}
-			return currentResult;
-		}
-	}
-
-	public static class NoOpCommand implements ICommand {
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
-			return currentResult;
-		}
-	}
-
-	public static class IfCommand implements ICommand {
-
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
-
-			// Result ifResult =
-			// RemoteQuery2.processCommand(commandNode.parameter,
-			// request,
-			// currentResult, serviceEntry);
-			// boolean isThen = ifResult != null && ifResult.table.size() > 0;
-			boolean isThen = !Utils.isBlank(request.get(commandNode.parameter));
-
-			for (CommandNode cbChild : commandNode.children) {
-				if ("else".equals(cbChild.cmd)) {
-					isThen = !isThen;
-					continue;
-				}
-				if (isThen) {
-					Result r = processCommandBlock(cbChild, request, currentResult, serviceEntry);
-					currentResult = r != null ? r : currentResult;
-				}
-			}
-
-			return currentResult;
-		}
-	}
-
-	public static class SwitchCommand implements ICommand {
-
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
-
-			// Result ifResult =
-			// RemoteQuery2.processCommand(commandNode.parameter,
-			// request,
-			// currentResult, serviceEntry);
-
-			String switchValue = request.get(commandNode.parameter);
-			switchValue = switchValue == null ? "" : switchValue;
-
-			boolean inSwitch = false;
-			boolean caseFound = false;
-
-			for (CommandNode cbChild : commandNode.children) {
-
-				if ("break".equals(cbChild.cmd)) {
-					inSwitch = false;
-					continue;
-				}
-
-				if ("case".equals(cbChild.cmd)) {
-					String caseParameter = cbChild.parameter;
-					caseParameter = caseParameter == null ? "" : caseParameter;
-					if (caseParameter.equals(switchValue)) {
-						caseFound = true;
-						inSwitch = true;
-					} else {
-						inSwitch = inSwitch || false;
-					}
-				}
-
-				if ("default".equals(cbChild.cmd)) {
-					inSwitch = !caseFound || inSwitch;
-					continue;
-				}
-
-				if (inSwitch) {
-					Result r = processCommandBlock(cbChild, request, currentResult, serviceEntry);
-					currentResult = r != null ? r : currentResult;
-				}
-			}
-
-			return currentResult;
-		}
-	}
-
-	public static class ForeachCommand implements ICommand {
-
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
-
-			Result indexResult = RemoteQuery2.processCommand(commandNode.parameter, request, currentResult,
-					serviceEntry);
-
-			if (indexResult == null || indexResult.table.size() == 0) {
-				return currentResult;
-			}
-
-			List<Map<String, String>> list = indexResult.asList();
-
-			Request iRequest = request.deepCopy();
-
-			for (Map<String, String> map : list) {
-				iRequest.put(map);
-				for (CommandNode child : commandNode.children) {
-					Result r = RemoteQuery2.processCommandBlock(child, iRequest, currentResult, serviceEntry);
-					currentResult = r == null ? currentResult : r;
-				}
-			}
-			return currentResult;
-		}
-	}
-
-	//
-	//
-	// BUILD IN COMMANDS -end-
-	//
-	//
+	
+	
 
 }

@@ -9,8 +9,8 @@ import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.remotequery.RemoteQuery.Request;
-import org.remotequery.RemoteQuery.Utils;
+import org.remotequery.z_RemoteQuery.Request;
+import org.remotequery.z_RemoteQuery.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +49,7 @@ public class DefaultWebRequestFactory implements IWebRequestFactory {
 	@Override
 	public List<Request> prepare(HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
 
-		List<Request> requests = new ArrayList<RemoteQuery.Request>();
+		List<Request> requests = new ArrayList<z_RemoteQuery.Request>();
 
 		String requestUri = httpRequest.getRequestURI();
 

@@ -62,7 +62,7 @@ public abstract class RequestDataHandler implements IRequestDataHandler {
 				String name = item.getFieldName();
 				InputStream stream = item.openStream();
 				if (item.isFormField()) {
-					String value = Streams.asString(stream, RemoteQuery.ENCODING);
+					String value = Streams.asString(stream, z_RemoteQuery.ENCODING);
 					if (name.startsWith(WebConstants.dataurl_)) {
 						//
 						// check for dataUrl, see also :

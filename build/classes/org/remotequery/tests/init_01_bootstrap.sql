@@ -1,11 +1,8 @@
 --
 --
--- INIT0 BOOTSTRAP
--- 
--- This sql file does:
--- * creating all tables (T_RQ_SERVICE, T_PERSON)
+-- INIT 01 BOOTSTRAP
 --
--- * inserting inital 'save service' service (RQService.save)
+-- Warning: SQL commands have to end with ';EOL' !
 --
 
 --
@@ -18,7 +15,7 @@ create table JGROUND.T_RQ_SERVICE (
    SERVICE_ID varchar(256),
    STATEMENTS varchar(4000),
    ROLES varchar(4000),
-   TAGS varchar(4000),
+   DATASOURCE varchar(512),
    primary key (SERVICE_ID)
 );
 
@@ -64,9 +61,9 @@ values
 	'RQService.save', 
 	'
 	delete from JGROUND.T_RQ_SERVICE where SERVICE_ID = :SERVICE_ID; insert into JGROUND.T_RQ_SERVICE 
-	(SERVICE_ID, STATEMENTS, ROLES, TAGS)  
+	(SERVICE_ID, STATEMENTS, ROLES)  
 	values 
-	(:SERVICE_ID, :statements, :ROLES, :TAGS)
+	(:SERVICE_ID, :statements, :ROLES)
 	',
 	'SYSTEM,APP_ADMIN'
 );

@@ -2,7 +2,7 @@ package org.remotequery.tests;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.remotequery.RemoteQuery.Utils;
+import org.remotequery.z_RemoteQuery.Utils;
 
 public class Test_Tokenizer {
 

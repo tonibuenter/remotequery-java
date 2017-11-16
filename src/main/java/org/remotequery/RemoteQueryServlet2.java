@@ -1,6 +1,6 @@
 package org.remotequery;
 
-import static org.remotequery.RemoteQuery.ENCODING;
+import static org.remotequery.z_RemoteQuery.ENCODING;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -19,11 +19,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.IOUtils;
-import org.remotequery.RemoteQuery.JsonUtils;
-import org.remotequery.RemoteQuery.ProcessLog;
-import org.remotequery.RemoteQuery.Request;
-import org.remotequery.RemoteQuery.Result;
-import org.remotequery.RemoteQuery.Utils;
+import org.remotequery.z_RemoteQuery.JsonUtils;
+import org.remotequery.z_RemoteQuery.ProcessLog;
+import org.remotequery.z_RemoteQuery.Request;
+import org.remotequery.z_RemoteQuery.Result;
+import org.remotequery.z_RemoteQuery.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

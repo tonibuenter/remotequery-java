@@ -6,7 +6,7 @@ import java.util.Properties;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.remotequery.RemoteQuery.Request;
+import org.remotequery.z_RemoteQuery.Request;
 
 public interface IWebRequestFactory {
 

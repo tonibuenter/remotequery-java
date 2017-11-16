@@ -5,10 +5,10 @@ import java.sql.Connection;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.remotequery.RemoteQuery2.Request;
-import org.remotequery.RemoteQuery2.Result;
-import org.remotequery.RemoteQuery2.ServiceEntry;
-import org.remotequery.RemoteQuery2.ServiceRepositoryHolder;
+import org.remotequery.RemoteQuery.Request;
+import org.remotequery.RemoteQuery.Result;
+import org.remotequery.RemoteQuery.ServiceEntry;
+import org.remotequery.RemoteQuery.ServiceRepositoryHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +44,7 @@ public class Test_Bootstrap {
 
 	@Test
 	public void serviceRepositoryIsOk() throws Exception {
-		ServiceEntry se = ServiceRepositoryHolder.getInstance().get("RQService.select");
+		ServiceEntry se = ServiceRepositoryHolder.get().get("RQService.select");
 		Assert.assertNotNull(se);
 		Assert.assertNotNull(se.serviceId);
 		Assert.assertEquals("RQService.select", se.serviceId);
@@ -53,13 +53,13 @@ public class Test_Bootstrap {
 	@Test
 	public void sqlCommandIsOk() throws Exception {
 		new Request().setServiceId("RQService.select");
-		ServiceEntry se = ServiceRepositoryHolder.getInstance().get("RQService.select");
+		ServiceEntry se = ServiceRepositoryHolder.get().get("RQService.select");
 		Assert.assertNotNull(se);
 		Assert.assertNotNull(se.serviceId);
 		Assert.assertEquals("RQService.select", se.serviceId);
 
 		//
-		se = ServiceRepositoryHolder.getInstance().get("RQService.delete");
+		se = ServiceRepositoryHolder.get().get("RQService.delete");
 		Assert.assertNotNull(se);
 		Assert.assertNotNull(se.serviceId);
 		Assert.assertEquals("RQService.delete", se.serviceId);
@@ -70,13 +70,13 @@ public class Test_Bootstrap {
 	@Test
 	public void setCommandIsOk() throws Exception {
 
-		ServiceEntry se = ServiceRepositoryHolder.getInstance().get("RQService.select");
+		ServiceEntry se = ServiceRepositoryHolder.get().get("RQService.select");
 		Assert.assertNotNull(se);
 		Assert.assertNotNull(se.serviceId);
 		Assert.assertEquals("RQService.select", se.serviceId);
 
 		//
-		se = ServiceRepositoryHolder.getInstance().get("RQService.delete");
+		se = ServiceRepositoryHolder.get().get("RQService.delete");
 		Assert.assertNotNull(se);
 		Assert.assertNotNull(se.serviceId);
 		Assert.assertEquals("RQService.delete", se.serviceId);

@@ -2,8 +2,8 @@ package org.remotequery.tests;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.remotequery.RemoteQuery.Utils;
-import org.remotequery.RemoteQuery.MLTokenizer.Command;
+import org.remotequery.z_RemoteQuery.Utils;
+import org.remotequery.z_RemoteQuery.MLTokenizer.Command;
 
 public class Test_Utils {
 

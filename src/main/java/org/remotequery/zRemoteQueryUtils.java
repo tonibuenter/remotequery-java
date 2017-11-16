@@ -10,14 +10,14 @@ import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
-import org.remotequery.RemoteQuery2.Request;
-import org.remotequery.RemoteQuery2.Result;
+import org.remotequery.z_RemoteQuery.Request;
+import org.remotequery.z_RemoteQuery.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RemoteQueryUtils2 {
+public class zRemoteQueryUtils {
 
-	private static Logger logger = LoggerFactory.getLogger(RemoteQueryUtils2.class);
+	private static Logger logger = LoggerFactory.getLogger(zRemoteQueryUtils.class);
 
 	/**
 	 * @param con
