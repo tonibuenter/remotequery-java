@@ -5,10 +5,10 @@
 
 # RemoteQuery (RQ)
 
-## An efficient service middleware for friends of SQL, Java and more
+## An efficient service middleware for friends of SQL, Java and more ...
 
 
-RemoteQuery (RQ) is a simple but powerful tool for secure service creation using SQL queries and Java as first class citicen. 
+RemoteQuery (RQ) is a simple but powerful tool for secure service creation using SQL queries and Java as first class citizen. 
 
 The highlights:
 
@@ -41,8 +41,8 @@ will return for users with the APP_USER role the following JSON:
 {
   "header" : ["firstName", "lastName", "city"],
   "table" : [
-        ["John", "Maier", "Zuerich"],
-        ["Mary", "Johnes", "Zuerich"]
+        ["John", "Maier",  "Zuerich"],
+        ["Mary", "Johannes", "Zuerich"]
   ]
 }
 ```
@@ -52,7 +52,6 @@ will return for users with the APP_USER role the following JSON:
 
 
 ```java
-
 public static class Address {
   public String firstName;
   public String lastName;
@@ -62,22 +61,23 @@ public static class Address {
 Result result = new Request().setServiceId("Address.search").put("nameFilter", "Jo%").addRole("APP_USER").run();
 
 // convert to a POJO
-List<Address> list = result.asList(Address.class)
-
+List<Address> list = result.asList(Address.class);
 ```
 
 
 ## Quick Start
 
-Download or clone this repository and run the JUnit classes to see how the RQ runs standalone. For running it on the web (Tomcat, other JEE server) use the RemoteQueryServlet
+Download or clone this repository. The repository is a Eclipse project (`Dynamic Web Project`). 
 
-More on : [QuickStart](docs/quickstart.md)
+### Standalone
 
-## RemoteQuery on the Web
+Run the JUnit classes in `src/test/java` to see how the RQ runs standalone.
+These tests create an apache-derby database in the temp directory (see: `Files.createTempDirectory`) with test tables and services.
 
-RemoteQuery is a standalone component that can be used as a web backend service delivery. Part of the distribution a RemoteQuery servlet is provided with a default implementation.
+### Java Web Container
 
-See [RemoteQuery Web](docs/remotequery_web.md)
+For running it on a Java web container like Tomcat, WebLogics, WebSphere and others (here: Embedded Jetty) just start the `StartJetty` (StartJetty.java or launch StartJetty configuration). The open http://localhost:8080.
+For running the Java web container (Jetty) Java 8 is required.
 
 
 ## Remote Query Documentation

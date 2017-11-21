@@ -4,7 +4,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.remotequery.RemoteQuery;
-import org.remotequery.TestCentral;
 import org.remotequery.RemoteQuery.CommandNode;
 import org.remotequery.RemoteQuery.Request;
 import org.remotequery.RemoteQuery.Result;

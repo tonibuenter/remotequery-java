@@ -3868,7 +3868,7 @@ public class RemoteQuery {
 			int counter = 0;
 			while (counter < MAX_WHILE) {
 				String whileCondition = request.get(commandNode.parameter);
-				//Request iRequest = request.deepCopy();
+				// Request iRequest = request.deepCopy();
 				if (Utils.isBlank(whileCondition)) {
 					break;
 				}

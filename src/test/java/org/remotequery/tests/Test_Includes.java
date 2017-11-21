@@ -8,7 +8,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.remotequery.RemoteQuery;
-import org.remotequery.TestCentral;
 import org.remotequery.RemoteQuery.ServiceEntry;
 import org.remotequery.RemoteQuery.ServiceRepositoryHolder;
 import org.remotequery.RemoteQuery.Utils;

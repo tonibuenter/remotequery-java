@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html class="mdc-typography">
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=9; IE=8; IE=7; IE=EDGE">
+
+<link rel="shortcut icon" href="img/remote-query-icon.png"
+	type="image/png">
+
+<link rel="icon" href="img/remote-query-icon.png" type="image/x-icon">
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta http-equiv="cache-control" content="max-age=0" />
+<meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="expires" content="0" />
+<meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT" />
+<meta http-equiv="pragma" content="no-cache" />
+
+<meta name="viewport"
+	content="width=device-width, initial-scale=1, maximum-scale=1">
+
+
+<!-- ------------ -->
+<!-- Google's MDC -->
+<!-- ------------ -->
+<link rel="stylesheet"
+	href="libs/mdc/node_modules/material-components-web/dist/material-components-web.css">
+<script
+	src="libs/mdc/node_modules/material-components-web/dist/material-components-web.js"></script>
+
+<!-- -------------- -->
+<!-- Material Icons -->
+<!-- -------------- -->
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+	rel="stylesheet">
+
+<!-- -------- -->
+<!-- JQUERY 3 -->
+<!-- -------- -->
+<script src="libs/jquery-3.2.1.js" type="text/javascript"></script>
+<script type="text/javascript" src="libs/underscore.js"></script>
+<script type="text/javascript" src="libs/moment-with-locales.js"></script>
+
+<!-- ------------------- -->
+<!-- AMINMATE CSS -->
+<!-- ------------------- -->
+<!-- https://github.com/daneden/animate.css -->
+
+<link type="text/css" rel="stylesheet" href="libs/animate.css" />
+
+
+<!-- ------------ -->
+<!-- Remote Query -->
+<!-- ------------ -->
+
+<script src="js/remotequery-0.9.0.js" type="text/javascript"></script>
+
+<!-- --------- -->
+<!-- THIS DEMO -->
+<!-- --------- -->
+
+<link href="css/demo.css" type="text/css" rel="stylesheet" />
+<script src="js/demo.js" type="text/javascript"></script>
+
+
+
+
+</head>
+
+<body>
+
+
+	<h2 class="mdc-typography--display2">RemoteQuery Web</h2>
+	<h4 class="mdc-typography--display1">Address Search</h4>
+
+	<div class="mdc-text-field" data-mdc-auto-init="MDCTextField">
+		<input type="text" class="mdc-text-field__input" id="nameFilter">
+		<label for="demo-input" class="mdc-text-field__label">Look up
+			an address!</label>
+	</div>
+
+	<button class="mdc-button" id="search">
+		<i class="material-icons mdc-button__icon">search</i> Search
+	</button>
+
+	<table class="mdc-table" id="table">
+
+	</table>
+
+	<div class="mdc-table" id="message"></div>
+
+	<script>
+    mdc.autoInit();
+    $(function() {
+      var search$ = $('#search');
+
+      search$.click(function() {
+        var nameFilter = $('#nameFilter').val() + '%';
+        rQ.call('Address.search', {
+          'nameFilter' : nameFilter
+        }, function(data) {
+          var list = rQ.asList(data);
+          var table$ = $('#table').empty();
+          var message$ = $('#message').empty();
+          if (list.length == 0) {
+            message$.text("No data found!");
+          }
+          _.each(list, function(e) {
+            table$.append($('<tr>').append($('<td>').text(e.firstName),
+                $('<td>').text(e.lastName), $('<td>').text(e.street),
+                $('<td>').text(e.zip), $('<td>').text(e.city)))
+          });
+        });
+      });
+
+    });
+  </script>
+
+
+</body>
+</html>
+
+
+
+
+
+
+

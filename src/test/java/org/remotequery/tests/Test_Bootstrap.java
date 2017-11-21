@@ -7,7 +7,6 @@ import org.remotequery.RemoteQuery.Request;
 import org.remotequery.RemoteQuery.Result;
 import org.remotequery.RemoteQuery.ServiceEntry;
 import org.remotequery.RemoteQuery.ServiceRepositoryHolder;
-import org.remotequery.TestCentral;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
