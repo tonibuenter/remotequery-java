@@ -5,18 +5,18 @@
 
 # RemoteQuery (RQ)
 
-## An efficient service middleware for SQL and Java
+## An efficient service middleware for friends of SQL, Java and more
 
 
-RemoteQuery (RQ) is a simple but powerful tool for secure service creation with focus on SQL queries and Java. 
+RemoteQuery (RQ) is a simple but powerful tool for secure service creation using SQL queries and Java as first class citicen. 
 
 The highlights:
 
 + The most simple RQ service: an SQL statement
-+ A Java class implementing the RQ IQuery interfase is a RQ service
++ A Java class implementing the RQ IQuery.process method is a RQ service
 + Any RQ service can be protected with a list of roles
 + The RQ Servlet directly maps HTTP parameters to SQ named parameters
-+ Simple but powerfull OR (object-relational) support
++ The most simple yet powerfull object-relational support
 
 ## Example 1: RemoteQuery Web
 
@@ -35,7 +35,7 @@ The the following URL:
 http://hostname/remoteQuery/Address.search?nameFilter=Jo%
 ```
  
-returns JSON:
+will return for users with the APP_USER role the following JSON:
 
 ```json
 {
@@ -46,9 +46,9 @@ returns JSON:
   ]
 }
 ```
-(If the user has the role APP_USER.)
 
-## Example 2: RemoteQuery as standalone Java
+
+## Example 2: Standalone RemoteQuery
 
 
 ```java
@@ -69,7 +69,7 @@ List<Address> list = result.asList(Address.class)
 
 ## Quick Start
 
-Download or clone this repository and run the JUnit classes.
+Download or clone this repository and run the JUnit classes to see how the RQ runs standalone. For running it on the web (Tomcat, other JEE server) use the RemoteQueryServlet
 
 More on : [QuickStart](docs/quickstart.md)
 
@@ -80,7 +80,8 @@ RemoteQuery is a standalone component that can be used as a web backend service 
 See [RemoteQuery Web](docs/remotequery_web.md)
 
 
-## Service Query and Manual
+## Remote Query Documentation
 
-[Service Query and Manual](docs/anatonomy.md)
+[RemoteQuery User Manual](docs/user_manual.md)
+[RemoteQuery Reference Manual](docs/reference_manual.md)
 

@@ -1,7 +1,5 @@
 package org.remotequery.tests;
 
-import java.sql.Connection;
-
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -9,6 +7,7 @@ import org.remotequery.RemoteQuery.Request;
 import org.remotequery.RemoteQuery.Result;
 import org.remotequery.RemoteQuery.ServiceEntry;
 import org.remotequery.RemoteQuery.ServiceRepositoryHolder;
+import org.remotequery.TestCentral;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,13 +32,6 @@ public class Test_Bootstrap {
 		
 		logger.error(logger.getName());
 		Assert.assertEquals(true, logger.isDebugEnabled());
-	}
-
-	@Test
-	public void connectionIsOk() throws Exception {
-		Connection connection = TestCentral.getConnection();
-		Assert.assertNotNull(connection);
-		TestCentral.returnConnection(connection);
 	}
 
 	@Test

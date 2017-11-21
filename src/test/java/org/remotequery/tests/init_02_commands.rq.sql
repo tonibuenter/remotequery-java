@@ -7,51 +7,61 @@
 -- SERVICE_ID = Test.Command.set
 --
 
-set:name=hello
+put name = hello
 ;
-select VALUE from JGROUND.T_APP_PROPERTIES where NAME = :name
+select "VALUE" from JGROUND.T_APP_PROPERTIES where NAME = :name
 
+
+
+--
+-- SERVICE_ID = Test.Command.copy
+--
+
+put name = hello
+;
+put name2 = hello2
+;
+copy name1 = name
+;
+copy-if-empty name2 = name
 
 
 --
 -- SERVICE_ID = Test.Command.if
 --
 
-parameters:select VALUE as "DOES_EXIST" from JGROUND.T_APP_PROPERTIES where NAME = :name
+parameters select VALUE as "DOES_EXIST" from JGROUND.T_APP_PROPERTIES where NAME = :name
 ;
-if:doesExist
-;
-then
-;
-select 'true' as "VALUE" from JGROUND.T_APP_PROPERTIES
-;
-select 'true' as "VALUE" from JGROUND.T_APP_PROPERTIES
-;
-else
-;
-select 'false' as "VALUE" from JGROUND.T_APP_PROPERTIES
-;
-fi
+if doesExist
+  ;
+	select 'true' as "VALUE" from JGROUND.T_APP_PROPERTIES
+	;
+	select 'true' as "VALUE" from JGROUND.T_APP_PROPERTIES
+	;
+  else
+	;
+	select 'false' as "VALUE" from JGROUND.T_APP_PROPERTIES
+	;
+end
 
 
 
 --
--- SERVICE_ID = Test.Command.foreach
+-- SERVICE_ID = Test.Command.if_elseOnly
 --
 
-parameters:select count(*) as "TOTAL1" from JGROUND.T_APP_PROPERTIES 
+put elseValue = not reached else
 ;
-foreach:select NAME, VALUE from JGROUND.T_APP_PROPERTIES 
-;
-do
-;
-insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values (:name || '-2', :value)
-;
-done
-;
-select * from JGROUND.T_APP_PROPERTIES 
-;
-parameters:select count(*) as "TOTAL2" from JGROUND.T_APP_PROPERTIES 
+if condition1
+  ;
+  else
+  ;
+  put elseValue = true
+  ;
+end
+
+
+
 
 
 
@@ -164,10 +174,85 @@ delete from JGROUND.T_APP_PROPERTIES where NAME like :prefix
 
 
 --
+-- SERVICE_ID = Test.Command.backslash
+-- 
+
+set semicolon = \;
+;
+insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE) values ('semicolon', :semicolon)
+;
+parameters
+  select VALUE as "IS_TRUE" from JGROUND.T_APP_PROPERTIES where VALUE = '\;' and NAME = 'semicolon'
+;
+if isTrue
+;
+  set semicolon = ok
+;
+end
+
+
+
+--
 -- SERVICE_ID = Test.Command.example
 -- ROLES      = APP_ADMIN
+--
 
-set:name=hello
+set name = hello
 ;
 select VALUE from JGROUND.T_APP_PROPERTIES where NAME = :name
 
+
+
+--
+-- SERVICE_ID = Test.Command.serviceid
+-- ROLES      = APP_ADMIN
+--
+
+serviceId Test.Command.example
+
+
+--
+-- SERVICE_ID = Test.Command.extension_CreateNewUser
+-- 
+
+create-new-user John Smith
+
+
+
+
+--
+-- SERVICE_ID = Test.Command.foreach
+--
+
+parameters 
+  select count(*) as "TOTAL1" from JGROUND.T_APP_PROPERTIES 
+;
+foreach 
+  select NAME, VALUE from JGROUND.T_APP_PROPERTIES 
+  ;
+  insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values (:name || '-2', :value)
+  ;
+end
+;
+select * from JGROUND.T_APP_PROPERTIES 
+;
+parameters
+  select count(*) as "TOTAL2" from JGROUND.T_APP_PROPERTIES 
+
+  
+  
+
+--
+-- SERVICE_ID = Test.Command.while
+--
+
+insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE) values ('while-1', '1');
+insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE) values ('while-2', '2');
+insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE) values ('while-3', '3');
+set whileName = start;
+while whileName;
+  delete from JGROUND.T_APP_PROPERTIES where NAME = :whileName;
+  parameters select NAME as "WHILE_NAME" from JGROUND.T_APP_PROPERTIES where NAME like 'while%';
+end;
+select * from JGROUND.T_APP_PROPERTIES where NAME like 'while%'
+  

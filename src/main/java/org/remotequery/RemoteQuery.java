@@ -117,9 +117,11 @@ public class RemoteQuery {
 			Registry.put("serviceRoot", new ServiceRootCommand());
 			Registry.put("sql", new SqlCommand());
 			Registry.put("set", new SetCommand());
+			Registry.put("put", new SetCommand());
 			Registry.put("set-if-empty", new SetIfEmptyCommand());
-			Registry.put("copy-over", new CopyOverCommand());
-			Registry.put("copy-over-if-empty", new CopyOverIfEmptyCommand());
+			Registry.put("set-if-empty", new SetIfEmptyCommand());
+			Registry.put("copy", new CopyCommand());
+			Registry.put("copy-if-empty", new CopyIfEmptyCommand());
 			Registry.put("parameters", new ParametersCommand());
 			Registry.put("parameters-if-empty", new ParametersIfEmptyCommand());
 			Registry.put("serviceId", new ServiceIdCommand());
@@ -1359,7 +1361,6 @@ public class RemoteQuery {
 		public List<String> header = new ArrayList<String>();
 		public String exception = null;
 		public ProcessLog processLog = null;
-		public Result subResult = null;
 
 		public Result(String... header) {
 			_header(header);
@@ -3661,26 +3662,30 @@ public class RemoteQuery {
 		}
 	}
 
-	public static class CopyOverCommand implements ICommand {
+	public static class CopyCommand implements ICommand {
 
 		public boolean overwrite = true;
 
 		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
 			String[] nv = Utils.tokenize(commandNode.parameter, '=');
-			String n = nv[0];
-			String v = nv.length > 1 ? nv[1] : null;
-			n = Utils.trim(n);
-			v = Utils.trim(v);
-			String requestValue = request.get(n);
-			v = request.get(v);
-			if (overwrite || Utils.isBlank(requestValue)) {
-				request.put(n, v);
+			if (nv == null || nv.length != 2) {
+				logger.warn("Expected parameter-part should be like name1 = name2. But was: " + commandNode.parameter);
+				return currentResult;
+			}
+			String targetName = Utils.trim(nv[0]);
+			String sourceName = Utils.trim(nv[1]);
+
+			String oldValue = request.get(targetName);
+			String newValue = request.get(sourceName);
+
+			if (overwrite || Utils.isBlank(oldValue)) {
+				request.put(targetName, newValue);
 			}
 			return currentResult;
 		}
 	}
 
-	public static class CopyOverIfEmptyCommand extends CopyOverCommand {
+	public static class CopyIfEmptyCommand extends CopyCommand {
 		{
 			overwrite = false;
 		}
@@ -3863,13 +3868,13 @@ public class RemoteQuery {
 			int counter = 0;
 			while (counter < MAX_WHILE) {
 				String whileCondition = request.get(commandNode.parameter);
-				Request iRequest = request.deepCopy();
+				//Request iRequest = request.deepCopy();
 				if (Utils.isBlank(whileCondition)) {
 					break;
 				}
 				counter++;
 				for (CommandNode child : commandNode.children) {
-					Result r = RemoteQuery.processCommandBlock(child, iRequest, currentResult, serviceEntry);
+					Result r = RemoteQuery.processCommandBlock(child, request, currentResult, serviceEntry);
 					currentResult = r == null ? currentResult : r;
 				}
 			}
