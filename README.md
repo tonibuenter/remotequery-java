@@ -1,5 +1,5 @@
 
-![Players of the RemoteQuery](https://docs.google.com/drawings/d/e/2PACX-1vQsPlanMiS2yX50Qxo3qR4Eb2di8tXoW3387qDHBcaJtvpu18WlyTY-k9Gfcvk8bCVCEhC9akweRta2/pub?w=378&amp;h=94)
+![Under Construction](https://docs.google.com/drawings/d/e/2PACX-1vQsPlanMiS2yX50Qxo3qR4Eb2di8tXoW3387qDHBcaJtvpu18WlyTY-k9Gfcvk8bCVCEhC9akweRta2/pub?w=378&amp;h=94)
 
 
 
@@ -67,17 +67,23 @@ List<Address> list = result.asList(Address.class);
 
 ## Quick Start
 
-Download or clone this repository. The repository is a Eclipse project (`Dynamic Web Project`). 
+Download or clone this repository. The repository is a Eclipse project (`Java Project`). 
+It expects Java 8, but RemoteQuery runs with Java 7 as well.
+
+Here some structural hints:
+
+* RQ main : `src/main/java` with `java-libs` is needed for RQ 
+* JUnit tests : `src/test/java` with `java-test-libs` together with RQ main
+* Web : `src/web/java`, `src/web/webapp` with `java-web-libs` together with Unit tests
 
 ### Standalone
 
 Run the JUnit classes in `src/test/java` to see how the RQ runs standalone.
-These tests create an apache-derby database in the temp directory (see: `Files.createTempDirectory`) with test tables and services.
+`TestCentral.java` creates an apache-derby database in the temp directory (see: `Files.createTempDirectory`) with test tables and services. DB object and services are defined in the corresponding `sql` and `rq.sql` files.
 
 ### Java Web Container
 
-For running it on a Java web container like Tomcat, WebLogics, WebSphere and others (here: Embedded Jetty) just start the `StartJetty` (StartJetty.java or launch StartJetty configuration). The open http://localhost:8080.
-For running the Java web container (Jetty) Java 8 is required.
+For running RQ as part of a Java web container just start the `remote-query-start-web` launch configuration (main class : `StartJetty.java`). Open the browser on http://localhost:8080. An embedded Jetty server is started. The integration of RQ is done by the `RemoteQueryWeb.java` servlet. The servlet rather simple. Please apply security such as user authentication and authorization.
 
 
 ## Remote Query Documentation
