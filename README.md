@@ -18,7 +18,7 @@ The highlights:
 + A simple yet powerfull object-relational support [OR Support](docs/object_relational_support.md)
 
 
-## Example 1\: RemoteQuery Web
+## Example RemoteQuery Web
 
 Let us assume we have the following RQ service entry: 
 
@@ -49,7 +49,7 @@ will return - for users with the APP_USER role - the following JSON:
 
 
 
-## Example 2\: Standalone RemoteQuery
+## Example Standalone RemoteQuery
 
 
 ```java
