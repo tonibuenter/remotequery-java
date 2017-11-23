@@ -7,12 +7,12 @@ The following diagram shows the main component and players in a RemoteQuery requ
 ![Players of the RemoteQuery](https://docs.google.com/drawings/d/e/2PACX-1vSe5Eh_cRISGGNsO2fOIHZ29ol4Pksf60_jdGR-n13sZMXS8vUKdR9QhGhMdd7aQojkt5NIcGKKV08E/pub?w=960&amp;h=720)
 
 
-- Caller : A standalone or web-based Java application can create a RemoteQuery request.
-- RemoteQuery Request : The request is build of service id, parameters, user id and roles. In a secured enviroment the user id and the roles are part of a authentication and authorization process.
-- RemoteQuery Run : The request is processed.
-- Service Entry : A service entry is detected according to the service id. The servcie execution is protected by the roles of the service entry. To be authorized to execute a service the request roles and the service entry roles have to have at least one common role. It there is no service entry role, the service is unprotected.
-- The processing of a request involves database and other resources like files.
-- RemoteQuery Result : After processing the request a RQ result is returned. The result mainly consists of a header, a table and a process log object.  
+- *Caller* : A standalone or web-based Java application can create a RemoteQuery request.
+- *RemoteQuery Request* : The request is build of service id, parameters, user id and roles. In a secured enviroment the user id and the roles are part of a authentication and authorization process.
+- *RemoteQuery Run* : The request is processed.
+- *Service Entry* : A service entry is detected according to the service id. The servcie execution is protected by the roles of the service entry. To be authorized to execute a service the request roles and the service entry roles have to have at least one common role. It there is no service entry role, the service is unprotected.
+- *Resources* : The processing of a request involves database and other resources like files.
+- *RemoteQuery Result* : After processing the request a RQ result is returned. The result mainly consists of a header, a table and a process log object.  
 
 
 Code example:
