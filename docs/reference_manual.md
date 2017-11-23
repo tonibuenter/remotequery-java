@@ -20,7 +20,7 @@ Command | Usage| Description
 --- | --- | ---
 *set*  | set hello = world | This sets 'value' to the request parameter 'name'
 *put* | put hello = world | The same as with *set*
-`set-if-empty` | set-if-empty name = value | As if set but only if the current value of 'name' *set-if-empty* *put-if-empty* | put-if-empty name = value | The same as with *set-if-empty*
+```set-if-empty```  | set-if-empty name = value | As if set but only if the current value of 'name' *set-if-empty* *put-if-empty* | put-if-empty name = value | The same as with *set-if-empty*
 *copy*  | copy name1 = name2 | set the value of name2 to value of name1
 *copy-if-empty*  | copy-if-empty name1 = name2 | Like copy, but only if value of name1 is empty
 *parameters*  | parameters select * from T_ADDRESS ... | The parameter part is processed as statements and the result, actually the first row if available, is applied to the parameters.
