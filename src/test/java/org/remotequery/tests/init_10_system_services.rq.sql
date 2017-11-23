@@ -82,3 +82,11 @@ delete from JGROUND.T_APP_PROPERTIES
 
 select 'ADDRESS_READER' as ROLE from JGROUND.T_DUAL
 
+
+
+--
+-- SERVICE_ID = UUID.create
+-- ROLES      = SYSTEM
+--
+
+class org.remotequery.tests.UuidQuery

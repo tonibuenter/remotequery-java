@@ -6,7 +6,7 @@
 The command statement syntax is:
 
 ```
-command {white-space, : } parameter part ;
+command {white-space} parameter-part ;
 
 ```
 
@@ -18,9 +18,9 @@ command {white-space, : } parameter part ;
 
 Command | Usage| Description
 --- | --- | ---
-*set*  | set hello = world | This sets 'value' to the request parameter 'name'
+*set*  | set hello = world | This sets right hand value (here: world) to the request parameter (here: hello)
 *put* | put hello = world | The same as with *set*
-```set-if-empty```  | set-if-empty name = value | As if set but only if the current value of 'name' *set-if-empty* *put-if-empty* | put-if-empty name = value | The same as with *set-if-empty*
+*set-if-empty* | set-if-empty name = value | As if set but only if the current value of 'name' *set-if-empty* *put-if-empty* | put-if-empty name = value | The same as with *set-if-empty*
 *copy*  | copy name1 = name2 | set the value of name2 to value of name1
 *copy-if-empty*  | copy-if-empty name1 = name2 | Like copy, but only if value of name1 is empty
 *parameters*  | parameters select * from T_ADDRESS ... | The parameter part is processed as statements and the result, actually the first row if available, is applied to the parameters.
@@ -55,14 +55,13 @@ include Test.Command.example
 ### Command *java* or *class* 
 
 The parameter part of a *java* or *class* command 
-is a java class that implements the *RemoteQuery.IQuery* interface
+is expected to be Java class that implements the *RemoteQuery.IQuery* interface.
 
 
 Example:
 
 ```
-java org.jground.ProcessTicket
-
+java org.remotequery.tests.UuidQuery
 ```
 
 
@@ -74,10 +73,10 @@ The *if* command expects a parameter and if the parameter has a value the comman
 Example:
 
 ```
-if tickeTid;
-    serviceId Ticket.update;
+if addressId;
+    serviceId Address.update;
   else;
-    serviceId Ticket.insert;
+    serviceId Address.insert;
 end
 ```
 

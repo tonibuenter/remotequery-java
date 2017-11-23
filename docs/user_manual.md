@@ -148,21 +148,14 @@ Writing SQL statements is done pretty straight forward. The following rules appl
 
 Command statements have been introduced to augment the SQL processing in a simple and light way. The command structure is like
 
-- **command**, white space or colon, parameter part
+- **command** white_space\* parameter\_part
 
-So the following examples are all the same:
+Example:
 
 ```
-set:days=13
+set days = 25
 ```
-```
-set : days = 13
-```
-```
-put
 
-days = 13
-```
 
 Basically, for each command there is a command class that runs the command. 
 The example above uses the SetCommand class which is doing a put ('days', '13') to the current request object. 
