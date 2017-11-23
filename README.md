@@ -46,13 +46,8 @@ will return - for users with the APP_USER role - the following JSON:
   ]
 }
 ```
-test
-
 
 ## Example Standalone RemoteQuery
-
-## Example Standalone RemoteQuery
-
 
 ```java
 public static class Address {
