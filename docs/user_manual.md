@@ -21,7 +21,7 @@ Code example:
 Request request = new Request();
 request.setServiceId("Address.search");
 request.put("nameFilter", "John%");
-request.addRole("APP_USER");
+request.addRole("ADDRESS_READER");
 Result result = request.run();
 ```
 
@@ -205,7 +205,7 @@ create-new-user John Smith
 
 For further details on the command see:
 
-[RemoteQuery Reference Manual](docs/reference_manual.md)
+[RemoteQuery Reference Manual](reference_manual.md)
 
 
 
