@@ -32,12 +32,12 @@ public class TestCentral {
 	public static void init() throws Exception {
 
 		if (TestCentral.dataSource != null) {
-			logger.info("TestCentral already initialized");
+			logger.info("TestCentral already initialized, will do nothing...");
 			return;
 		}
 
 		//
-		// 1. Database : Derby with embedded driver
+		// 1. Database : Create a temporary directory for a Appache Derby DB with with embedded driver
 		//
 
 		Path tmpDbPath = Files.createTempDirectory("remoteQueryTestDb");
@@ -49,7 +49,7 @@ public class TestCentral {
 		String dbpasswd = "derby";
 
 		//
-		// 2. DataSource : Apache BasicDataSource
+		// 2. DataSource : Create a data source object with Apache BasicDataSource
 		//
 
 		BasicDataSource basicDataSource = new BasicDataSource();
@@ -58,10 +58,10 @@ public class TestCentral {
 		basicDataSource.setUsername(dbuserid);
 		basicDataSource.setPassword(dbpasswd);
 		Connection connection = basicDataSource.getConnection();
-		logger.info("Got connection: " + connection);
+		logger.info("Connection from Apache BasicDataSource: " + connection);
 
 		//
-		// 3. DB Objects : Create tables, insert bootstrap service entry
+		// 3. DB Objects : Create schema and tables, insert bootstrap service entry
 		//
 
 		for (String sqlfileName : sqlfileNames) {
@@ -73,8 +73,8 @@ public class TestCentral {
 		}
 
 		//
-		// 4. Initialize RemoteQuery : Register data source and service
-		// repository
+		// 4. Initialize RemoteQuery : Register data source, create and register an sql service
+		// repository with the service table JGROUND.T_RQ_SERVICE
 		//
 
 		logger.info("Register default data source...");
@@ -85,7 +85,7 @@ public class TestCentral {
 		ServiceRepositoryHolder.set(serviceRepository);
 
 		//
-		// 5. Load RQ Services : Read service definitions from rq.sql files
+		// 5. Load RQ Services : Read application's service definitions from rq.sql files
 		//
 
 		for (String fileName : rqSqlfileNames) {

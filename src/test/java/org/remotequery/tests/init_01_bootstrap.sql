@@ -11,6 +11,12 @@
 
 create schema JGROUND;
 
+
+
+create SEQUENCE JGROUND.GLOBAL_ID START with 1000;
+
+
+
 create table JGROUND.T_RQ_SERVICE (
    SERVICE_ID varchar(256),
    STATEMENTS varchar(4000),

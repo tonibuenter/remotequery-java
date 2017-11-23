@@ -1195,6 +1195,23 @@ public class RemoteQuery {
 			return runner.run(this);
 		}
 
+		public Result run(String serviceId) {
+			this.setServiceId(serviceId);
+			return run();
+		}
+
+		public Result run(String serviceId, Map<String, String> map) {
+			this.setServiceId(serviceId);
+			this.put(map);
+			return run();
+		}
+
+		public Result runWith(String serviceId, Object object) {
+			this.setServiceId(serviceId);
+			this.putObject(object);
+			return run();
+		}
+
 		public Request setParameters(Map<String, String> parametersIn) {
 			this.parameters = parametersIn;
 			this.parameters = this.parameters == null ? new HashMap<String, String>() : this.parameters;
@@ -1240,6 +1257,14 @@ public class RemoteQuery {
 		public Request put(Map<String, String> map) {
 			this.parameters.putAll(map);
 			return this;
+		}
+
+		public Request putObject(Object object) {
+			if (object == null) {
+				return this;
+			}
+			Map<String, String> params = Utils.asMap(object);
+			return put(params);
 		}
 
 		public Request addRole(String role) {
@@ -1679,6 +1704,10 @@ public class RemoteQuery {
 				return list.get(0);
 			}
 			return null;
+		}
+
+		public <E> E as(Class<E> claxx) {
+			return asObject(claxx);
 		}
 
 		public List<String> getColumn(String columnName) {
@@ -2932,23 +2961,40 @@ public class RemoteQuery {
 			return c == null || c.size() == 0;
 		}
 
-		public static Map<String, String> asMap(Object obj) throws Exception {
-			Map<String, String> values = new HashMap<String, String>();
+		public static Map<String, String> asMap(Object obj) {
+			Map<String, String> map = new HashMap<String, String>();
 			Method[] methods = obj.getClass().getMethods();
+			Field[] fields = obj.getClass().getFields();
 
-			for (Method method : methods) {
-				if (Modifier.isStatic(method.getModifiers())) {
-					continue;
+			try {
+				for (Method method : methods) {
+					if (Modifier.isStatic(method.getModifiers())) {
+						continue;
+					}
+					if (method.getParameterTypes().length == 0 && method.getName().startsWith("get")
+							&& method.getName().length() > 3 && method.getReturnType().equals(String.class)) {
+						String key = method.getName().substring(3, 4).toLowerCase() + method.getName().substring(4);
+						Object r = method.invoke(obj, (Object[]) null);
+						String value = rnn(r);
+						map.put(key, value);
+					}
 				}
-				if (method.getParameterTypes().length == 0 && method.getName().startsWith("get")
-						&& method.getName().length() > 3 && method.getReturnType().equals(String.class)) {
-					String key = method.getName().substring(3, 4).toLowerCase() + method.getName().substring(4);
-					Object r = method.invoke(obj, (Object[]) null);
-					String value = rnn(r);
-					values.put(key, value);
+
+				for (Field field : fields) {
+					if (Modifier.isStatic(field.getModifiers())) {
+						continue;
+					}
+					String key = field.getName();
+					if (map.containsKey(key)) {
+						continue;
+					}
+					String value = rnn(field.get(obj));
+					map.put(key, value);
 				}
+			} catch (Exception e) {
+				logger.error(e.getMessage(), e);
 			}
-			return values;
+			return map;
 		}
 
 		public static <K, V> V firstValue(Map<K, V> map) {
@@ -3364,7 +3410,7 @@ public class RemoteQuery {
 			return result;
 		}
 
-		public List<E> search(String serviceId, E object) throws Exception {
+		public List<E> search(String serviceId, Object object) throws Exception {
 			if (object == null) {
 				return search(serviceId);
 			}
