@@ -15,9 +15,10 @@ The highlights:
 + A Java class implementing the RQ IQuery.process method is a RQ service
 + Any RQ service can be protected with a list of roles
 + The RQ Servlet directly maps HTTP parameters to SQ named parameters
-+ A simple yet powerfull object-relational support [OR Support](docs/object_relational_support.md))
++ A simple yet powerfull object-relational support [OR Support](docs/object_relational_support.md)
 
-## Example 1: RemoteQuery Web
+
+## Example 1\: RemoteQuery Web
 
 Let us assume we have the following RQ service entry: 
 
@@ -47,7 +48,8 @@ will return - for users with the APP_USER role - the following JSON:
 ```
 
 
-## Example 2: Standalone RemoteQuery
+
+## Example 2\: Standalone RemoteQuery
 
 
 ```java
@@ -71,10 +73,10 @@ It expects Java 8, but RemoteQuery runs with Java 7 as well.
 
 Here some hints for the directory layout of this repository:
 
-* RQ main : `src/main/java` with `java-libs` is needed for RQ 
-* JUnit tests : `src/test/java` with `java-test-libs` together with RQ main
-* Web : `src/web/java`, `src/web/webapp` with `java-web-libs` together with Unit tests
-* Documentation : `docs`
+* RQ main : `src/main/java/` with `java-libs/` is needed for RQ 
+* JUnit tests : `src/test/java/` with `java-test-libs/` together with RQ main
+* Web : `src/web/java/`, `src/web/webapp/` with `java-web-libs/` together with Unit tests
+* Documentation : `docs/`
 
 ### Standalone
 
@@ -92,6 +94,6 @@ More details:
 
 ## Remote Query Documentation
 
-[RemoteQuery User Manual](docs/user_manual.md)
-[RemoteQuery Reference Manual](docs/reference_manual.md)
+* [RemoteQuery User Manual](docs/user_manual.md)
+* [RemoteQuery Reference Manual](docs/reference_manual.md)
 
