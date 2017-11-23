@@ -28,7 +28,7 @@ Result result = request.run();
 ... or in one line: 
 
 ```java
-Result result = new Request().setServiceId("Address.search").put("nameFilter", "John%").addRole("APP_USER").run();
+Result result = new Request().put("nameFilter", "John%").addRole("ADDRESS_READER").run("Address.search");
 ```
 
 

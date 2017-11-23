@@ -71,3 +71,14 @@ where NAME = :name
 --
 
 delete from JGROUND.T_APP_PROPERTIES
+
+
+
+--
+-- SERVICE_ID = Role.select
+-- ROLES      = SYSTEM
+-- INFO       = Just a dummy service ...
+--
+
+select 'ADDRESS_READER' as ROLE from JGROUND.T_DUAL
+

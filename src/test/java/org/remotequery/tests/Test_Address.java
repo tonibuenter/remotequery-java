@@ -29,7 +29,8 @@ public class Test_Address {
 
 	@Test
 	public void testCreateNewUser() {
-		Result result = new Request().setServiceId("Address.search").put("nameFilter", "Jo%").addRole("APP_USER").run();
+		Result result = new Request().setServiceId("Address.search").put("nameFilter", "Jo%").addRole("ADDRESS_READER")
+				.run();
 		// convert to a POJO
 		List<Address> list = result.asList(Address.class);
 		Assert.assertEquals(2, list.size());
@@ -58,38 +59,9 @@ public class Test_Address {
 	}
 
 	@Test
-	public void testORMapping_update_address() throws Exception {
-
-		Set<String> roles = new HashSet<String>();
-		roles.add("ADDRESS_WRITER");
-
-		ObjectStore<Address> objectStore = new ObjectStore<Address>(Address.class, roles);
-
-		// 1. search for Anna
-		AddressFilter addressFilter = new AddressFilter();
-		addressFilter.nameFilter = "Anna";
-
-		Address address = objectStore.search("Address.search", addressFilter).get(0);
-		Assert.assertEquals("8", address.addressId);
-
-		// 2. save change
-		address.lastName = "Braader Schramm";
-
-		address = objectStore.update("Address.save", address).asObject(Address.class);
-
-		Assert.assertNotNull(address);
-		Assert.assertNotNull(address.addressId);
-		Assert.assertEquals("Anna", address.firstName);
-		Assert.assertEquals("Anna", address.firstName);
-		Assert.assertEquals("Braader Schramm", address.lastName);
-		Assert.assertEquals("8", address.addressId);
-
-	}
-
-	@Test
 	public void testOR() throws Exception {
 
-		Request request = new Request().addRole("ADDRESS_WRITER");
+		Request request = new Request().addRole("ADDRESS_WRITER").addRole("ADDRESS_READER");
 
 		// 1. search for Anna
 		AddressFilter addressFilter = new AddressFilter();

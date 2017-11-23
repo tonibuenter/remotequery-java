@@ -32,7 +32,7 @@ RemoteQuery directly supports working with POJO that have standard set and get m
 The request method `runWith` supports now a POJO the will be injected as a set of parameters. The result can be mapped to a POJO again.
 
 ```java
-    
+    // ...
     AddressFilter addressFilter = new AddressFilter();
     addressFilter.nameFilter = "Anna";
 
@@ -60,6 +60,7 @@ The services used for the above examples look like:
 ```
 --
 -- SERVICE_ID = Address.search
+-- ROLES      = ADDRESS_READER
 -- 
 
 set-if-empty nameFilter = %

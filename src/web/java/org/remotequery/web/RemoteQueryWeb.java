@@ -119,12 +119,11 @@ public class RemoteQueryWeb extends HttpServlet {
 			// Read roles for userId from session of from service 'Role.select'
 			//
 
-			request.setUserId(userId);
+			Request rolesRequest = new Request().addRole("SYSTEM");
 
 			roles = (List<String>) httpRequest.getSession().getAttribute("roles");
 			if (roles == null) {
-				result = request.setServiceId("Role.select").put("userId", userId).run();
-
+				result = rolesRequest.put("userId", userId).run("Role.select");
 				roles = result.getColumn("role");
 				httpRequest.getSession().setAttribute("roles", roles);
 			}
@@ -132,8 +131,10 @@ public class RemoteQueryWeb extends HttpServlet {
 			//
 			// Run the main request
 			//
-
-			result = request.setServiceId(serviceId).put(parameters).setRoles(roles).run();
+			
+			request.setUserId(userId);
+			request.setRoles(roles);
+			result = request.put(parameters).run(serviceId);
 
 			//
 			// Write back the result object as JSON

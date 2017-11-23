@@ -1,5 +1,6 @@
 --
 -- SERVICE_ID = Address.search
+-- ROLES      = ADDRESS_READER
 -- 
 
 set-if-empty nameFilter = %
