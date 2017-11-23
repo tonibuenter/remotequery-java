@@ -37,7 +37,7 @@ http://hostname/remoteQuery/Address.search?nameFilter=Jo%
  
 will return - for users with the APP_USER role - the following JSON:
 
-```json
+```
 {
   "header" : ["firstName", "lastName", "city"],
   "table" : [
