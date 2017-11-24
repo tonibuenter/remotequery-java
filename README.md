@@ -1,5 +1,5 @@
 
-![Under Construction](https://docs.google.com/drawings/d/e/2PACX-1vQsPlanMiS2yX50Qxo3qR4Eb2di8tXoW3387qDHBcaJtvpu18WlyTY-k9Gfcvk8bCVCEhC9akweRta2/pub?w=378&amp;h=94)
+![Remote Query](docs/remote-query.png)
 
 
 # RemoteQuery (RQ)
