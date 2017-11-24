@@ -113,7 +113,9 @@ In this test setup, an instance of the SQL based service repository `ServiceRepo
 
 
 
-
-
+ ####  5. Load RQ Services
+ 
+ The last section in this test setup is reading in all services from the rq.sql files.
+ Further details on [RQ SQL Files](rq_sql_files.md)
 
 
