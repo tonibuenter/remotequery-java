@@ -1,0 +1,13 @@
+div.demo-content {
+	padding: 1em;
+}
+
+
+div.demo-content table td {
+  padding: 0.2em;
+}
+
+
+div.demo-content div.demo-message {
+  padding: 0.2em;
+}

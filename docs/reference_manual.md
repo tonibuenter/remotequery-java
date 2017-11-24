@@ -6,10 +6,11 @@
 The command statement syntax is:
 
 ```
-command {white-space} parameter-part ;
+command white-space parameter-part
 
 ```
 
+Multiple command are separated with a semicolon `;`.
 
 
 

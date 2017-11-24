@@ -20,9 +20,9 @@
 	content="width=device-width, initial-scale=1, maximum-scale=1">
 
 
-<!-- ------------ -->
-<!-- Google's MDC -->
-<!-- ------------ -->
+
+<!-- https://github.com/material-components/material-components-web -->
+
 <link rel="stylesheet"
 	href="libs/mdc/node_modules/material-components-web/dist/material-components-web.css">
 <script
@@ -31,8 +31,19 @@
 <!-- -------------- -->
 <!-- Material Icons -->
 <!-- -------------- -->
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons"
-	rel="stylesheet">
+<!-- <link href="https://fonts.googleapis.com/icon?family=Material+Icons" -->
+<!-- 	rel="stylesheet"> -->
+
+<link rel="stylesheet" href="libs/material-design-icons/mdi.css">
+
+
+
+
+
+
+
+
+
 
 <!-- -------- -->
 <!-- JQUERY 3 -->
@@ -68,34 +79,42 @@
 </head>
 
 <body>
+	<div class="demo-content">
+		<div class="mdc-card">
+			<section class="mdc-card__primary">
+				<h1>RemoteQuery Web</h1>
+				<h3>Address Search</h3>
+			</section>
+		</div>
+
+		<div class="mdc-text-field" data-mdc-auto-init="MDCTextField">
+			<input type="text" class="mdc-text-field__input" id="nameFilter">
+			<label for="demo-input" class="mdc-text-field__label">Look up
+				an address!</label>
+		</div>
 
 
-	<h2 class="mdc-typography--display2">RemoteQuery Web</h2>
-	<h4 class="mdc-typography--display1">Address Search</h4>
+		<button class="mdc-button mdc-button--compact" id="search">
+			<i class="material-icons mdc-button__icon">search</i> Search
+		</button>
 
-	<div class="mdc-text-field" data-mdc-auto-init="MDCTextField">
-		<input type="text" class="mdc-text-field__input" id="nameFilter">
-		<label for="demo-input" class="mdc-text-field__label">Look up
-			an address!</label>
+
+		<section>
+			<table class="mdc-table" id="table">
+			</table>
+		</section>
+
+		<div class="demo-message" id="message"></div>
 	</div>
-
-	<button class="mdc-button" id="search">
-		<i class="material-icons mdc-button__icon">search</i> Search
-	</button>
-
-	<table class="mdc-table" id="table">
-
-	</table>
-
-	<div class="mdc-table" id="message"></div>
 
 	<script>
     mdc.autoInit();
     $(function() {
       var search$ = $('#search');
-
+      var nameFilter$ = $('#nameFilter');
+      
       search$.click(function() {
-        var nameFilter = $('#nameFilter').val() + '%';
+        var nameFilter = nameFilter$.val() + '%';
         rQ.call('Address.search', {
           'nameFilter' : nameFilter
         }, function(data) {
@@ -111,6 +130,15 @@
                 $('<td>').text(e.zip), $('<td>').text(e.city)))
           });
         });
+      });
+
+      var nameFilter$ = $('#nameFilter');
+      
+      nameFilter$.keypress(function(e) {
+        var code = e.keyCode || e.which;
+        if (code == 13) {
+          search$.click();
+        }
       });
 
     });
