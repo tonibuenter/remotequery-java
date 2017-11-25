@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="mdc-typography">
+<html>
 <head>
 <meta http-equiv="X-UA-Compatible" content="IE=9; IE=8; IE=7; IE=EDGE">
 
@@ -19,14 +19,19 @@
 <meta name="viewport"
 	content="width=device-width, initial-scale=1, maximum-scale=1">
 
+<!-- ----------------- -->
+<!-- JQUERY 3 and more -->
+<!-- ----------------- -->
+<script src="libs/jquery-3.2.1.js" type="text/javascript"></script>
+<script src="libs/underscore.js" type="text/javascript"></script>
+<script src="libs/moment-with-locales.js" type="text/javascript"></script>
 
 
-<!-- https://github.com/material-components/material-components-web -->
 
-<link rel="stylesheet"
-	href="libs/mdc/node_modules/material-components-web/dist/material-components-web.css">
-<script
-	src="libs/mdc/node_modules/material-components-web/dist/material-components-web.js"></script>
+<!-- http://materializecss.com -->
+
+<link rel="stylesheet" href="libs/materialize/css/materialize.css">
+<script src="libs/materialize/js/materialize.js"></script>
 
 <!-- -------------- -->
 <!-- Material Icons -->
@@ -36,21 +41,6 @@
 
 <link rel="stylesheet" href="libs/material-design-icons/mdi.css">
 
-
-
-
-
-
-
-
-
-
-<!-- -------- -->
-<!-- JQUERY 3 -->
-<!-- -------- -->
-<script src="libs/jquery-3.2.1.js" type="text/javascript"></script>
-<script type="text/javascript" src="libs/underscore.js"></script>
-<script type="text/javascript" src="libs/moment-with-locales.js"></script>
 
 <!-- ------------------- -->
 <!-- AMINMATE CSS -->
@@ -79,28 +69,42 @@
 </head>
 
 <body>
-	<div class="demo-content">
-		<div class="mdc-card">
-			<section class="mdc-card__primary">
-				<h1>RemoteQuery Web</h1>
-				<h3>Address Search</h3>
+	<div class="container">
+		<div>
+			<section>
+				<h3>RemoteQuery Web</h3>
+				<h4>Address_Search</h4>
 			</section>
 		</div>
 
-		<div class="mdc-text-field" data-mdc-auto-init="MDCTextField">
-			<input type="text" class="mdc-text-field__input" id="nameFilter">
-			<label for="demo-input" class="mdc-text-field__label">Look up
-				an address!</label>
+		<div class="row">
+
+			<div class="input-field col s6">
+				<input id="nameFilter" type="text" class="validate"> <label
+					for="nameFilter">Name Filter</label>
+			</div>
+
+			<div class="input-field col s6">
+				<a id="search" class="waves-effect red waves-light btn"><i
+					class="material-icons left">search</i>Search Address</a>
+			</div>
 		</div>
 
 
-		<button class="mdc-button mdc-button--compact" id="search">
-			<i class="material-icons mdc-button__icon">search</i> Search
-		</button>
-
 
 		<section>
-			<table class="mdc-table" id="table">
+			<table>
+				<thead>
+					<tr>
+						<th>First Name</th>
+						<th>Last Name</th>
+						<th>Street</th>
+						<th>Zip</th>
+						<th>City</th>
+					</tr>
+				</thead>
+				<tbody id="tbody">
+				</tbody>
 			</table>
 		</section>
 
@@ -108,32 +112,32 @@
 	</div>
 
 	<script>
-    mdc.autoInit();
     $(function() {
+
       var search$ = $('#search');
       var nameFilter$ = $('#nameFilter');
-      
+
       search$.click(function() {
         var nameFilter = nameFilter$.val() + '%';
         rQ.call('Address.search', {
           'nameFilter' : nameFilter
         }, function(data) {
           var list = rQ.asList(data);
-          var table$ = $('#table').empty();
+
+          var head$ = $('#thead-tr').empty();
+          var body$ = $('#tbody').empty();
           var message$ = $('#message').empty();
           if (list.length == 0) {
             message$.text("No data found!");
           }
           _.each(list, function(e) {
-            table$.append($('<tr>').append($('<td>').text(e.firstName),
+            body$.append($('<tr>').append($('<td>').text(e.firstName),
                 $('<td>').text(e.lastName), $('<td>').text(e.street),
                 $('<td>').text(e.zip), $('<td>').text(e.city)))
           });
         });
       });
 
-      var nameFilter$ = $('#nameFilter');
-      
       nameFilter$.keypress(function(e) {
         var code = e.keyCode || e.which;
         if (code == 13) {

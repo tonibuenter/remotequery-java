@@ -184,7 +184,7 @@
     }
     return noSessionFn;
   }
-  
+
   function settingParameterWrapperFn(arg0) {
     if (_.isFunction(arg0)) {
       parameterWrapperFn = arg0;
@@ -418,5 +418,15 @@
     return map;
   }
   root[REMOTE_QUERY_NAME].toListMap = toListMap;
+  root[REMOTE_QUERY_NAME].asListMap = toListMap;
+
+  function camelCaseToTitle(camelCase) {
+    var p;
+    camelCase = camelCase.charAt(0).toUpperCase() + camelCase.substring(1);
+    p = camelCase.match(/[A-Z][a-z0-9]*/g);
+    return p.join(' ');
+  }
+
+  root[REMOTE_QUERY_NAME].camelCaseToTitle = camelCaseToTitle;
 
 })(this);
