@@ -56,7 +56,7 @@ include Test.Command.example
 ### Command *java* or *class* 
 
 The parameter part of a *java* or *class* command 
-is expected to be Java class that implements the *RemoteQuery.IQuery* interface.
+is expected to be Java class that implements the `RemoteQuery.IQuery` interface.
 
 
 Example:
@@ -64,6 +64,10 @@ Example:
 ```
 java org.remotequery.tests.UuidQuery
 ```
+
+*Remark:*
+
+If the Java class implements the `RemoteQuery.ICommand` interface as well, the `RemoteQuery.ICommand.run` method is called instead of the `RemoteQuery.IQuery.run` method.
 
 
 
@@ -121,7 +125,17 @@ end
 
 ### Command *while*, *end* 
 
-The *while* command is very similar to the *if* command. The child statements of the while are repeatedly executed till the parameter value of the *while* is empty. The *end* statement signifies the end of the *foreach*.
+The *while* command is by the structure very similar to the *if* command. 
+The child statements of the while are repeatedly executed till the parameter 
+value of the *while* is empty. The *end* statement signifies the end of the *while* command:
+
+```
+while parameter_is_not_empty;
+  statement_1;
+  statement_2;
+  .. more statements;
+end;
+```
 
 Example:
 

@@ -166,37 +166,59 @@ The example above uses the SetCommand class which is doing a put ('days', '13') 
 
 ## Statement Extensibility
 
-The programming with statements can be extended in the following way
+The programming with RQ statements can be extended in the following two ways
 
-- Using the *java* command and provide a Java class with all the possibility Java programming provides.
-- Register an **additional command** identifier like create-new-user:
-```
-    RemoteQuery.Commands.Registry.put("create-new-user", new CreateNewUser());
+- Using the *java* command and provide a Java class that implements the `RemoteQuery.IQuery` interface.
+- Create and register an *additional command* with a Java class that implements the `RemoteQuery.ICommand` interface.
+
+While the first approach is good for rather specific tasks the second approach is somehow a language extension.
+
+In the example below we show a solution for a rather generic requirement that is best solved with the second approach.
+
+
+### Extending the built-in commands with create-uuid-for
+
+Let's assume we need a command the creates a new UUID in case a certain id parameter 
+is not yet set.
+
+We could like to use it like:
 
 ```
-The CreateNewUser has to implement the ICommand:
+create-uuid-if-empty userId
+```
+
+which will fill the parameter `userId` with a UUID if the parameter `userId` is empty.
+
+Here the class that implements this requirement:
+
 
 ```java
-  public interface ICommand {
 
-    public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry);
+public class UuidCommand implements  ICommand {
 
+  @Override
+  public Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry) {
+    
+    String name = statementNode.parameter;
+    String value = request.get(name);
+
+    if (Utils.isBlank(value)) {
+      request.put(name, UUID.randomUUID().toString());
+    }
+    return null;
   }
 
+}
 ```
 
-So, a service entry could use the new command like:
-
+What is missing now, is the command registration. This is simply done before the command can be used. Here the registration:
 ```
---
--- SERVICE_ID = Test.Command.extension_newuser
--- 
-
-create-new-user John Smith
-
+RemoteQuery.Commands.Registry.put("create-uuid-if-empty", new UuidCommand());
 ```
 
-For further details on the command see:
+
+
+Continue reading on:
 
 [RemoteQuery Reference Manual](reference_manual.md)
 

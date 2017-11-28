@@ -2,16 +2,20 @@
 
 ## Support for POJO
 
-Adding object-relational support for RQ is a actually a small step. What is needed is mapping of POJOs to parameters in the request and a mapping of the result to a POJO or a list of POJOs.
+Adding object-relational support to RQ is a small step. What is needed, is the mapping of POJOs to a RQ request parameters and the backward mapping of a RQ result to POJOs.
 
-Here an example which shows everysthing (see also: `Test_Address.testOR`):
+Below two examples that illustrate the RQ object-relational support (see also: `Test_Address.testOR`):
 
 #### POJO's AddressFilter and Address
 
-RemoteQuery directly supports working with POJO that have standard set and get methods of public fields:
+RemoteQuery directly supports working with POJO that have standard set and get methods or public fields:
 
 ```java
 
+  public static class AddressFilter {
+    public String nameFilter;
+  }
+  
   public static class Address {
     public String addressId;
     public String firstName;
@@ -21,17 +25,17 @@ RemoteQuery directly supports working with POJO that have standard set and get m
     public String city;
   }
 
-  public static class AddressFilter {
-    public String nameFilter;
-  }
-
 ```
 
 #### Search with AddressFilter
 
-The request method `runWith` supports now a POJO the will be injected as a set of parameters. The result can be mapped to a POJO again.
+The method `Request.runWith` supports now POJOs. The POJO's attributes will be injected as parameters. 
+With `Result.as` and `Result.asList` the RQ result is returned as a POJO.
+
+The the first example below address objects are search by an `AddressFilter` instance and a list of `Address`s is returned.
 
 ```java
+
     // ...
     AddressFilter addressFilter = new AddressFilter();
     addressFilter.nameFilter = "Anna";
@@ -48,14 +52,16 @@ The request method `runWith` supports now a POJO the will be injected as a set o
 In this second example the address object is changed and saved again:
 
 ```java
+
     // ...
     address.lastName = "Braader Mayer";
     address = request.runWith("Address.save", address).as(Address.class);
+    
 ```
 
 #### The Address Services
 
-The services used for the above examples look like:
+The RQ service entries used for the above examples look like:
 
 ```
 --
@@ -65,7 +71,12 @@ The services used for the above examples look like:
 
 set-if-empty nameFilter = %
 ;
-select * from JGROUND.T_ADDRESS where FIRST_NAME like :nameFilter or LAST_NAME like :nameFilter
+select * 
+from JGROUND.T_ADDRESS 
+where 
+  FIRST_NAME like :nameFilter 
+  or 
+  LAST_NAME like :nameFilter
 
 
 
@@ -84,15 +95,14 @@ end
 ;
 update JGROUND.T_ADDRESS set
   FIRST_NAME = :firstName,
-  LAST_NAME = :lastName,
-  STREET = :street,
-  ZIP = :zip,
-  CITY = :city
+  LAST_NAME  = :lastName,
+  STREET     = :street,
+  ZIP        = :zip,
+  CITY       = :city
 where
   ADDRESS_ID = :addressId
 ;
 select * from JGROUND.T_ADDRESS where ADDRESS_ID = :addressId
-
 
 ```
 
