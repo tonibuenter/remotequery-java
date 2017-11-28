@@ -126,11 +126,13 @@ The *while* command is very similar to the *if* command. The child statements of
 Example:
 
 ```
-foreach 
-  select NAME, VALUE from JGROUND.T_APP_PROPERTIES 
-  ;
-  insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values (:name || '-2', :value)
-  ;
-end
+insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE) values ('while-1', '1');
+insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE) values ('while-2', '2');
+insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE) values ('while-3', '3');
+set whileName = start;
+while whileName;
+  delete from JGROUND.T_APP_PROPERTIES where NAME = :whileName;
+  parameters select NAME as "WHILE_NAME" from JGROUND.T_APP_PROPERTIES where NAME like 'while%';
+end;
 ```
 
