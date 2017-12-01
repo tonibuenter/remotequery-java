@@ -4,7 +4,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.remotequery.RemoteQuery;
-import org.remotequery.RemoteQuery.CommandNode;
+import org.remotequery.RemoteQuery.StatementNode;
 import org.remotequery.RemoteQuery.Request;
 import org.remotequery.RemoteQuery.Result;
 import org.remotequery.RemoteQuery.ServiceEntry;
@@ -35,17 +35,17 @@ public class Test_Commands_if_and_more {
 
 		ServiceEntry se = ServiceRepositoryHolder.get().get("Test.Command.if");
 		Assert.assertNotNull(se);
-		CommandNode cb = RemoteQuery.prepareCommandBlock(se);
+		StatementNode cb = RemoteQuery.prepareCommandBlock(se);
 
-		CommandNode cbExpected = new CommandNode("serviceRoot").append(new CommandNode("parameters"),
-				new CommandNode("if").append(
+		StatementNode cbExpected = new StatementNode("serviceRoot").append(new StatementNode("parameters"),
+				new StatementNode("if").append(
 						//
-						new CommandNode("sql"), new CommandNode("sql"), new CommandNode("else"), new CommandNode("sql"),
-						new CommandNode("end")
+						new StatementNode("sql"), new StatementNode("sql"), new StatementNode("else"), new StatementNode("sql"),
+						new StatementNode("end")
 				//
 				));
 
-		RemoteQueryAssert.assertCommandNodeEquals(cbExpected, cb);
+		RemoteQueryAssert.assertStatementNodeEquals(cbExpected, cb);
 		logger.info(cb.toString());
 
 		//
@@ -74,22 +74,22 @@ public class Test_Commands_if_and_more {
 
 		ServiceEntry se = ServiceRepositoryHolder.get().get(serviceId);
 		Assert.assertNotNull(se);
-		CommandNode cb = RemoteQuery.prepareCommandBlock(se);
+		StatementNode cb = RemoteQuery.prepareCommandBlock(se);
 
-		CommandNode cbExpected = new CommandNode("serviceRoot").append(
+		StatementNode cbExpected = new StatementNode("serviceRoot").append(
 				//
-				new CommandNode("put"),
-				new CommandNode("if").append(
+				new StatementNode("put"),
+				new StatementNode("if").append(
 						//
-						new CommandNode("else"),
+						new StatementNode("else"),
 						//
-						new CommandNode("put"),
+						new StatementNode("put"),
 						//
-						new CommandNode("end")
+						new StatementNode("end")
 				//
 				));
 
-		RemoteQueryAssert.assertCommandNodeEquals(cbExpected, cb);
+		RemoteQueryAssert.assertStatementNodeEquals(cbExpected, cb);
 		logger.info(cb.toString());
 
 		//
@@ -119,51 +119,51 @@ public class Test_Commands_if_and_more {
 
 		ServiceEntry se = ServiceRepositoryHolder.get().get(serviceId);
 		Assert.assertNotNull(se);
-		CommandNode cb = RemoteQuery.prepareCommandBlock(se);
+		StatementNode cb = RemoteQuery.prepareCommandBlock(se);
 
-		CommandNode cbExpected = new CommandNode("serviceRoot").append(
+		StatementNode cbExpected = new StatementNode("serviceRoot").append(
 				//
-				new CommandNode("sql"),
+				new StatementNode("sql"),
 				//
-				new CommandNode("parameters"),
+				new StatementNode("parameters"),
 				//
-				new CommandNode("switch").append(
+				new StatementNode("switch").append(
 						//
-						new CommandNode("case"),
+						new StatementNode("case"),
 						//
-						new CommandNode("case"),
+						new StatementNode("case"),
 						//
-						new CommandNode("case"),
+						new StatementNode("case"),
 						//
-						new CommandNode("sql"),
+						new StatementNode("sql"),
 						//
-						new CommandNode("break"),
+						new StatementNode("break"),
 						//
-						new CommandNode("case"),
+						new StatementNode("case"),
 						//
-						new CommandNode("sql"),
+						new StatementNode("sql"),
 						//
-						new CommandNode("break"),
+						new StatementNode("break"),
 						//
-						new CommandNode("case"),
+						new StatementNode("case"),
 						//
-						new CommandNode("sql"),
+						new StatementNode("sql"),
 						//
-						new CommandNode("break"),
+						new StatementNode("break"),
 						//
-						new CommandNode("case"),
+						new StatementNode("case"),
 						//
-						new CommandNode("sql"),
+						new StatementNode("sql"),
 						//
-						new CommandNode("end")),
+						new StatementNode("end")),
 				//
-				new CommandNode("sql"),
+				new StatementNode("sql"),
 				//
-				new CommandNode("parameters"),
+				new StatementNode("parameters"),
 				//
-				new CommandNode("sql"));
+				new StatementNode("sql"));
 
-		RemoteQueryAssert.assertCommandNodeEquals(cbExpected, cb);
+		RemoteQueryAssert.assertStatementNodeEquals(cbExpected, cb);
 
 		//
 		// REQUEST RUN
@@ -191,49 +191,49 @@ public class Test_Commands_if_and_more {
 
 		ServiceEntry se = ServiceRepositoryHolder.get().get(serviceId);
 		Assert.assertNotNull(se);
-		CommandNode cb = RemoteQuery.prepareCommandBlock(se);
+		StatementNode cb = RemoteQuery.prepareCommandBlock(se);
 
-		CommandNode cbExpected = new CommandNode("serviceRoot").append(
+		StatementNode cbExpected = new StatementNode("serviceRoot").append(
 				//
-				new CommandNode("set"),
+				new StatementNode("set"),
 				//
-				new CommandNode("sql"),
+				new StatementNode("sql"),
 				//
-				new CommandNode("set"),
+				new StatementNode("set"),
 				//
-				new CommandNode("set"),
+				new StatementNode("set"),
 				//
-				new CommandNode("switch").append(
+				new StatementNode("switch").append(
 						//
-						new CommandNode("case"),
+						new StatementNode("case"),
 						//
-						new CommandNode("case"),
+						new StatementNode("case"),
 						//
-						new CommandNode("case"),
+						new StatementNode("case"),
 						//
-						new CommandNode("sql"),
+						new StatementNode("sql"),
 						//
-						new CommandNode("break"),
+						new StatementNode("break"),
 						//
-						new CommandNode("case"),
+						new StatementNode("case"),
 						//
-						new CommandNode("sql"),
+						new StatementNode("sql"),
 						//
-						new CommandNode("break"),
+						new StatementNode("break"),
 						//
-						new CommandNode("case"),
+						new StatementNode("case"),
 						//
-						new CommandNode("sql"),
+						new StatementNode("sql"),
 						//
-						new CommandNode("end")),
+						new StatementNode("end")),
 				//
-				new CommandNode("sql"),
+				new StatementNode("sql"),
 				//
-				new CommandNode("parameters"),
+				new StatementNode("parameters"),
 				//
-				new CommandNode("sql"));
+				new StatementNode("sql"));
 
-		RemoteQueryAssert.assertCommandNodeEquals(cbExpected, cb);
+		RemoteQueryAssert.assertStatementNodeEquals(cbExpected, cb);
 
 		//
 		// REQUEST RUN
@@ -261,49 +261,49 @@ public class Test_Commands_if_and_more {
 
 		ServiceEntry se = ServiceRepositoryHolder.get().get(serviceId);
 		Assert.assertNotNull(se);
-		CommandNode cb = RemoteQuery.prepareCommandBlock(se);
+		StatementNode cb = RemoteQuery.prepareCommandBlock(se);
 
-		CommandNode cbExpected = new CommandNode("serviceRoot").append(
+		StatementNode cbExpected = new StatementNode("serviceRoot").append(
 				//
-				new CommandNode("set"),
+				new StatementNode("set"),
 				//
-				new CommandNode("sql"),
+				new StatementNode("sql"),
 				//
-				new CommandNode("set"),
+				new StatementNode("set"),
 				//
-				new CommandNode("set"),
+				new StatementNode("set"),
 				//
-				new CommandNode("switch").append(
+				new StatementNode("switch").append(
 						//
-						new CommandNode("case"),
+						new StatementNode("case"),
 						//
-						new CommandNode("case"),
+						new StatementNode("case"),
 						//
-						new CommandNode("case"),
+						new StatementNode("case"),
 						//
-						new CommandNode("sql"),
+						new StatementNode("sql"),
 						//
-						new CommandNode("break"),
+						new StatementNode("break"),
 						//
-						new CommandNode("default"),
+						new StatementNode("default"),
 						//
-						new CommandNode("sql"),
+						new StatementNode("sql"),
 						//
-						new CommandNode("break"),
+						new StatementNode("break"),
 						//
-						new CommandNode("case"),
+						new StatementNode("case"),
 						//
-						new CommandNode("sql"),
+						new StatementNode("sql"),
 						//
-						new CommandNode("end")),
+						new StatementNode("end")),
 				//
-				new CommandNode("sql"),
+				new StatementNode("sql"),
 				//
-				new CommandNode("parameters"),
+				new StatementNode("parameters"),
 				//
-				new CommandNode("sql"));
+				new StatementNode("sql"));
 
-		RemoteQueryAssert.assertCommandNodeEquals(cbExpected, cb);
+		RemoteQueryAssert.assertStatementNodeEquals(cbExpected, cb);
 
 		//
 		// REQUEST RUN
@@ -331,23 +331,23 @@ public class Test_Commands_if_and_more {
 
 		ServiceEntry se = ServiceRepositoryHolder.get().get(serviceId);
 		Assert.assertNotNull(se);
-		CommandNode cb = RemoteQuery.prepareCommandBlock(se);
+		StatementNode cb = RemoteQuery.prepareCommandBlock(se);
 
-		CommandNode cbExpected = new CommandNode("serviceRoot").append(
+		StatementNode cbExpected = new StatementNode("serviceRoot").append(
 				//
-				new CommandNode("parameters"),
+				new StatementNode("parameters"),
 				//
-				new CommandNode("foreach").append(
+				new StatementNode("foreach").append(
 						//
-						new CommandNode("sql"),
+						new StatementNode("sql"),
 						//
-						new CommandNode("end")),
+						new StatementNode("end")),
 				//
-				new CommandNode("sql"),
+				new StatementNode("sql"),
 				//
-				new CommandNode("parameters"));
+				new StatementNode("parameters"));
 
-		RemoteQueryAssert.assertCommandNodeEquals(cbExpected, cb);
+		RemoteQueryAssert.assertStatementNodeEquals(cbExpected, cb);
 
 		//
 		// REQUEST RUN

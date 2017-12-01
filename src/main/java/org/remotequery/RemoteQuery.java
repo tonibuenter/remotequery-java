@@ -199,7 +199,7 @@ public class RemoteQuery {
 	 */
 	public interface ICommand {
 
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry);
+		public Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry);
 
 	}
 
@@ -239,10 +239,10 @@ public class RemoteQuery {
 
 	}
 
-	public static int buildCommandBlockTree(CommandNode root, List<String> statementList, int pointer) {
+	public static int buildCommandBlockTree(StatementNode root, List<String> statementList, int pointer) {
 
 		while (pointer < statementList.size()) {
-			CommandNode commandNode = null;
+			StatementNode statementNode = null;
 
 			Triple<String, String, String> t = Utils.parseStatement(statementList.get(pointer));
 			pointer++;
@@ -259,15 +259,15 @@ public class RemoteQuery {
 				continue;
 			}
 
-			commandNode = new CommandNode(cmd, parameter, statement);
-			root.children.add(commandNode);
+			statementNode = new StatementNode(cmd, parameter, statement);
+			root.children.add(statementNode);
 
 			if (Commands.EndBLock.contains(cmd)) {
 				return pointer;
 			}
 
 			if (Commands.StartBlock.contains(cmd)) {
-				pointer = buildCommandBlockTree(commandNode, statementList, pointer);
+				pointer = buildCommandBlockTree(statementNode, statementList, pointer);
 			}
 		}
 		return pointer;
@@ -305,11 +305,11 @@ public class RemoteQuery {
 		return resolvedList;
 	}
 
-	public static CommandNode prepareCommandBlock(ServiceEntry serviceEntry) {
+	public static StatementNode prepareCommandBlock(ServiceEntry serviceEntry) {
 		List<String> statementList = resolveIncludes(serviceEntry.statements, new HashMap<String, Integer>());
-		CommandNode commandNode = new CommandNode("serviceRoot", serviceEntry.serviceId, "");
-		buildCommandBlockTree(commandNode, statementList, 0);
-		return commandNode;
+		StatementNode statementNode = new StatementNode("serviceRoot", serviceEntry.serviceId, "");
+		buildCommandBlockTree(statementNode, statementList, 0);
+		return statementNode;
 	}
 
 	/**
@@ -328,7 +328,7 @@ public class RemoteQuery {
 		return runner.run(request);
 	}
 
-	public static Result processCommandBlock(CommandNode commandNode, Request request, Result currentResult,
+	public static Result processCommandBlock(StatementNode statementNode, Request request, Result currentResult,
 			ServiceEntry serviceEntry) {
 		ProcessLog log = ProcessLog.Current();
 		try {
@@ -339,19 +339,19 @@ public class RemoteQuery {
 			}
 
 			//
-			Object o = Commands.Registry.get(commandNode.cmd);
+			Object o = Commands.Registry.get(statementNode.cmd);
 
 			if (o instanceof ICommand) {
 				ICommand aq = (ICommand) o;
-				return aq.run(request, currentResult, commandNode, serviceEntry);
+				return aq.run(request, currentResult, statementNode, serviceEntry);
 			}
 			if (o instanceof IQuery) {
 				IQuery iq = (IQuery) o;
 				return iq.run(request);
 			}
-			log.error("Unknown command " + commandNode.cmd + " (in statement: " + commandNode.statement + ")", logger);
+			log.error("Unknown command " + statementNode.cmd + " (in statement: " + statementNode.statement + ")", logger);
 		} catch (Exception e) {
-			log.error("Statement " + commandNode.statement + " failed. Exception: " + e.getMessage(), logger);
+			log.error("Statement " + statementNode.statement + " failed. Exception: " + e.getMessage(), logger);
 		} finally {
 			log.decrRecursion();
 		}
@@ -364,12 +364,12 @@ public class RemoteQuery {
 		String cmd = t.getLeft();
 		String parameter = t.getMiddle();
 		String statement = t.getRight();
-		CommandNode commandNode = new CommandNode(cmd, parameter, statement);
-		return processCommandBlock(commandNode, request, currentResult, serviceEntry);
+		StatementNode statementNode = new StatementNode(cmd, parameter, statement);
+		return processCommandBlock(statementNode, request, currentResult, serviceEntry);
 	}
 
 	public static Result processJava(String className, String parameterString, Request request, Result currentResult,
-			CommandNode commandNode, ServiceEntry serviceEntry)
+			StatementNode statementNode, ServiceEntry serviceEntry)
 			throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException {
 		Result result = null;
 		Connection connection = null;
@@ -380,7 +380,7 @@ public class RemoteQuery {
 
 			if (o instanceof ICommand) {
 				ICommand aq = (ICommand) o;
-				return aq.run(request, currentResult, commandNode, serviceEntry);
+				return aq.run(request, currentResult, statementNode, serviceEntry);
 			}
 			if (o instanceof IQuery) {
 				IQuery iq = (IQuery) o;
@@ -639,9 +639,9 @@ public class RemoteQuery {
 
 				log.system("ServiceEntry found for userId=" + userId + " is : " + serviceEntry, logger);
 
-				CommandNode commandNode = prepareCommandBlock(serviceEntry);
+				StatementNode statementNode = prepareCommandBlock(serviceEntry);
 
-				result = processCommandBlock(commandNode, request, result, serviceEntry);
+				result = processCommandBlock(statementNode, request, result, serviceEntry);
 
 			} catch (Exception e) {
 				log.error(e, logger);
@@ -3436,9 +3436,9 @@ public class RemoteQuery {
 		 * 
 		 * @param serviceId
 		 * @param parameters
-		 * @return
+		 * @return map
 		 * @throws Exception
-		 * @Deprecated use Request.run() ...
+		 * @deprecated use Request.run() ...
 		 */
 		public Map<String, String> getMap(String serviceId, Map<String, String> parameters) throws Exception {
 			Request request = new Request();
@@ -3627,28 +3627,35 @@ public class RemoteQuery {
 
 	}
 
-	public static class CommandNode {
+	/**
+	 * A Statement Node represents a single statement like a sql, if, end, set and other statements.
+	 * Some statements like if or while statements have children which might run conditionally.
+	 * 
+	 * @author tonibuenter
+	 *
+	 */
+	public static class StatementNode {
 
 		public String statement;
 		public String cmd;
 		public String parameter;
-		public List<CommandNode> children;
+		public List<StatementNode> children;
 		public int pointer = 0;
 
-		public CommandNode(String cmd, String parameter, String statement) {
+		public StatementNode(String cmd, String parameter, String statement) {
 			super();
 			this.cmd = cmd;
 			this.parameter = parameter;
 			this.statement = statement;
-			this.children = new ArrayList<CommandNode>();
+			this.children = new ArrayList<StatementNode>();
 		}
 
-		public CommandNode(String cmd) {
+		public StatementNode(String cmd) {
 			this(cmd, "", "");
 		}
 
-		public CommandNode append(CommandNode... cbChildren) {
-			for (CommandNode cbChild : cbChildren) {
+		public StatementNode append(StatementNode... cbChildren) {
+			for (StatementNode cbChild : cbChildren) {
 				children.add(cbChild);
 			}
 			return this;
@@ -3662,7 +3669,7 @@ public class RemoteQuery {
 
 		private void _toString(String indent, StringBuffer sb) {
 			sb.append(indent + this.cmd + " -> " + parameter + "\n");
-			for (CommandNode child : this.children) {
+			for (StatementNode child : this.children) {
 				child._toString(" " + indent, sb);
 			}
 		}
@@ -3676,9 +3683,9 @@ public class RemoteQuery {
 	//
 
 	public static class SqlCommand implements ICommand {
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
+		public Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry) {
 			Result r = new Result();
-			processSql(commandNode.parameter, request, serviceEntry, r);
+			processSql(statementNode.parameter, request, serviceEntry, r);
 			return r;
 		}
 	}
@@ -3687,8 +3694,8 @@ public class RemoteQuery {
 
 		public boolean overwrite = true;
 
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
-			String[] nv = Utils.tokenize(commandNode.parameter, '=');
+		public Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry) {
+			String[] nv = Utils.tokenize(statementNode.parameter, '=');
 			String n = nv[0];
 			String v = nv.length > 1 ? nv[1] : null;
 			n = Utils.trim(n);
@@ -3712,10 +3719,10 @@ public class RemoteQuery {
 
 		public boolean overwrite = true;
 
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
-			String[] nv = Utils.tokenize(commandNode.parameter, '=');
+		public Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry) {
+			String[] nv = Utils.tokenize(statementNode.parameter, '=');
 			if (nv == null || nv.length != 2) {
-				logger.warn("Expected parameter-part should be like name1 = name2. But was: " + commandNode.parameter);
+				logger.warn("Expected parameter-part should be like name1 = name2. But was: " + statementNode.parameter);
 				return currentResult;
 			}
 			String targetName = Utils.trim(nv[0]);
@@ -3742,15 +3749,15 @@ public class RemoteQuery {
 		protected boolean overwrite = true;
 
 		@Override
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
+		public Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry) {
 
-			CommandNode iCb = null;
+			StatementNode iCb = null;
 
-			Triple<String, String, String> t = Utils.parseStatement(commandNode.parameter);
+			Triple<String, String, String> t = Utils.parseStatement(statementNode.parameter);
 			String cmd = t.getLeft();
 			String parameter = t.getMiddle();
 			String statement = t.getRight();
-			iCb = new CommandNode(cmd, parameter, statement);
+			iCb = new StatementNode(cmd, parameter, statement);
 
 			Result iResult = processCommandBlock(iCb, request, currentResult, serviceEntry);
 
@@ -3778,17 +3785,17 @@ public class RemoteQuery {
 	}
 
 	public static class ServiceIdCommand implements ICommand {
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
-			Request iRequest = request.deepCopy().setServiceId(commandNode.parameter);
+		public Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry) {
+			Request iRequest = request.deepCopy().setServiceId(statementNode.parameter);
 			Result result = iRequest.run();
 			return result;
 		}
 	}
 
 	public static class JavaCommand implements ICommand {
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
+		public Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry) {
 			try {
-				return processJava(commandNode.parameter, commandNode.statement, request, currentResult, commandNode,
+				return processJava(statementNode.parameter, statementNode.statement, request, currentResult, statementNode,
 						serviceEntry);
 			} catch (Exception e) {
 				logger.error(e.getMessage(), e);
@@ -3798,8 +3805,8 @@ public class RemoteQuery {
 	}
 
 	public static class ServiceRootCommand implements ICommand {
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
-			for (CommandNode cbChild : commandNode.children) {
+		public Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry) {
+			for (StatementNode cbChild : statementNode.children) {
 				Result r = processCommandBlock(cbChild, request, currentResult, serviceEntry);
 				currentResult = r != null ? r : currentResult;
 			}
@@ -3808,18 +3815,18 @@ public class RemoteQuery {
 	}
 
 	public static class NoOpCommand implements ICommand {
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
+		public Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry) {
 			return currentResult;
 		}
 	}
 
 	public static class IfCommand implements ICommand {
 
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
+		public Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry) {
 
-			boolean isThen = !Utils.isBlank(request.get(commandNode.parameter));
+			boolean isThen = !Utils.isBlank(request.get(statementNode.parameter));
 
-			for (CommandNode cbChild : commandNode.children) {
+			for (StatementNode cbChild : statementNode.children) {
 				if ("else".equals(cbChild.cmd)) {
 					isThen = !isThen;
 					continue;
@@ -3836,20 +3843,20 @@ public class RemoteQuery {
 
 	public static class SwitchCommand implements ICommand {
 
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
+		public Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry) {
 
 			// Result ifResult =
-			// RemoteQuery2.processCommand(commandNode.parameter,
+			// RemoteQuery2.processCommand(statementNode.parameter,
 			// request,
 			// currentResult, serviceEntry);
 
-			String switchValue = request.get(commandNode.parameter);
+			String switchValue = request.get(statementNode.parameter);
 			switchValue = switchValue == null ? "" : switchValue;
 
 			boolean inSwitch = false;
 			boolean caseFound = false;
 
-			for (CommandNode cbChild : commandNode.children) {
+			for (StatementNode cbChild : statementNode.children) {
 
 				if ("break".equals(cbChild.cmd)) {
 					inSwitch = false;
@@ -3884,9 +3891,9 @@ public class RemoteQuery {
 
 	public static class ForeachCommand implements ICommand {
 
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
+		public Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry) {
 
-			Result indexResult = RemoteQuery.processCommand(commandNode.parameter, request, currentResult,
+			Result indexResult = RemoteQuery.processCommand(statementNode.parameter, request, currentResult,
 					serviceEntry);
 
 			if (indexResult == null || indexResult.table.size() == 0) {
@@ -3899,7 +3906,7 @@ public class RemoteQuery {
 
 			for (Map<String, String> map : list) {
 				iRequest.put(map);
-				for (CommandNode child : commandNode.children) {
+				for (StatementNode child : statementNode.children) {
 					Result r = RemoteQuery.processCommandBlock(child, iRequest, currentResult, serviceEntry);
 					currentResult = r == null ? currentResult : r;
 				}
@@ -3910,16 +3917,16 @@ public class RemoteQuery {
 
 	public static class WhileCommand implements ICommand {
 
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
+		public Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry) {
 			int counter = 0;
 			while (counter < MAX_WHILE) {
-				String whileCondition = request.get(commandNode.parameter);
+				String whileCondition = request.get(statementNode.parameter);
 				// Request iRequest = request.deepCopy();
 				if (Utils.isBlank(whileCondition)) {
 					break;
 				}
 				counter++;
-				for (CommandNode child : commandNode.children) {
+				for (StatementNode child : statementNode.children) {
 					Result r = RemoteQuery.processCommandBlock(child, request, currentResult, serviceEntry);
 					currentResult = r == null ? currentResult : r;
 				}
@@ -3930,9 +3937,9 @@ public class RemoteQuery {
 
 	public static class AddRoleCommand implements ICommand {
 
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
-			if (!Utils.isBlank(commandNode.parameter)) {
-				request.addRole(commandNode.parameter);
+		public Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry) {
+			if (!Utils.isBlank(statementNode.parameter)) {
+				request.addRole(statementNode.parameter);
 			}
 			return currentResult;
 		}
@@ -3940,9 +3947,9 @@ public class RemoteQuery {
 
 	public static class RemoveRoleCommand implements ICommand {
 
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
-			if (!Utils.isBlank(commandNode.parameter)) {
-				request.removeRole(commandNode.parameter);
+		public Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry) {
+			if (!Utils.isBlank(statementNode.parameter)) {
+				request.removeRole(statementNode.parameter);
 			}
 			return currentResult;
 		}
@@ -3950,10 +3957,10 @@ public class RemoteQuery {
 
 	public static class CommentCommand implements ICommand {
 
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
-			if (!Utils.isBlank(commandNode.parameter)) {
-				logger.info("comment: " + commandNode.parameter);
-				ProcessLog.Current().infoUser(commandNode.parameter);
+		public Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry) {
+			if (!Utils.isBlank(statementNode.parameter)) {
+				logger.info("comment: " + statementNode.parameter);
+				ProcessLog.Current().infoUser(statementNode.parameter);
 			}
 			return currentResult;
 		}

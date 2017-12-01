@@ -14,21 +14,13 @@ import junit.framework.Assert;
 
 public class Test_Address {
 
-	public static class Address {
-		public String addressId;
-		public String firstName;
-		public String lastName;
-		public String street;
-		public String zip;
-		public String city;
-	}
 
-	public static class AddressFilter {
-		public String nameFilter;
-	}
+	
+	
+	
 
 	@Test
-	public void testCreateNewUser() {
+	public void testAddress_filter() {
 		Result result = new Request().setServiceId("Address.search").put("nameFilter", "Jo%").addRole("ADDRESS_READER")
 				.run();
 		// convert to a POJO

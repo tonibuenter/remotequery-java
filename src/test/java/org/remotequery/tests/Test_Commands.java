@@ -4,7 +4,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.remotequery.RemoteQuery;
-import org.remotequery.RemoteQuery.CommandNode;
+import org.remotequery.RemoteQuery.StatementNode;
 import org.remotequery.RemoteQuery.ProcessLog;
 import org.remotequery.RemoteQuery.Request;
 import org.remotequery.RemoteQuery.Result;
@@ -22,7 +22,7 @@ public class Test_Commands {
 	public void test_command_set() throws Exception {
 		ServiceEntry se = ServiceRepositoryHolder.get().get("Test.Command.set");
 		Assert.assertNotNull(se);
-		CommandNode cb = RemoteQuery.prepareCommandBlock(se);
+		StatementNode cb = RemoteQuery.prepareCommandBlock(se);
 		Assert.assertEquals("serviceRoot", cb.cmd);
 		Assert.assertEquals(2, cb.children.size());
 		Assert.assertEquals("put", cb.children.get(0).cmd);

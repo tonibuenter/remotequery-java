@@ -4,7 +4,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.remotequery.RemoteQuery;
-import org.remotequery.RemoteQuery.CommandNode;
+import org.remotequery.RemoteQuery.StatementNode;
 import org.remotequery.RemoteQuery.ICommand;
 import org.remotequery.RemoteQuery.Request;
 import org.remotequery.RemoteQuery.Result;
@@ -15,9 +15,9 @@ import org.slf4j.LoggerFactory;
 public class Test_Commands_Extension {
 
 	public static class CreateNewUser implements ICommand {
-		public Result run(Request request, Result currentResult, CommandNode commandNode, ServiceEntry serviceEntry) {
+		public Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry) {
 			Logger logger = LoggerFactory.getLogger(Test_Bootstrap.class);
-			request.put("newUser", commandNode.parameter);
+			request.put("newUser", statementNode.parameter);
 			logger.warn("Reached Command Extension " + CreateNewUser.class.getName());
 			return currentResult;
 		}

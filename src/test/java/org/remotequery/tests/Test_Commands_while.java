@@ -4,7 +4,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.remotequery.RemoteQuery;
-import org.remotequery.RemoteQuery.CommandNode;
+import org.remotequery.RemoteQuery.StatementNode;
 import org.remotequery.RemoteQuery.Request;
 import org.remotequery.RemoteQuery.Result;
 import org.remotequery.RemoteQuery.ServiceEntry;
@@ -39,29 +39,29 @@ public class Test_Commands_while {
 
 		ServiceEntry se = ServiceRepositoryHolder.get().get(serviceId);
 		Assert.assertNotNull(se);
-		CommandNode cb = RemoteQuery.prepareCommandBlock(se);
+		StatementNode cb = RemoteQuery.prepareCommandBlock(se);
 
-		CommandNode cbExpected = new CommandNode("serviceRoot").append(
+		StatementNode cbExpected = new StatementNode("serviceRoot").append(
 				//
-				new CommandNode("sql"),
+				new StatementNode("sql"),
 				//
-				new CommandNode("sql"),
+				new StatementNode("sql"),
 				//
-				new CommandNode("sql"),
+				new StatementNode("sql"),
 				//
-				new CommandNode("set"),
+				new StatementNode("set"),
 				//
-				new CommandNode("while").append(
+				new StatementNode("while").append(
 						//
-						new CommandNode("sql"),
+						new StatementNode("sql"),
 						//
-						new CommandNode("parameters"),
+						new StatementNode("parameters"),
 						//
-						new CommandNode("end")),
+						new StatementNode("end")),
 				//
-				new CommandNode("sql"));
+				new StatementNode("sql"));
 
-		RemoteQueryAssert.assertCommandNodeEquals(cbExpected, cb);
+		RemoteQueryAssert.assertStatementNodeEquals(cbExpected, cb);
 
 		//
 		// REQUEST RUN

@@ -1,0 +1,25 @@
+apply plugin: 'java'
+
+version = '1.0'
+
+dependencies {
+	compile fileTree(dir: 'java-libs', include: '*.jar')
+	compile fileTree(dir: 'java-test-libs', include: '*.jar')
+	compile fileTree(dir: 'java-web-libs', include: '*.jar')
+}
+
+javadoc {
+	source = sourceSets.main.allJava
+	classpath = configurations.compile
+}
+
+task fatJar(type: Jar) {
+	manifest {
+		attributes 'Implementation-Title': 'Gradle Fat Jar File Example',
+			'Implementation-Version': version,
+			'Main-Class': 'org.remotequery.web.StartJetty'
+	}
+	baseName = project.name + '-all'
+	from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+	with jar
+}
