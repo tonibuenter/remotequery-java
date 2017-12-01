@@ -12,11 +12,11 @@ RemoteQuery directly supports working with POJO that have standard set and get m
 
 ```java
 
-  public static class AddressFilter {
+  public class AddressFilter {
     public String nameFilter;
   }
   
-  public static class Address {
+  public class Address {
     public String addressId;
     public String firstName;
     public String lastName;

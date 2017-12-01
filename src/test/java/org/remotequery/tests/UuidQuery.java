@@ -15,5 +15,12 @@ public class UuidQuery implements IQuery {
 		result.addRowVar(uuid.toString());
 		return result;
 	}
+	
+	
+	public Result createNew(Request request) {
+		return run(request);
+	}
+
+	
 
 }

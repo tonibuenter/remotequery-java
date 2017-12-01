@@ -59,6 +59,7 @@ The parameter part of a *java* or *class* command
 is expected to be Java class that implements the `RemoteQuery.IQuery` interface.
 
 
+
 Example:
 
 ```
@@ -68,6 +69,18 @@ java org.remotequery.tests.UuidQuery
 *Remark:*
 
 If the Java class implements the `RemoteQuery.ICommand` interface as well, the `RemoteQuery.ICommand.run` method is called instead of the `RemoteQuery.IQuery.run` method.
+
+#### Command *java* or *class*  with method name
+
+For the *java* or *class* command we can define a method in the Java 8 style instead of a Java class:
+
+```
+java org.remotequery.tests.UuidQuery::createNew
+```
+
+The method defined expects a request object as input and a result object as output as the `RemoteQuery.IQuery.run` method.
+
+
 
 
 

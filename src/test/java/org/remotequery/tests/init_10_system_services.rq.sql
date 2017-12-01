@@ -89,4 +89,16 @@ select 'ADDRESS_READER' as ROLE from JGROUND.T_DUAL
 -- ROLES      = SYSTEM
 --
 
+
+
 class org.remotequery.tests.UuidQuery
+
+
+
+
+--
+-- SERVICE_ID = UUID.method.createNew
+-- ROLES      = SYSTEM
+--
+
+class org.remotequery.tests.UuidQuery::createNew

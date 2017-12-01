@@ -29,6 +29,17 @@ public class Test_ClassCommand {
 	}
 
 	@Test
+	public void test_uuid_with_method() throws Exception {
+
+		String uuid = new Request().addRole("SYSTEM").run("UUID.method.createNew").getColumn("uuid").get(0);
+
+		if (Utils.isBlank(uuid)) {
+			Assert.fail("no uuid created");
+		}
+
+	}
+
+	@Test
 	public void test_command_copy() throws Exception {
 		Request request = new Request().setServiceId("Test.Command.copy");
 		request.run();
