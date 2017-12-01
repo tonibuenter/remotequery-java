@@ -26,7 +26,13 @@ Let us assume we have the following RQ service entry:
 SERVICE_ID   : Address.search
 ROLES        : APP_USER
 
-select FIRST_NAME, LAST_NAME, CITY from T_ADDRESS where FIRST_NAME like :nameFilter or LAST_NAME like :nameFilter
+select 
+  FIRST_NAME, LAST_NAME, CITY 
+from T_ADDRESS 
+where 
+  FIRST_NAME like :nameFilter 
+or 
+  LAST_NAME like :nameFilter
 ```
 
 The the following URL:
@@ -56,7 +62,11 @@ public static class Address {
   public String city;
 }
 
-Result result = new Request().setServiceId("Address.search").put("nameFilter", "Jo%").addRole("APP_USER").run();
+Result result = 
+    new Request()
+       .setServiceId("Address.search").put("nameFilter", "Jo%")
+       .addRole("APP_USER")
+       .run();
 
 // convert to a POJO
 List<Address> list = result.asList(Address.class);

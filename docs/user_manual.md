@@ -25,10 +25,13 @@ request.addRole("ADDRESS_READER");
 Result result = request.run();
 ```
 
-... or in one line: 
+... or in 'one line': 
 
 ```java
-Result result = new Request().put("nameFilter", "John%").addRole("ADDRESS_READER").run("Address.search");
+Result result = 
+   new Request().put("nameFilter", "John%")
+      .addRole("ADDRESS_READER")
+      .run("Address.search");
 ```
 
 
@@ -197,7 +200,8 @@ Here the class that implements this requirement:
 public class UuidCommand implements  ICommand {
 
   @Override
-  public Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry) {
+  public Result run(Request request, Result currentResult, 
+          StatementNode statementNode, ServiceEntry serviceEntry) {
     
     String name = statementNode.parameter;
     String value = request.get(name);

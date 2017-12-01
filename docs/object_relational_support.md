@@ -114,7 +114,8 @@ The example below shows the creation of a Java map by the usage of the `Collecto
 
 ```java
     List<Address> addressList = 
-          request.runWith("Address.search", addressFilter).asList(Address.class);
+          request.runWith("Address.search", addressFilter)
+          .asList(Address.class);
     Map<String, Address> addressMap = addressList.stream()
           .collect(Collectors.toMap(a -> a.addressId, a -> a));
 ```
