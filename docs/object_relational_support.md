@@ -108,13 +108,15 @@ select * from JGROUND.T_ADDRESS where ADDRESS_ID = :addressId
 
 ## Made for Java 8 
 
-Due to the functional extension Java 8 makes handling of result objects even easier.
+With the functional extension Java 8 handling of result objects is even easier.
 
 The example below shows the creation of a Java map by the usage of the `Collectors.toMap` utility:
 
 ```java
-    List<Address> addressList = request.runWith("Address.search", addressFilter).asList(Address.class);
-    Map<String, Address> addressMap = addressList.stream().collect(Collectors.toMap(a -> a.addressId, a -> a));
+    List<Address> addressList = 
+          request.runWith("Address.search", addressFilter).asList(Address.class);
+    Map<String, Address> addressMap = addressList.stream()
+          .collect(Collectors.toMap(a -> a.addressId, a -> a));
 ```
 
 #### Remark
