@@ -25,7 +25,7 @@ public class RemoteQueryUtils {
 	 * @param saveServiceId
 	 * @param source
 	 */
-	public static void processRqSqlText(Connection con, String rqSqlText, String saveServiceId, String source) {
+	public static void processRqSqlText(String rqSqlText, String saveServiceId, String source) {
 		int counter = 0;
 		Map<String, String> parameters = new HashMap<String, String>();
 		String statements = "";

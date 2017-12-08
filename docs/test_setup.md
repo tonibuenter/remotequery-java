@@ -10,7 +10,8 @@ Run JUnit in `src/test/java`. The code in `TestCentral.java` shows how RemoteQue
 ```java
  
     //
-    // 1. Database : Create a temporary directory for a Apache Derby DB with with embedded driver
+    // 1. Database : Create a temporary directory for a Appache Derby DB
+    // with with embedded driver
     //
 
     Path tmpDbPath = Files.createTempDirectory("remoteQueryTestDb");
@@ -22,7 +23,8 @@ Run JUnit in `src/test/java`. The code in `TestCentral.java` shows how RemoteQue
     String dbpasswd = "derby";
 
     //
-    // 2. DataSource : Create a data source object with Apache BasicDataSource
+    // 2. DataSource : Create a data source object with Apache
+    // BasicDataSource
     //
 
     BasicDataSource basicDataSource = new BasicDataSource();
@@ -34,7 +36,8 @@ Run JUnit in `src/test/java`. The code in `TestCentral.java` shows how RemoteQue
     logger.info("Connection from Apache BasicDataSource: " + connection);
 
     //
-    // 3. DB Objects : Create schema and tables, insert bootstrap service entry
+    // 3. DB Objects : Create schema and tables, insert bootstrap service
+    // entry
     //
 
     for (String sqlfileName : sqlfileNames) {
@@ -44,9 +47,11 @@ Run JUnit in `src/test/java`. The code in `TestCentral.java` shows how RemoteQue
       input.close();
       RemoteQueryUtils.processSqlText(connection, sqlText, sqlfileName);
     }
+    connection.close();
 
     //
-    // 4. Initialize RemoteQuery : Register data source, create and register an sql service
+    // 4. Initialize RemoteQuery : Register data source, create and register
+    // an sql service
     // repository with the service table JGROUND.T_RQ_SERVICE
     //
 
@@ -58,7 +63,8 @@ Run JUnit in `src/test/java`. The code in `TestCentral.java` shows how RemoteQue
     ServiceRepositoryHolder.set(serviceRepository);
 
     //
-    // 5. Load RQ Services : Read application's service definitions from rq.sql files
+    // 5. Load RQ Services : Read application's service definitions from
+    // rq.sql files
     //
 
     for (String fileName : rqSqlfileNames) {
@@ -66,9 +72,8 @@ Run JUnit in `src/test/java`. The code in `TestCentral.java` shows how RemoteQue
           TestCentral.class.getResourceAsStream("/org/remotequery/tests/" + fileName), "UTF-8");
       String rqSqlText = IOUtils.toString(input);
       input.close();
-      RemoteQueryUtils.processRqSqlText(connection, rqSqlText, "RQService.save", fileName);
+      RemoteQueryUtils.processRqSqlText(rqSqlText, "RQService.save", fileName);
     }
-
  
 ```
 

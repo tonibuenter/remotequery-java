@@ -37,7 +37,8 @@ public class TestCentral {
 		}
 
 		//
-		// 1. Database : Create a temporary directory for a Appache Derby DB with with embedded driver
+		// 1. Database : Create a temporary directory for a Appache Derby DB
+		// with with embedded driver
 		//
 
 		Path tmpDbPath = Files.createTempDirectory("remoteQueryTestDb");
@@ -49,7 +50,8 @@ public class TestCentral {
 		String dbpasswd = "derby";
 
 		//
-		// 2. DataSource : Create a data source object with Apache BasicDataSource
+		// 2. DataSource : Create a data source object with Apache
+		// BasicDataSource
 		//
 
 		BasicDataSource basicDataSource = new BasicDataSource();
@@ -61,7 +63,8 @@ public class TestCentral {
 		logger.info("Connection from Apache BasicDataSource: " + connection);
 
 		//
-		// 3. DB Objects : Create schema and tables, insert bootstrap service entry
+		// 3. DB Objects : Create schema and tables, insert bootstrap service
+		// entry
 		//
 
 		for (String sqlfileName : sqlfileNames) {
@@ -71,9 +74,11 @@ public class TestCentral {
 			input.close();
 			RemoteQueryUtils.processSqlText(connection, sqlText, sqlfileName);
 		}
+		connection.close();
 
 		//
-		// 4. Initialize RemoteQuery : Register data source, create and register an sql service
+		// 4. Initialize RemoteQuery : Register data source, create and register
+		// an sql service
 		// repository with the service table JGROUND.T_RQ_SERVICE
 		//
 
@@ -85,7 +90,8 @@ public class TestCentral {
 		ServiceRepositoryHolder.set(serviceRepository);
 
 		//
-		// 5. Load RQ Services : Read application's service definitions from rq.sql files
+		// 5. Load RQ Services : Read application's service definitions from
+		// rq.sql files
 		//
 
 		for (String fileName : rqSqlfileNames) {
@@ -93,10 +99,9 @@ public class TestCentral {
 					TestCentral.class.getResourceAsStream("/org/remotequery/tests/" + fileName), "UTF-8");
 			String rqSqlText = IOUtils.toString(input);
 			input.close();
-			RemoteQueryUtils.processRqSqlText(connection, rqSqlText, "RQService.save", fileName);
+			RemoteQueryUtils.processRqSqlText(rqSqlText, "RQService.save", fileName);
 		}
 
-		connection.close();
 		dataSource = basicDataSource;
 
 	}

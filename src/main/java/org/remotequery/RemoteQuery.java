@@ -152,6 +152,40 @@ public class RemoteQuery {
 
 	}
 
+	//
+	// START OF SQL VALUE
+	//
+
+	public static Map<Integer, ISqlValue> SqlValueMap = new HashMap<Integer, ISqlValue>();
+
+	/**
+	 * This interface is used for creating customized converstion of JDBC
+	 * ResultSet values to Strings. A customized conversion can be registered
+	 * with
+	 * <code>RemoteQuery.SqlValueMap.put(Sql-Type, ISqlValue-Instance)</code>
+	 * 
+	 * @author tonibuenter
+	 *
+	 */
+	interface ISqlValue {
+		String toString(Object o);
+	}
+
+	static {
+		RemoteQuery.SqlValueMap.put(Types.CHAR, new SqlValueChar());
+		RemoteQuery.SqlValueMap.put(Types.VARCHAR, new SqlValueChar());
+	}
+
+	public static class SqlValueChar implements ISqlValue {
+		public String toString(Object o) {
+			return o.toString().trim();
+		}
+	}
+
+	//
+	// END OF SQL VALUE
+	//
+
 	/**
 	 * Singleton for keeping the data source objects. Remark: not thread save.
 	 * 
@@ -221,23 +255,23 @@ public class RemoteQuery {
 
 	public static interface IResultListener {
 
-		public void start();
+		public IResultListener start();
 
-		public void done();
+		public IResultListener done();
 
-		public void setName(String name);
+		public IResultListener setName(String name);
 
-		public void setFrom(int from);
+		public IResultListener setFrom(int from);
 
-		public void setHeader(String[] header);
+		public IResultListener setHeader(String[] header);
 
-		public void addRow(String[] row);
+		public IResultListener addRow(String[] row);
 
-		public void setTotalCount(int totalCount);
+		public IResultListener setTotalCount(int totalCount);
 
-		public void setException(Exception e);
+		public IResultListener setException(Exception e);
 
-		public void setRowsAffected(int rowsAffected);
+		public IResultListener setRowsAffected(int rowsAffected);
 
 	}
 
@@ -1431,30 +1465,34 @@ public class RemoteQuery {
 			return table == null ? 0 : table.size();
 		}
 
-		public void update() {
+		public Result update() {
 			totalCount = Math.max(from + size(), totalCount);
+			return this;
 		}
 
 		@Override
-		public void addRow(String[] row) {
+		public Result addRow(String[] row) {
 			List<String> l = new ArrayList<String>(row.length);
 			for (int i = 0; i < row.length; i++) {
 				l.add(row[i]);
 			}
 			table.add(l);
 			update();
+			return this;
 		}
 
-		public void addRow(List<String> row) {
+		public Result addRow(List<String> row) {
 			table.add(row);
 			update();
+			return this;
 		}
 
-		public void addRowVar(String... row) {
+		public Result addRowVar(String... row) {
 			addRow(row);
+			return this;
 		}
 
-		public void addObject(Object o) {
+		public Result addObject(Object o) {
 			Map<String, String> map = Utils.asPropertyMap(o);
 			List<String> row = new ArrayList<String>(header.size());
 			for (int i = 0; i < header.size(); i++) {
@@ -1462,6 +1500,22 @@ public class RemoteQuery {
 				row.add(e == null ? "" : e);
 			}
 			addRow(row);
+			return this;
+		}
+
+		public Result addColumnsWithExtension(Object o) {
+			Map<String, String> map = Utils.asPropertyMap(o);
+
+			for (String key : map.keySet()) {
+				int index = getHeaderIndex(key);
+				List<String> row = new ArrayList<String>(header.size());
+				if (index < 0) {
+					header.add(key);
+					index = header.size();
+				}
+				row.set(index, map.get(key));
+			}
+			return this;
 		}
 
 		/**
@@ -1489,6 +1543,11 @@ public class RemoteQuery {
 			List<String> row = table.get(0);
 			header.add(head);
 			row.add(value);
+			return this;
+		}
+
+		public Result setException(String exception) {
+			this.exception = exception;
 			return this;
 		}
 
@@ -1592,10 +1651,6 @@ public class RemoteQuery {
 				}
 			}
 			return key;
-		}
-
-		public void setException(String exception) {
-			this.exception = exception;
 		}
 
 		public Result(Exception e) {
@@ -1902,44 +1957,50 @@ public class RemoteQuery {
 		}
 
 		@Override
-		public void start() {
-			// TODO Auto-generated method stub
-
+		public IResultListener start() {
+			return this;
 		}
 
 		@Override
-		public void done() {
+		public IResultListener done() {
+			return this;
 		}
 
 		@Override
-		public void setName(String name) {
+		public IResultListener setName(String name) {
 			this.name = name;
+			return this;
 		}
 
 		@Override
-		public void setFrom(int from) {
+		public IResultListener setFrom(int from) {
 			this.from = from;
+			return this;
 		}
 
 		@Override
-		public void setHeader(String[] header) {
+		public IResultListener setHeader(String[] header) {
 			this.header.clear();
 			_header(header);
+			return this;
 		}
 
 		@Override
-		public void setTotalCount(int totalCount) {
+		public IResultListener setTotalCount(int totalCount) {
 			this.totalCount = totalCount;
+			return this;
 		}
 
 		@Override
-		public void setException(Exception e) {
+		public IResultListener setException(Exception e) {
 			this.exception = e.getMessage();
+			return this;
 		}
 
 		@Override
-		public void setRowsAffected(int rowsAffected) {
+		public IResultListener setRowsAffected(int rowsAffected) {
 			this.rowsAffected = rowsAffected;
+			return this;
 		}
 
 	}
@@ -2791,17 +2852,17 @@ public class RemoteQuery {
 		public static String sqlValueToString(Object value, int sqlType) throws IllegalArgumentException,
 				SecurityException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
 
-			switch (sqlType) {
-			case Types.CHAR:
-			case Types.VARCHAR:
-				return value == null ? "" : value.toString();// _NULL_ :
-			// String.valueOf(value);
-			default:
-			}
-			String strValue = value == null ? "" : value.toString();
-			if (isBlank(strValue)) {
+			if (value == null) {
 				return "";
 			}
+
+			ISqlValue sqlValue = SqlValueMap.get(sqlType);
+			if (sqlValue != null) {
+				String s = sqlValue.toString(value);
+				return s == null ? "" : s;
+			}
+
+			String strValue = value.toString().trim();
 			if (value.getClass().getName().toString().startsWith("oracle.sql.TIMESTAMP")) {
 				value = value.getClass().getMethod("toJdbc").invoke(value);
 			}
@@ -2828,66 +2889,6 @@ public class RemoteQuery {
 				logger.error(e.getMessage(), e);
 			}
 			return "";
-		}
-
-		public static Result buildResult(int start, int max, ResultSet rs) {
-			Result result = null;
-			try {
-
-				//
-				ResultSetMetaData md = rs.getMetaData();
-
-				int colums = rs.getMetaData().getColumnCount();
-				String[] header = new String[colums];
-				int[] sqlTypes = new int[colums];
-				header = new String[colums];
-				for (int i = 0; i < colums; i++) {
-					header[i] = md.getColumnName(i + 1);
-					if (Result.USE_CAMEL_CASE_FOR_RESULT_HEADER) {
-						header[i] = camelCase(header[i]);
-					}
-					sqlTypes[i] = md.getColumnType(i + 1);
-				}
-				//
-				int counter = 0;
-				result = new Result(header);
-				result.from = -1;
-				String[] row = null;
-				while (rs.next()) {
-
-					if (counter >= start && ((counter < start + max) || max == -1)) {
-						if (result.from == -1) {
-							result.from = counter;
-						}
-
-						row = new String[colums];
-
-						for (int i = 0; i < colums; i++) {
-							if (sqlTypes[i] == Types.BLOB) {
-								logger.warn("BLOB type not supported! Returning empty string!");
-								row[i] = "";
-							} else if (sqlTypes[i] == Types.CLOB) {
-								Clob clob = (Clob) rs.getObject(i + 1);
-								row[i] = blobToString(clob);
-							} else {
-								Object sqlValue = rs.getObject(i + 1);
-								row[i] = sqlValueToString(sqlValue, sqlTypes[i]);
-							}
-						}
-						result.addRow(row);
-					} else {
-						//
-					}
-					counter++;
-				}
-				result.totalCount = counter;
-
-			} catch (Exception e) {
-				result = new Result(e);
-			} finally {
-
-			}
-			return result;
 		}
 
 		public static void buildResult(int start, int max, ResultSet rs, IResultListener irl) {
