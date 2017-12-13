@@ -1,6 +1,7 @@
 package org.remotequery.tests;
 
 public class Address {
+	
 	public String addressId;
 	public String firstName;
 	public String lastName;

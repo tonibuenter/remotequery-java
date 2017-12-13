@@ -1,0 +1,9 @@
+body.dev div.statements {
+  white-space: pre;
+  padding: 0.6em;
+}
+
+
+.pointer {
+	cursor: pointer;
+}

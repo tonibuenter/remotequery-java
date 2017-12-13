@@ -19,9 +19,9 @@
 <meta name="viewport"
 	content="width=device-width, initial-scale=1, maximum-scale=1">
 
-<!-- ----------------- -->
-<!-- JQUERY 3 and more -->
-<!-- ----------------- -->
+<!-- ---------------------------- -->
+<!-- JQUERY 3, UNDERSCORE, MOMENT -->
+<!-- ---------------------------- -->
 <script src="libs/jquery-3.2.1.js" type="text/javascript"></script>
 <script src="libs/underscore.js" type="text/javascript"></script>
 <script src="libs/moment-with-locales.js" type="text/javascript"></script>
@@ -50,63 +50,59 @@
 <link type="text/css" rel="stylesheet" href="libs/animate.css" />
 
 
+
 <!-- ------------ -->
 <!-- Remote Query -->
 <!-- ------------ -->
 
 <script src="js/remotequery-0.9.0.js" type="text/javascript"></script>
-<script src="js/app-ui.js" type="text/javascript"></script>
+<script src="js/rq-base.js" type="text/javascript"></script>
+<script src="js/rq-ui.js" type="text/javascript"></script>
+
+<link href="css/rq-ui.css" type="text/css" rel="stylesheet" />
+
+
 
 <!-- --------- -->
-<!-- THIS DEMO -->
+<!-- THIS PAGE -->
 <!-- --------- -->
 
-<link href="css/demo.css" type="text/css" rel="stylesheet" />
-<script src="js/demo.js" type="text/javascript"></script>
+<script src="js/dev.js" type="text/javascript"></script>
 
-
-
+<link href="css/dev.css" type="text/css" rel="stylesheet" />
 
 </head>
 
-<body>
+<body class="dev">
 	<div class="container">
-		<div>
-			<section>
-				<h3>Services</h3>
-			</section>
+
+		<div class="section">
+			<h4>Manage Services</h4>
 		</div>
+		<div class="divider"></div>
 
-		<div class="row">
+		<div class="section" id="serviceSearch">
 
-			<div class="input-field col s6">
-				<input id="nameFilter" type="text" class="validate"> <label
-					for="nameFilter">Service Filter</label>
+			<div class="row">
+
+				<div class="input-field col s6">
+					<input id="nameFilter" type="text" class="validate"> <label
+						for="nameFilter">Service Filter</label>
+				</div>
+
+				<div class="input-field col s6">
+					<a id="search" class="waves-effect red waves-light btn"><i
+						class="material-icons left">search</i>Search</a>
+				</div>
 			</div>
 
-			<div class="input-field col s6">
-				<a id="search" class="waves-effect red waves-light btn"><i
-					class="material-icons left">search</i>Search</a>
-			</div>
+			<div id="serviceList"></div>
+
+
 		</div>
 
+		<div class="section" id="serviceEdit"></div>
 
-
-		<section>
-			<table>
-				<thead>
-					<tr>
-						<th>Service Id</th>
-						<th>Roles</th>
-						<th>Statements</th>
-					</tr>
-				</thead>
-				<tbody id="tbody">
-				</tbody>
-			</table>
-		</section>
-
-		<div class="demo-message" id="message"></div>
 	</div>
 
 	<script>
@@ -114,27 +110,15 @@
 
       var search$ = $('#search');
       var nameFilter$ = $('#nameFilter');
+      var serviceEditUi = rQ_ui.serviceEditUi();
+      $('#serviceEdit').append(serviceEditUi.view()).hide();
+      serviceEditUi.done(goToList);
 
       search$.click(function() {
         var nameFilter = nameFilter$.val() + '%';
         rQ.call('RQService.search', {
           'nameFilter' : nameFilter
-        }, function(data) {
-          var list = rQ.asList(data);
-
-          var head$ = $('#thead-tr').empty();
-          var body$ = $('#tbody').empty();
-          var message$ = $('#message').empty();
-          if (list.length == 0) {
-            message$.text("No data found!");
-          }
-          _.each(list, function(e) {
-            body$.append($('<tr>').append(
-                $('<td>').append(serviceId$(e.serviceId)),
-                $('<td>').append(roles$(e.roles)),
-                $('<td>').append($('<pre>').text(e.statements))))
-          });
-        });
+        }, renderServiceList);
       });
 
       nameFilter$.keypress(function(e) {
@@ -145,7 +129,7 @@
       });
 
       function serviceId$(serviceId) {
-        var r = '', ident=0;
+        var r = '', ident = 0;
         serviceId.split(".").forEach(function(item) {
           if (r) {
             r += '.';
@@ -156,12 +140,48 @@
         return r;
       }
 
+      function renderServiceList(data) {
+
+        var serviceList$ = $('#serviceList').empty();
+        var list = rQ.asList(data);
+
+        if (list.length == 0) {
+          rQ_ui.toast("No_Data_Found.");
+        } else {
+          rQ_ui.toast('Found_' + list.length + '_Services.');
+          _.each(list, function(e) {
+
+            var v$ = rQ_ui.div('row pointer').append(
+                rQ_ui.div('col s12 red-text darken-4-text ').append(
+                    rQ_ui.h5().text(e.serviceId),
+                    rQ_ui.h6(e.roles, 'grey-text')),
+                rQ_ui.div(' col s12 grey lighten-2 statements').text(
+                    e.statements)).click(function() {
+              goToEdit(e);
+            });
+
+            serviceList$.append(v$);
+
+          });
+        }
+      }
+
+      function goToEdit(service) {
+        $('#serviceSearch').hide('slow');
+        $('#serviceEdit').show('slow');
+        serviceEditUi.value(service);
+      }
+      function goToList() {
+        $('#serviceSearch').show('slow');
+        $('#serviceEdit').hide('slow');
+      }
+
       function roles$(roles) {
-        var r = '';
-        roles.split(",").forEach(function(item) {
-          r += '<div>' + item + '</div>';
+        var r$ = [];
+        roles.split(",").forEach(function(role) {
+          r$.push(rQ_ui.div(role, 'role'));
         });
-        return r;
+        return r$;
       }
 
     });

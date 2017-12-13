@@ -26,8 +26,8 @@ public class StartJetty {
 
 		WebAppContext webapp = new WebAppContext();
 		webapp.setContextPath("/");
-		File warFile = new File("src/web/webapp");
-		webapp.setWar(warFile.getAbsolutePath());
+		File webappDir = new File("src/web/webapp");
+		webapp.setWar(webappDir.getAbsolutePath());
 
 		server.setHandler(webapp);
 

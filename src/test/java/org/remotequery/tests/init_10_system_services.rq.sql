@@ -28,6 +28,21 @@ delete from JGROUND.T_RQ_SERVICE where SERVICE_ID = :serviceId
 
 
 
+--
+-- SERVICE_ID = RQService.search
+-- ROLES      = APP_USER
+-- 
+
+set-if-empty nameFilter = %
+;
+select SERVICE_ID, STATEMENTS, ROLES 
+from
+  JGROUND.T_RQ_SERVICE
+where
+  SERVICE_ID like :nameFilter
+
+
+  
 -- **************
 -- APP PROPERTIES
 -- **************
@@ -83,14 +98,14 @@ delete from JGROUND.T_APP_PROPERTIES
 select 'ADDRESS_READER' as ROLE from JGROUND.T_DUAL
 union
 select 'APP_USER' as ROLE from JGROUND.T_DUAL
+union
+select 'APP_ADMIN' as ROLE from JGROUND.T_DUAL
 
 
 --
 -- SERVICE_ID = UUID.create
 -- ROLES      = SYSTEM
 --
-
-
 
 class org.remotequery.tests.UuidQuery
 

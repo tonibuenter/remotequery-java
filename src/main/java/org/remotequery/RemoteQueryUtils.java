@@ -60,7 +60,7 @@ public class RemoteQueryUtils {
 				}
 				inComment = false;
 				inStatement = true;
-				statements += line + '\n';
+				statements += line2 + '\n';
 			}
 			if (inStatement) {
 				saveRQService(saveServiceId, parameters, statements, source);

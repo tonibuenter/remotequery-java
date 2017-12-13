@@ -174,11 +174,19 @@ public class RemoteQuery {
 	static {
 		RemoteQuery.SqlValueMap.put(Types.CHAR, new SqlValueChar());
 		RemoteQuery.SqlValueMap.put(Types.VARCHAR, new SqlValueChar());
+		RemoteQuery.SqlValueMap.put(Types.CLOB, new SqlValueClob());
 	}
 
 	public static class SqlValueChar implements ISqlValue {
 		public String toString(Object o) {
 			return o.toString().trim();
+		}
+	}
+
+	public static class SqlValueClob implements ISqlValue {
+		public String toString(Object o) {
+			Clob clob = (Clob) o;
+			return Utils.blobToString(clob);
 		}
 	}
 
@@ -496,13 +504,13 @@ public class RemoteQuery {
 		for (String attributeName : qap.parameters) {
 			String attributeValue = request.get(attributeName);
 			if (attributeValue == null) {
-				pLog.system("processSql:No value provided for parameter name:" + attributeName + " (serviceId:"
+				pLog.system("processSql: No value provided for parameter: " + attributeName + " (serviceId: "
 						+ request.serviceId + "). Will use empty string.", logger);
 				paramObjects.add("");
 				sqlLogger.debug("sql-parameter:  " + attributeName + " : ");
 			} else {
 				paramObjects.add(attributeValue);
-				sqlLogger.debug("sql-parameter:  " + attributeName + ": " + attributeValue);
+				sqlLogger.debug("sql-parameter:  " + attributeName + " : " + attributeValue);
 			}
 		}
 		//
@@ -524,6 +532,7 @@ public class RemoteQuery {
 				rs = ps.getResultSet();
 				Utils.buildResult(0, -1, rs, irl);
 				irl.setName(serviceId);
+				irl.setFrom(0);
 			} else {
 				int rowsAffected = ps.getUpdateCount();
 				pLog.system("ServiceEntry : " + serviceId + "; rowsAffected : " + rowsAffected);
@@ -2929,9 +2938,6 @@ public class RemoteQuery {
 							if (sqlTypes[i] == Types.BLOB) {
 								logger.warn("BLOB type not supported! Returning empty string!");
 								row[i] = "";
-							} else if (sqlTypes[i] == Types.CLOB) {
-								Clob clob = (Clob) rs.getObject(i + 1);
-								row[i] = blobToString(clob);
 							} else {
 								Object sqlValue = rs.getObject(i + 1);
 								row[i] = sqlValueToString(sqlValue, sqlTypes[i]);

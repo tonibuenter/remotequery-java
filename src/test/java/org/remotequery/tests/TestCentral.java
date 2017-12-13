@@ -23,11 +23,11 @@ public class TestCentral {
 
 	private static DataSource dataSource;
 
-	private static String sqlfileNames[] = { "init_01_bootstrap.sql", "init_20_address_db.sql",
-			"init_21_address_testdata.sql" };
+	private static String sqlfileNames[] = { "init_01_bootstrap.sql", "address.sql", "address_testdata.sql",
+			"html-text.sql" };
 
 	private static String rqSqlfileNames[] = { "init_02_commands.rq.sql", "init_03_includes.rq.sql",
-			"init_10_system_services.rq.sql", "init_22_address_services.rq.sql" };
+			"init_10_system_services.rq.sql", "address.rq.sql", "html-text.rq.sql" };
 
 	public static void init() throws Exception {
 

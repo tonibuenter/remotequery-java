@@ -71,33 +71,35 @@ end
 
 delete from JGROUND.T_APP_PROPERTIES where NAME like 'Test.Command.switch%'
 ;
-parameters:select 'A12' as "SWITCH_VALUE" from JGROUND.T_DUAL
+parameters select 'A12' as "SWITCH_VALUE" from JGROUND.T_DUAL
 ;
-switch:switchValue;
-  case:A12;
-  case:A13;
-  case:A14;
-    insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values ('Test.Command.switch-1', 'ok');
+switch switchValue;
+  case A12;
+  case A13;
+  case A14;
+    insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  
+    values ('Test.Command.switch-1', 'ok');
   break;
   
-  case:A13;
-    insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values ('Test.Command.switch-2', 'ok');
+  case A13;
+    insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  
+    values ('Test.Command.switch-2', 'ok');
   break;
   
-  case:A14;
+  case A14;
     insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values ('Test.Command.switch-3', 'ok');
   break;
   
-  case:A12;
+  case A12;
     insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values ('Test.Command.switch-4', 'ok');
 end;
 ;
 select * from JGROUND.T_APP_PROPERTIES where NAME like 'Test.Command.switch%'
 ;
-parameters:select count(*) as "TOTAL1" from JGROUND.T_APP_PROPERTIES where NAME like 'Test.Command.switch%'
-;;
-delete from JGROUND.T_APP_PROPERTIES where NAME like 'Test.Command.switch%'
+parameters select count(*) as "TOTAL1" from JGROUND.T_APP_PROPERTIES where NAME like 'Test.Command.switch%'
 ;
+delete from JGROUND.T_APP_PROPERTIES where NAME like 'Test.Command.switch%'
+
 
 
 
@@ -105,35 +107,34 @@ delete from JGROUND.T_APP_PROPERTIES where NAME like 'Test.Command.switch%'
 -- SERVICE_ID = Test.Command.switch_empty
 --
 
-set:prefix=Test.Command.switch_empty%
+set prefix=Test.Command.switch_empty%
 ;
 delete from JGROUND.T_APP_PROPERTIES where NAME like :prefix
 ;
-set:switchValue=ABC
+set switchValue=ABC
 ;
-set:switchValue=
+set switchValue=
 ;
-switch:switchValue;
-  case:A12;
-  case:;
-  case:A14;
+switch switchValue;
+  case A12;
+  case ;
+  case A14;
     insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values (:prefix || '1', 'ok');
   break;
   
-  case:;
+  case ;
     insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values (:prefix || '2', 'ok');
   break;
   
-  case:A14;
+  case A14;
     insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values (:prefix || '3', 'ok');
 end;
 ;
 select * from JGROUND.T_APP_PROPERTIES where NAME like :prefix
 ;
-parameters:select count(*) as "TOTAL1" from JGROUND.T_APP_PROPERTIES where NAME like 'Test.Command.switch%'
+parameters select count(*) as "TOTAL1" from JGROUND.T_APP_PROPERTIES where NAME like 'Test.Command.switch%'
 ;
 delete from JGROUND.T_APP_PROPERTIES where NAME like :prefix
-;
 
 
 
@@ -141,32 +142,32 @@ delete from JGROUND.T_APP_PROPERTIES where NAME like :prefix
 -- SERVICE_ID = Test.Command.switch_default
 --
 
-set:prefix=Test.Command.switch_default%
+set prefix=Test.Command.switch_default%
 ;
 delete from JGROUND.T_APP_PROPERTIES where NAME like :prefix
 ;
-set:switchValue=ABC
+set switchValue=ABC
 ;
-set:switchValue=NOMATCH
+set switchValue=NOMATCH
 ;
-switch:switchValue;
-  case:A12;
-  case:;
-  case:A14;
+switch switchValue;
+  case A12;
+  case ;
+  case A14;
     insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values (:prefix || '1', 'ok');
   break;
   
-  default:;
+  default ;
     insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values (:prefix || '2', 'ok');
   break;
   
-  case:A14;
+  case A14;
     insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values (:prefix || '3', 'ok');
 end;
 ;
 select * from JGROUND.T_APP_PROPERTIES where NAME like :prefix
 ;
-parameters:select count(*) as "TOTAL1" from JGROUND.T_APP_PROPERTIES where NAME like 'Test.Command.switch%'
+parameters select count(*) as "TOTAL1" from JGROUND.T_APP_PROPERTIES where NAME like 'Test.Command.switch%'
 ;
 delete from JGROUND.T_APP_PROPERTIES where NAME like :prefix
 ;

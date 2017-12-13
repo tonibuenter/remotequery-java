@@ -1,6 +1,5 @@
 package org.remotequery.web;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashMap;
@@ -13,7 +12,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.remotequery.RemoteQuery;
 import org.remotequery.RemoteQuery.JsonUtils;
@@ -21,7 +19,6 @@ import org.remotequery.RemoteQuery.ProcessLog;
 import org.remotequery.RemoteQuery.Request;
 import org.remotequery.RemoteQuery.Result;
 import org.remotequery.RemoteQuery.Utils;
-import org.remotequery.RemoteQueryUtils;
 import org.remotequery.tests.TestCentral;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,17 +60,20 @@ public class RemoteQueryWeb extends HttpServlet {
 
 		// load additional remote-query services
 
-		String[] rqSqlFiles = { "jground-services.rq.sql" };
-
-		for (String rqSqlFile : rqSqlFiles) {
-			try {
-				String path = config.getServletContext().getRealPath("WEB-INF/remoteQuery/" + rqSqlFile);
-				String rqSqlText = FileUtils.readFileToString(new File(path));
-				RemoteQueryUtils.processRqSqlText(rqSqlText, "RQService.save", "jground-services.rq.sql");
-			} catch (Exception e) {
-				logger.error(e.getMessage(), e);
-			}
-		}
+		// String[] rqSqlFiles = { "jground-services.rq.sql" };
+		//
+		// for (String rqSqlFile : rqSqlFiles) {
+		// try {
+		// String path =
+		// config.getServletContext().getRealPath("WEB-INF/remoteQuery/" +
+		// rqSqlFile);
+		// String rqSqlText = FileUtils.readFileToString(new File(path));
+		// RemoteQueryUtils.processRqSqlText(rqSqlText, "RQService.save",
+		// "jground-services.rq.sql");
+		// } catch (Exception e) {
+		// logger.error(e.getMessage(), e);
+		// }
+		// }
 
 		logger.info("RemoteQueryWeb started");
 	}

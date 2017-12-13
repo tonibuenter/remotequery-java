@@ -1,0 +1,13 @@
+div.index-content {
+	padding: 1em;
+}
+
+
+div.index-content table td {
+  padding: 0.2em;
+}
+
+
+div.index-content div.index-message {
+  padding: 0.2em;
+}
