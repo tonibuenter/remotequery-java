@@ -8,7 +8,7 @@
 -- ROLES      = SYSTEM
 --
 
-set:includee=hello;
+set includee = hello
 
 
 
@@ -18,11 +18,11 @@ set:includee=hello;
 
 if isblank
 ;
-set:bla=123
+set bla = 123
 ;
-include:Test.Include.includee
+include Test.Include.includee
 ;
-fi;
+fi
 
 
 
@@ -33,10 +33,10 @@ fi;
 
 if isblank
 ;
-set:bla=123
+set bla=123
 ;
-set:includee=hello;
+set includee=hello
 ;
-fi;
+fi
 
 

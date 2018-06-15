@@ -106,11 +106,11 @@ public class RemoteQuery {
 			StartBlock.add("foreach");
 		}
 
-		public static final Set<String> EndBLock = new HashSet<String>();
+		public static final Set<String> EndBlock = new HashSet<String>();
 		static {
-			EndBLock.add("fi");
-			EndBLock.add("done");
-			EndBLock.add("end");
+			EndBlock.add("fi");
+			EndBlock.add("done");
+			EndBlock.add("end");
 		}
 
 		public static final Map<String, Object> Registry = new HashMap<String, Object>();
@@ -129,6 +129,7 @@ public class RemoteQuery {
 			Registry.put("java", new JavaCommand());
 			Registry.put("class", new JavaCommand());
 			Registry.put("if", new IfCommand());
+			Registry.put("include", new FailCommand());
 			Registry.put("switch", new SwitchCommand());
 			Registry.put("while", new WhileCommand());
 			Registry.put("foreach", new ForeachCommand());
@@ -144,10 +145,12 @@ public class RemoteQuery {
 			Registry.put("add-role", new AddRoleCommand());
 			Registry.put("remove-role", new RemoveRoleCommand());
 			Registry.put("comment", new CommentCommand());
+			//
+			Registry.put("python", new NoOpCommand());
 		}
 
 		public static boolean isCmd(String cmd) {
-			return StartBlock.contains(cmd) || EndBLock.contains(cmd) || Registry.containsKey(cmd);
+			return StartBlock.contains(cmd) || EndBlock.contains(cmd) || Registry.containsKey(cmd);
 		}
 
 	}
@@ -306,7 +309,7 @@ public class RemoteQuery {
 			statementNode = new StatementNode(cmd, parameter, statement);
 			root.children.add(statementNode);
 
-			if (Commands.EndBLock.contains(cmd)) {
+			if (Commands.EndBlock.contains(cmd)) {
 				return pointer;
 			}
 
@@ -323,10 +326,11 @@ public class RemoteQuery {
 		List<String> resolvedList = new ArrayList<String>(statementList.size());
 		for (String stmt : statementList) {
 			stmt = Utils.trim(stmt);
-			if (stmt.startsWith("include:")) {
+			if (stmt.startsWith("include")) {
 				String serviceId = "";
 				try {
-					serviceId = stmt.substring("include:".length());
+					Triple<String, String, String> t = Utils.parseStatement(stmt);
+					serviceId = t.getMiddle();
 					ServiceEntry se = ServiceRepositoryHolder.get().get(serviceId);
 					String includeStatements = se.statements;
 					Integer counter = recursionCounter.get(serviceId) == null ? 0 : recursionCounter.get(serviceId);
@@ -416,8 +420,7 @@ public class RemoteQuery {
 	public static Result processJava(String parameter, String parameterString, Request request, Result currentResult,
 			StatementNode statementNode, ServiceEntry serviceEntry)
 			throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException {
-		Result result = null;
-		Connection connection = null;
+
 		ProcessLog pLog = ProcessLog.Current();
 		String[] parts = StringUtils.split(parameter, "::");
 		String className = parts[0];
@@ -442,11 +445,9 @@ public class RemoteQuery {
 
 		} catch (Exception e) {
 			pLog.error(e, logger);
-		} finally {
-			Utils.closeQuietly(connection);
 		}
 
-		return result;
+		return null;
 	}
 
 	public static void processSql(String sql, Request request, ServiceEntry serviceEntry, IResultListener irl) {
@@ -630,15 +631,16 @@ public class RemoteQuery {
 	 */
 	public static class Runner {
 
-		private final Map<String, Serializable> processStore = new HashMap<String, Serializable>();
-
-		public void put(String key, Serializable value) {
-			processStore.put(key, value);
-		}
-
-		public Serializable get(String key) {
-			return processStore.get(key);
-		}
+		// private final Map<String, Serializable> processStore = new
+		// HashMap<String, Serializable>();
+		//
+		// public void put(String key, Serializable value) {
+		// processStore.put(key, value);
+		// }
+		//
+		// public Serializable get(String key) {
+		// return processStore.get(key);
+		// }
 
 		public Result run(Request request) {
 			Result result = null;
@@ -1143,13 +1145,6 @@ public class RemoteQuery {
 		public static void RemoveCurrent() {
 			TL.remove();
 		}
-
-		//
-		// public static ProcessLog newOnThread(String userId) {
-		// ProcessLog rl = new ProcessLog();
-		// TL.set(rl);
-		// return TL.get();
-		// }
 
 		//
 		// DEBUG CONTEXT -start-
@@ -2912,7 +2907,8 @@ public class RemoteQuery {
 				int[] sqlTypes = new int[colums];
 				header = new String[colums];
 				for (int i = 0; i < colums; i++) {
-					header[i] = md.getColumnName(i + 1);
+					// header[i] = md.getColumnName(i + 1);
+					header[i] = md.getColumnLabel(i + 1);
 					if (Result.USE_CAMEL_CASE_FOR_RESULT_HEADER) {
 						header[i] = camelCase(header[i]);
 					}
@@ -3568,44 +3564,6 @@ public class RemoteQuery {
 
 	public static class MLTokenizer {
 
-		// public static Command tokenize(String s, char quote, String
-		// separators, char esc, boolean stripQuotes) {
-		//
-		// List<String> list = new ArrayList<String>();
-		// String reminder = null;
-		// boolean prot = false;
-		// boolean escaped = false;
-		// String text = "";
-		// for (int current = 0; current < s.length(); current++) {
-		// char c = s.charAt(current);
-		// if (escaped) {
-		// text += c;
-		// escaped = false;
-		// continue;
-		// }
-		// if (c == esc) {
-		// escaped = true;
-		// continue;
-		// }
-		// if (c == quote) {
-		// prot = !prot;
-		// text += c;
-		// continue;
-		// } else if (separators.contains("" + s.charAt(current)) && !prot) {
-		// addText(list, text, stripQuotes);
-		// if (reminder == null) {
-		// reminder = s.substring(current);
-		// reminder = trimLeft(reminder, separators, esc);
-		// }
-		// text = "";
-		// } else {
-		// text += c;
-		// }
-		// }
-		// addText(list, text, stripQuotes);
-		// return new Command(list, reminder);
-		// }
-
 		public static String trimLeft(String s, String separators, char esc) {
 			if (s == null) {
 				return "";
@@ -3865,6 +3823,15 @@ public class RemoteQuery {
 				}
 			}
 
+			return currentResult;
+		}
+	}
+
+	public static class FailCommand implements ICommand {
+
+		public Result run(Request request, Result currentResult, StatementNode statementNode,
+				ServiceEntry serviceEntry) {
+			logger.error("Fail Command! You should never reached this point! statementNode: " + statementNode);
 			return currentResult;
 		}
 	}

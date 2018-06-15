@@ -28,7 +28,6 @@ public class Test_Bootstrap {
 	public void loggerStuff() throws Exception {
 
 		Logger logger = LoggerFactory.getLogger("org.remotequery.RemoteQuery2.sql");
-		
 		logger.error(logger.getName());
 		Assert.assertEquals(true, logger.isDebugEnabled());
 	}

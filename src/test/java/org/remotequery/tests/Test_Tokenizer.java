@@ -12,7 +12,7 @@ public class Test_Tokenizer {
 		test(list);
 		list = new String[] { "a" };
 		test(list);
-		list = new String[] {   };
+		list = new String[] {};
 		test(list);
 	}
 
@@ -24,32 +24,21 @@ public class Test_Tokenizer {
 
 	@Test
 	public void test1() {
+		Assert.assertEquals(2, Utils.tokenize("set-0:a=b", ':', '\\').length);
+		Assert.assertEquals(2, Utils.tokenize(Utils.tokenize("set-0:a=b", ':', '\\')[1], '=', '\\').length);
 
 		Assert.assertEquals(3, Utils.tokenize("this \\, is, a,test").length);
 		Assert.assertEquals(4, Utils.tokenize("this , is, a,test").length);
 		Assert.assertEquals(" is", Utils.tokenize(" is, a,test")[0]);
-		Assert.assertEquals("this,is",
-		    Utils.joinTokens(new String[] { "this", "is" }));
-		Assert.assertEquals("t\\,his,is",
-		    Utils.joinTokens(new String[] { "t,his", "is" }));
-
-	}
-
-	@Test
-	public void test2() {
-
-		Assert.assertEquals(2, Utils.tokenize("set-0:a=b", ':', '\\').length);
-		Assert
-		    .assertEquals(2, Utils.tokenize(
-		        Utils.tokenize("set-0:a=b", ':', '\\')[1], '=', '\\').length);
+		Assert.assertEquals("this,is", Utils.joinTokens(new String[] { "this", "is" }));
+		Assert.assertEquals("t\\,his,is", Utils.joinTokens(new String[] { "t,his", "is" }));
 
 	}
 
 	@Test
 	public void testNesting() {
 
-		Assert.assertEquals("\\se:t-0",
-		    Utils.tokenize("\\se\\:t-0:a=b", ':', '\\')[0]);
+		Assert.assertEquals("\\se:t-0", Utils.tokenize("\\se\\:t-0:a=b", ':', '\\')[0]);
 
 		String s = Utils.tokenize("a:b=1\\,2,u=v", ':', '\\')[1];
 		s = Utils.tokenize(s, ',', '\\')[0];
@@ -57,12 +46,7 @@ public class Test_Tokenizer {
 		Assert.assertEquals("1,2", s);
 		s = Utils.tokenize("1\\,2", ',', '\\')[0];
 		Assert.assertEquals("1,2", s);
-
-	}
-
-	@Test
-	public void testNesting2() {
-		String s = Utils.tokenize("set:a=1\\,2\\,1", ':', '`')[1];
+		s = Utils.tokenize("set:a=1\\,2\\,1", ':', '`')[1];
 		Assert.assertEquals("a=1\\,2\\,1", s);
 
 		s = Utils.tokenize(s, ',', '\\')[0];

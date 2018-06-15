@@ -108,7 +108,8 @@ select 'APP_ADMIN' as ROLE from JGROUND.T_DUAL
 --
 
 class org.remotequery.tests.UuidQuery
-
+;
+python Commands.UuidQuery
 
 
 

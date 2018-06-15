@@ -10,4 +10,3 @@ values
 (7, 'Ralf', 'Meierhans', 'Hügelweg 1', '1021', 'Genf'),
 (8, 'Anna', 'Braader', 'Mythenweg 112', '7528', 'Sargans'),
 (9, 'Sara', 'Norumo', 'Piazza Grande 12', '4731', 'Biasca');
-

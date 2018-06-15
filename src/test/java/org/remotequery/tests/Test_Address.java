@@ -14,11 +14,6 @@ import junit.framework.Assert;
 
 public class Test_Address {
 
-
-	
-	
-	
-
 	@Test
 	public void testAddress_filter() {
 		Result result = new Request().setServiceId("Address.search").put("nameFilter", "Jo%").addRole("ADDRESS_READER")
