@@ -429,4 +429,100 @@
 
   root[REMOTE_QUERY_NAME].camelCaseToTitle = camelCaseToTitle;
 
+  //
+  // AJAX FILE UPLOAD
+  //
+
+  // https://stackoverflow.com/questions/2320069/jquery-ajax-file-upload
+
+  function ajaxFileUpload(file, serviceId, parameters, progressCb, doneCb) {
+
+    var Upload = function(file) {
+
+      this.file = file;
+
+    };
+
+    Upload.prototype.doUpload = function() {
+
+      var that = this;
+
+      var formData = new FormData();
+
+      // add assoc key values, this will be posts values
+
+      if (this.file.length) {
+        _.each(this.file, function(f, i) {
+          formData.append('file' + i, f, f.name);
+        })
+      } else {
+        formData.append("file", this.file, this.file.name);
+      }
+      formData.append("upload_file", true);
+
+      if (parameters) {
+        _.each(parameters, function(v, k) {
+          formData.append(k, v);
+        });
+      }
+
+      $.ajax({
+        'type' : "POST",
+        'url' : url + '/' + serviceId, // "script",
+
+        'dataType' : 'json',
+
+        'xhr' : function() {
+          var myXhr = $.ajaxSettings.xhr();
+          if (myXhr.upload) {
+            myXhr.upload.addEventListener('progress', that.progressHandling,
+                false);
+          }
+          return myXhr;
+        },
+
+        'success' : function(data) {
+          if (_.isFunction(doneCb)) {
+            doneCb(data);
+          }
+        },
+
+        'error' : function(error) {
+          // handle error
+        },
+        'async' : true,
+        'data' : formData,
+        'cache' : false,
+        'contentType' : false,
+        'processData' : false,
+        'timeout' : 300000
+      });
+
+    };
+
+    Upload.prototype.progressHandling = function(event) {
+
+      var percent = 0;
+      var position = event.loaded || event.position;
+      var total = event.total;
+
+      if (event.lengthComputable) {
+        percent = Math.ceil(position / total * 100);
+      }
+      if (_.isFunction(progressCb)) {
+        progressCb({
+          'percent' : percent
+        });
+      }
+    };
+
+    // var file = $(this)[0].files[0];
+
+    var upload = new Upload(file);
+
+    upload.doUpload();
+  }
+
+  root[REMOTE_QUERY_NAME].ajaxFileUpload = ajaxFileUpload;
+
 })(this);

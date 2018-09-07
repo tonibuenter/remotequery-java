@@ -486,13 +486,13 @@ public class RemoteQuery {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 
-		QueryAndParams qap = null;
+		QueryAndParams qap = new QueryAndParams();
 
 		pLog.system("sql before conversion: " + sql);
 		sqlLogger.debug("start sql **************************************");
 		sqlLogger.debug("Start sql (in service : " + serviceId + ")\n" + sql);
 
-		qap = convertQuery(sql);
+		qap.convertQuery(sql, request.getParameterSnapshhot());
 		sql = qap.questionMarkQuery;
 		// pLog.system("sql after conversion: " + sql);
 
@@ -502,16 +502,16 @@ public class RemoteQuery {
 
 		List<Object> paramObjects = new ArrayList<Object>();
 
-		for (String attributeName : qap.parameters) {
-			String attributeValue = request.get(attributeName);
-			if (attributeValue == null) {
-				pLog.system("processSql: No value provided for parameter: " + attributeName + " (serviceId: "
+		for (String param : qap.parameters) {
+			String val = qap.reqParams.get(param);
+			if (val == null) {
+				pLog.system("processSql: No value provided for parameter: " + param + " (serviceId: "
 						+ request.serviceId + "). Will use empty string.", logger);
 				paramObjects.add("");
-				sqlLogger.debug("sql-parameter:  " + attributeName + " : ");
+				sqlLogger.debug("sql-parameter:  " + param + " : ");
 			} else {
-				paramObjects.add(attributeValue);
-				sqlLogger.debug("sql-parameter:  " + attributeName + " : " + attributeValue);
+				paramObjects.add(val);
+				sqlLogger.debug("sql-parameter:  " + param + " : " + val);
 			}
 		}
 		//
@@ -565,9 +565,10 @@ public class RemoteQuery {
 	}
 
 	public static class QueryAndParams {
-		String parameterNameQuery;
-		String questionMarkQuery;
-		List<String> parameters = new ArrayList<String>();
+		public String parameterNameQuery;
+		public String questionMarkQuery;
+		public List<String> parameters = new ArrayList<String>();
+		public Map<String, String> reqParams;
 
 		@Override
 		public String toString() {
@@ -575,52 +576,84 @@ public class RemoteQuery {
 					+ questionMarkQuery + ", parameters=" + parameters + "]";
 		}
 
-	}
+		private StringBuffer qm_query_buffer;
+		private boolean in_param = false;
+		private boolean prot = false;
+		private List<String> param_list;
+		private StringBuffer current_param;
 
-	public static QueryAndParams convertQuery(String query) {
+		public void convertQuery(String query, Map<String, String> reqParams) {
 
-		StringBuffer buf = new StringBuffer(query.length());
+			qm_query_buffer = new StringBuffer(query.length());
+			in_param = false;
+			prot = false;
+			param_list = new ArrayList<String>();
+			current_param = new StringBuffer();
+			this.reqParams = reqParams;
 
-		boolean started = false;
-		boolean prot = false;
-		List<String> parameters = new ArrayList<String>();
-		StringBuffer currentParam = new StringBuffer();
-		for (char c : query.toCharArray()) {
-			if (!prot) {
-				if (started) {
-					if (Character.isJavaIdentifierPart(c)) {
-						currentParam.append(c);
+			for (char c : query.toCharArray()) {
+				if (!prot) {
+					if (in_param) {
+						if (Character.isJavaIdentifierPart(c) || c == '[' || c == ']') {
+							current_param.append(c);
+							continue;
+						} else {
+							_process_param();
+						}
+					}
+					if (!in_param && c == ':') {
+						in_param = true;
+						// buf.append('?');
 						continue;
-					} else {
-						started = false;
-						parameters.add(currentParam.toString());
-						currentParam = new StringBuffer();
 					}
 				}
-				if (!started && c == ':') {
-					started = true;
-					buf.append('?');
-					continue;
+				if (c == '\'') {
+					prot = !prot;
 				}
+				qm_query_buffer.append(c);
+			}
+			if (in_param) {
+				_process_param();
 			}
 
-			if (c == '\'') {
-				prot = !prot;
+			this.parameterNameQuery = query;
+			this.questionMarkQuery = qm_query_buffer.toString();
+			this.parameters = param_list;
+
+		}
+
+		private void _process_param() {
+
+			String param = current_param.toString();
+			if (param.endsWith("[]")) {
+				String a_value = reqParams.get(param);
+				if (StringUtils.isBlank(a_value)) {
+					param_list.add(param);
+					qm_query_buffer.append('?');
+				} else {
+					String param_base = param.substring(0, param.length() - 2);
+					String[] request_values = reqParams.get(param).split(",");
+					int index = 0;
+					for (String request_value : request_values) {
+						String param_indexed = param_base + "[" + index + "]";
+						reqParams.put(param_indexed, request_value);
+						param_list.add(param_indexed);
+						if (index == 0) {
+							qm_query_buffer.append("?");
+						} else {
+							qm_query_buffer.append(",?");
+						}
+						index++;
+					}
+				}
+			} else {
+				param_list.add(param);
+				qm_query_buffer.append('?');// NEW
 			}
-			buf.append(c);
+			current_param = new StringBuffer();
+			in_param = false;
 		}
 
-		// end processing
-		if (started) {
-			parameters.add(currentParam.toString());
-		}
-
-		//
-		QueryAndParams qap = new QueryAndParams();
-		qap.parameterNameQuery = query;
-		qap.questionMarkQuery = buf.toString();
-		qap.parameters = parameters;
-		return qap;
 	}
 
 	/**
@@ -762,8 +795,6 @@ public class RemoteQuery {
 									Entry e = (Entry) o;
 									requestC.put(e.getKey() + "", e.getValue() + "");
 								}
-							} else {
-								pLog.warn("No parameter in request ", logger);
 							}
 							resultC = mainQuery.run(requestC);
 							resultC.processLog = pLog;

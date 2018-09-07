@@ -3,11 +3,11 @@ package org.remotequery.tests;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import org.junit.Assert;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 public class Test_Misc {
+
 	@Test
 	public void sort1() {
 		Integer[] i1 = { 8, 4, 1, 3 };
@@ -15,7 +15,7 @@ public class Test_Misc {
 		Integer[] i3 = { 8, 4, 3, 1 };
 
 		Arrays.sort(i1);
-		assertArrayEquals(i2, i1);
+		Assert.assertArrayEquals(i2, i1);
 
 		Arrays.sort(i1, new Comparator<Integer>() {
 			@Override
@@ -24,6 +24,7 @@ public class Test_Misc {
 			}
 		});
 
-		assertArrayEquals(i3, i1);
+		Assert.assertArrayEquals(i3, i1);
 	}
+
 }
