@@ -7,15 +7,27 @@
 ## An efficient middleware for friends of SQL, Java and more ...
 
 
-RemoteQuery (RQ) is a simple but powerful tool for secure service creation using SQL queries and Java as first class citizen. 
+RemoteQuery (RQ) is a simple but powerful tool for secure service creation using SQL 
+queries and Java as first class citizen. 
 
-The highlights:
+## Just another 'Hibernate', 'JPA', ... ?
 
-+ The most simple RQ service: an SQL statement
-+ A Java class implementing the RQ IQuery.process method is a RQ service
+Yes indeed, but a much more efficient one. RQ does not introduce another level of complexity
+and uncertainty. RQ does not provide a sophisticated and magic mapping and optimization for DB access. 
+
+We strongly believe that the database and the SQL query developer can build the best queries. 
+
+Further, after years of the object to relational mapping, it seems obvious that a good relational database design is very important and should not be restrained by an additional layer such as Hibernate and JPAs.
+
+After starting with RQ the Java Code was reduced even using JPA and Hibernate by 80 per cent. On the other side, the RQ code of which 90 per cent are just SQL statements, has been proven to be easily maintainable and testable.
+
+## The highlights:
+
++ The most simple RQ service is an SQL statement
 + Any RQ service can be protected with a list of roles
-+ The RQ Servlet directly maps HTTP parameters to SQ named parameters
-+ A simple yet powerfull object-relational support [OR Support](docs/object_relational_support.md)
++ SQL parameters are directly mapped into the query (still preventing SQL injection)
++ A Java class (or Python function) can be used for a RQ service
++ A simple yet powerfull object-relational support without obfuscation is provided for the Java and Python coding [OR Support](docs/object_relational_support.md)
 
 
 ## Example RemoteQuery Web

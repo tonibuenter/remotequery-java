@@ -10,7 +10,7 @@ Look at this example:
 -- ROLES      = ADDRESS_WRITER
 --
 
-if addressId
+if :addressId
   ;
 else
   ;
