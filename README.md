@@ -21,7 +21,7 @@ Further, after years of the object to relational mapping, it seems obvious that 
 
 After starting with RQ the Java Code was reduced even using JPA and Hibernate by 80 per cent. On the other side, the RQ code of which 90 per cent are just SQL statements, has been proven to be easily maintainable and testable.
 
-## The highlights:
+## The Highlights:
 
 + The most simple RQ service is an SQL statement
 + Any RQ service can be protected with a list of roles
@@ -96,6 +96,10 @@ Here some hints for the directory layout of this repository:
 * JUnit tests : `src/test/java/` with `java-test-libs/` together with RQ main
 * Web : `src/web/java/`, `src/web/webapp/` with `java-web-libs/` together with Unit tests
 * Documentation : `docs/`
+
+### Python version
+
+A pytion version is soon released on this page.
 
 ### Standalone
 
