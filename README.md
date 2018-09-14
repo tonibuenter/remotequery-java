@@ -10,7 +10,7 @@
 RemoteQuery (RQ) is a simple but powerful tool for secure service creation using SQL 
 queries and Java as first class citizen. 
 
-## Just another 'Hibernate', 'JPA', ... ?
+## ... just another Hibernate, JPA ?
 
 Yes indeed, but a much more efficient one. RQ does not introduce another level of complexity
 and uncertainty. RQ does not provide a sophisticated and magic mapping and optimization for DB access. 
