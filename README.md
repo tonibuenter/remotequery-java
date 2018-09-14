@@ -19,7 +19,7 @@ We strongly believe that the database and the SQL query developer can build the 
 
 Further, after years of the object to relational mapping, it seems obvious that a good relational database design is very important and should not be restrained by an additional layer such as Hibernate and JPAs.
 
-After starting with RQ the Java Code was reduced even using JPA and Hibernate by 80 per cent. On the other side, the RQ code of which 90 per cent are just SQL statements, has been proven to be easily maintainable and testable.
+After starting with RQ the Java Code was reduced even using JPA and Hibernate by 80 per cent. On the other side, the RQ code, of which 90 per cent are just SQL statements, has been proven to be easily maintainable and testable.
 
 ## The Highlights:
 
