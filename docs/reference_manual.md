@@ -21,9 +21,9 @@ Command | Usage| Description
 --- | --- | ---
 *set*  | set hello = world | This sets right hand value (here: world) to the request parameter (here: hello)
 *put* | put hello = world | The same as with *set*
-*set-if-empty* | set-if-empty name = value | As if set but only if the current value of 'name' *set-if-empty* *put-if-empty* | put-if-empty name = value | The same as with *set-if-empty*
+*set-if-empty* | set-if-empty name = value | As if set but only if the current value of ':name' *set-if-empty* *put-if-empty* | put-if-empty name = value | The same as with *set-if-empty*
 *copy*  | copy name1 = name2 | set the value of name2 to value of name1
-*copy-if-empty*  | copy-if-empty name1 = name2 | Like copy, but only if value of name1 is empty
+*copy-if-empty*  | copy-if-empty name1 = name2 | Like copy, but only if value of :name1 is empty
 *parameters*  | parameters select * from T_ADDRESS ... | The parameter part is processed as statements and the result, actually the first row if available, is applied to the parameters.
 *parameters-if-empty*  |   | The same as with *parameters* but only for parameters that are empty
 
@@ -91,7 +91,7 @@ The *if* command expects a parameter and if the parameter has a value the comman
 Example:
 
 ```
-if addressId;
+if :addressId;
     serviceId Address.update;
   else;
     serviceId Address.insert;
@@ -105,11 +105,11 @@ The *switch* command expects a parameter name. If the value of the parameter is 
 Example:
 
 ```
-switch ticketType;
-  case comment;    
+switch :ticketType;
+  case 'comment';    
     serviceId TicketComment.save;
     break;
-  case incident;    
+  case 'incident';    
     serviceId TicketIncident.save;
     break;
   default;    

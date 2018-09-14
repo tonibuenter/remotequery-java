@@ -25,7 +25,7 @@ public class Test_Commands {
 		StatementNode cb = RemoteQuery.prepareCommandBlock(se);
 		Assert.assertEquals("serviceRoot", cb.cmd);
 		Assert.assertEquals(2, cb.children.size());
-		Assert.assertEquals("put", cb.children.get(0).cmd);
+		Assert.assertEquals("set", cb.children.get(0).cmd);
 		Assert.assertEquals("sql", cb.children.get(1).cmd);
 	}
 

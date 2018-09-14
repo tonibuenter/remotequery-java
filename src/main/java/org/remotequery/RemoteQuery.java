@@ -3186,6 +3186,40 @@ public class RemoteQuery {
 			return map;
 		}
 
+		public static String resolveValue(String term, Request request) {
+			String val = "";
+			// reference to parameter
+			term = term == null ? "" : term.trim();
+			try {
+				if (term.charAt(0) == ':') {
+					val = request.get(term.substring(1));
+					return val == null ? "" : val;
+				}
+			} catch (Exception e) {
+				logger.debug(e.getMessage());
+			}
+			try {
+				if (term.charAt(0) == '\'' && term.charAt(term.length() - 1) == '\'') {
+					val = term.substring(1, term.length() - 1);
+					return val;
+				}
+			} catch (Exception e) {
+				logger.debug(e.getMessage());
+			}
+			return term == null ? "" : term;
+		}
+
+		public static String resolveNodeParameter(String statement) {
+			String v = statement;
+			for (int index = 0; index < statement.length(); index++) {
+				if (Character.isWhitespace(statement.charAt(index))) {
+					v = statement.substring(index);
+					return v;
+				}
+			}
+			return "";
+		}
+
 	}
 
 	public static class JsonUtils {
@@ -3708,7 +3742,7 @@ public class RemoteQuery {
 			String n = nv[0];
 			String v = nv.length > 1 ? nv[1] : null;
 			n = Utils.trim(n);
-			v = Utils.trim(v);
+			v = Utils.resolveValue(v, request);
 			String requestValue = request.get(n);
 
 			if (overwrite || Utils.isBlank(requestValue)) {
@@ -3841,7 +3875,12 @@ public class RemoteQuery {
 		public Result run(Request request, Result currentResult, StatementNode statementNode,
 				ServiceEntry serviceEntry) {
 
-			boolean isThen = !Utils.isBlank(request.get(statementNode.parameter));
+			String nodeParameter = Utils.resolveNodeParameter(statementNode.statement);
+			String condition = Utils.resolveValue(nodeParameter, request);
+
+			// boolean isThen =
+			// !Utils.isBlank(request.get(statementNode.parameter));
+			boolean isThen = condition.length() > 0;
 
 			for (StatementNode cbChild : statementNode.children) {
 				if ("else".equals(cbChild.cmd)) {
@@ -3877,8 +3916,10 @@ public class RemoteQuery {
 			// request,
 			// currentResult, serviceEntry);
 
-			String switchValue = request.get(statementNode.parameter);
-			switchValue = switchValue == null ? "" : switchValue;
+			// String switchValue = request.get(statementNode.parameter);
+			// switchValue = switchValue == null ? "" : switchValue;
+
+			String switchValue = Utils.resolveValue(Utils.resolveNodeParameter(statementNode.statement), request);
 
 			boolean inSwitch = false;
 			boolean caseFound = false;
@@ -3891,8 +3932,11 @@ public class RemoteQuery {
 				}
 
 				if ("case".equals(cbChild.cmd)) {
-					String caseParameter = cbChild.parameter;
-					caseParameter = caseParameter == null ? "" : caseParameter;
+					String caseParameter = Utils.resolveValue(Utils.resolveNodeParameter(cbChild.statement), request);
+					// String caseParameter = cbChild.parameter;
+					// caseParameter = caseParameter == null ? "" :
+					// caseParameter;
+
 					if (caseParameter.equals(switchValue)) {
 						caseFound = true;
 						inSwitch = true;

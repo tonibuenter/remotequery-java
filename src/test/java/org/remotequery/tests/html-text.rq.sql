@@ -3,7 +3,7 @@
 -- ROLES      = APP_USER
 -- 
 
-if htmlTextId
+if :htmlTextId
 ;
   delete from JGROUND.T_HTML_TEXT where HTML_TEXT_ID = :htmlTextId
   ;

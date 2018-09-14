@@ -43,7 +43,6 @@ public class Test_ClassCommand {
 	public void test_command_copy() throws Exception {
 		Request request = new Request().setServiceId("Test.Command.copy");
 		request.run();
-
 		Assert.assertEquals("hello", request.get("name"));
 		Assert.assertEquals("hello", request.get("name1"));
 		Assert.assertEquals("hello2", request.get("name2"));

@@ -3,18 +3,18 @@
 -- INFO       = Overwrite for mysql
 --
 
-set prefix=Test.Command.switch_empty%
+set prefix = 'Test.Command.switch_empty%'
 ;
 delete from JGROUND.T_APP_PROPERTIES where NAME like :prefix
 ;
-set switchValue=ABC
+set switchValue = 'ABC'
 ;
-set switchValue=
+set switchValue =
 ;
-switch switchValue;
-  case A12;
+switch :switchValue;
+  case 'A12';
   case ;
-  case A14;
+  case 'A14';
     insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values (concat(:prefix, '1'), 'ok');
   break;
   
@@ -22,7 +22,7 @@ switch switchValue;
     insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values (concat(:prefix, '2'), 'ok');
   break;
   
-  case A14;
+  case 'A14';
     insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values (concat(:prefix, '3'), 'ok');
 end;
 ;
@@ -39,18 +39,18 @@ delete from JGROUND.T_APP_PROPERTIES where NAME like :prefix
 -- INFO       = Overwrite for mysql
 --
 
-set prefix=Test.Command.switch_default%
+set prefix = 'Test.Command.switch_default%'
 ;
 delete from JGROUND.T_APP_PROPERTIES where NAME like :prefix
 ;
-set switchValue=ABC
+set switchValue = 'ABC'
 ;
 set switchValue=NOMATCH
 ;
-switch switchValue;
-  case A12;
-  case ;
-  case A14;
+switch :switchValue;
+  case 'A12';
+  case '';
+  case 'A14';
     insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values (concat(:prefix, '1'), 'ok');
   break;
   
@@ -58,7 +58,7 @@ switch switchValue;
     insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values (concat(:prefix, '2'), 'ok');
   break;
   
-  case A14;
+  case 'A14';
     insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values (concat(:prefix, '3'), 'ok');
 end;
 ;
@@ -98,16 +98,16 @@ parameters
 -- INFO       = Overwrite for mysql
 -- 
 
-set semicolon = \\;
+set semicolon = '\\';
 ;
 insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE) values ('semicolon', :semicolon)
 ;
 parameters
   select VALUE as "IS_TRUE" from JGROUND.T_APP_PROPERTIES where VALUE = '\\;' and NAME = 'semicolon'
 ;
-if isTrue
+if :isTrue
 ;
-  set semicolon = ok
+  set semicolon = 'ok'
 ;
 end
 

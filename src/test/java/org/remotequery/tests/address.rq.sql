@@ -3,7 +3,7 @@
 -- ROLES      = ADDRESS_READER
 -- 
 
-set-if-empty nameFilter = %
+set-if-empty nameFilter = '%'
 ;
 select * from JGROUND.T_ADDRESS where FIRST_NAME like :nameFilter or LAST_NAME like :nameFilter
 
@@ -14,7 +14,7 @@ select * from JGROUND.T_ADDRESS where FIRST_NAME like :nameFilter or LAST_NAME l
 -- ROLES      = ADDRESS_WRITER
 --
 
-if addressId
+if :addressId
   ;
 else
   ;

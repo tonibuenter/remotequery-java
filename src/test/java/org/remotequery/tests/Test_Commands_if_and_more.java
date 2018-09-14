@@ -78,12 +78,12 @@ public class Test_Commands_if_and_more {
 
 		StatementNode cbExpected = new StatementNode("serviceRoot").append(
 				//
-				new StatementNode("put"),
+				new StatementNode("set"),
 				new StatementNode("if").append(
 						//
 						new StatementNode("else"),
 						//
-						new StatementNode("put"),
+						new StatementNode("set"),
 						//
 						new StatementNode("end")
 				//

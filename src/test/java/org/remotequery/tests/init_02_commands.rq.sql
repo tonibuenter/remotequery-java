@@ -7,7 +7,7 @@
 -- SERVICE_ID = Test.Command.set
 --
 
-put name = hello
+set name = 'hello'
 ;
 select "VALUE" from JGROUND.T_APP_PROPERTIES where NAME = :name
 
@@ -17,13 +17,13 @@ select "VALUE" from JGROUND.T_APP_PROPERTIES where NAME = :name
 -- SERVICE_ID = Test.Command.copy
 --
 
-put name = hello
+set name = 'hello'
 ;
-put name2 = hello2
+set name2 = 'hello2'
 ;
-copy name1 = name
+set name1 = :name
 ;
-copy-if-empty name2 = name
+set-if-empty name2 = :name
 
 
 --
@@ -32,7 +32,7 @@ copy-if-empty name2 = name
 
 parameters select VALUE as "DOES_EXIST" from JGROUND.T_APP_PROPERTIES where NAME = :name
 ;
-if doesExist
+if :doesExist
   ;
 	select 'true' as "VALUE" from JGROUND.T_APP_PROPERTIES
 	;
@@ -50,13 +50,13 @@ end
 -- SERVICE_ID = Test.Command.if_elseOnly
 --
 
-put elseValue = not reached else
+set elseValue = 'not reached else'
 ;
-if condition1
+if :condition1
   ;
   else
   ;
-  put elseValue = true
+  set elseValue = true
   ;
 end
 
@@ -73,24 +73,24 @@ delete from JGROUND.T_APP_PROPERTIES where NAME like 'Test.Command.switch%'
 ;
 parameters select 'A12' as "SWITCH_VALUE" from JGROUND.T_DUAL
 ;
-switch switchValue;
-  case A12;
-  case A13;
-  case A14;
+switch :switchValue;
+  case 'A12';
+  case 'A13';
+  case 'A14';
     insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  
     values ('Test.Command.switch-1', 'ok');
   break;
   
-  case A13;
+  case 'A13';
     insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  
     values ('Test.Command.switch-2', 'ok');
   break;
   
-  case A14;
+  case 'A14';
     insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values ('Test.Command.switch-3', 'ok');
   break;
   
-  case A12;
+  case 'A12';
     insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values ('Test.Command.switch-4', 'ok');
 end;
 ;
@@ -107,18 +107,18 @@ delete from JGROUND.T_APP_PROPERTIES where NAME like 'Test.Command.switch%'
 -- SERVICE_ID = Test.Command.switch_empty
 --
 
-set prefix=Test.Command.switch_empty%
+set prefix = 'Test.Command.switch_empty%'
 ;
 delete from JGROUND.T_APP_PROPERTIES where NAME like :prefix
 ;
-set switchValue=ABC
+set switchValue = 'ABC'
 ;
-set switchValue=
+set switchValue = ''
 ;
-switch switchValue;
-  case A12;
+switch :switchValue;
+  case 'A12';
   case ;
-  case A14;
+  case 'A14';
     insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values (:prefix || '1', 'ok');
   break;
   
@@ -126,7 +126,7 @@ switch switchValue;
     insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values (:prefix || '2', 'ok');
   break;
   
-  case A14;
+  case 'A14';
     insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values (:prefix || '3', 'ok');
 end;
 ;
@@ -142,18 +142,18 @@ delete from JGROUND.T_APP_PROPERTIES where NAME like :prefix
 -- SERVICE_ID = Test.Command.switch_default
 --
 
-set prefix=Test.Command.switch_default%
+set prefix = 'Test.Command.switch_default%'
 ;
 delete from JGROUND.T_APP_PROPERTIES where NAME like :prefix
 ;
-set switchValue=ABC
+set switchValue = 'ABC'
 ;
-set switchValue=NOMATCH
+set switchValue = 'NOMATCH'
 ;
-switch switchValue;
-  case A12;
+switch :switchValue;
+  case 'A12';
   case ;
-  case A14;
+  case 'A14';
     insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values (:prefix || '1', 'ok');
   break;
   
@@ -161,7 +161,7 @@ switch switchValue;
     insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values (:prefix || '2', 'ok');
   break;
   
-  case A14;
+  case 'A14';
     insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values (:prefix || '3', 'ok');
 end;
 ;
@@ -178,14 +178,14 @@ delete from JGROUND.T_APP_PROPERTIES where NAME like :prefix
 -- SERVICE_ID = Test.Command.backslash
 -- 
 
-set semicolon = \;
+set semicolon = '\;'
 ;
 insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE) values ('semicolon', :semicolon)
 ;
 parameters
   select VALUE as "IS_TRUE" from JGROUND.T_APP_PROPERTIES where VALUE = '\;' and NAME = 'semicolon'
 ;
-if isTrue
+if :isTrue
 ;
   set semicolon = ok
 ;
