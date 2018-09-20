@@ -41,8 +41,8 @@ After starting with RQ the Java source code was reduced - even using JPA and Hib
 Let us assume we have the following RQ service entry: 
 
 ```
-SERVICE_ID   : Address.search
-ROLES        : APP_USER
+-- SERVICE_ID   : Address.search
+-- ROLES        : APP_USER
 
 select 
   FIRST_NAME, LAST_NAME, CITY 
