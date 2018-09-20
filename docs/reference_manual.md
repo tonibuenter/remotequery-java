@@ -1,6 +1,15 @@
 # RemoteQuery Reference Manual
 
 
+The usage model of a RQ service can be summarized as follows:
+
+
+Create a request object with _a service id_, a list of access roles, a parameter map
+Call the run method
+Process the result object
+
+
+
 ## Commands Statement Syntax
 
 The command statement syntax is:
@@ -10,7 +19,7 @@ The command statement syntax is:
 
 ```
 
-Multiple command are separated with a semicolon `;`.
+Multiple command statements are separated with a semicolon: `;`
 
 
 ## Parameters
