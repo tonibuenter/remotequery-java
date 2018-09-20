@@ -1,6 +1,7 @@
 package org.remotequery.tests;
 
 public   class AddressFilter {
+	
 	public String nameFilter;
 
 	public String getNameFilter() {

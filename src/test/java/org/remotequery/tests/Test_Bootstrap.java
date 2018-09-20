@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
  * 
  */
 public class Test_Bootstrap {
-	
+
 	Logger logger = LoggerFactory.getLogger(Test_Bootstrap.class);
 
 	@BeforeClass
@@ -25,7 +25,7 @@ public class Test_Bootstrap {
 	}
 
 	@Test
-	public void loggerStuff() throws Exception {
+	public void logger_stuff() throws Exception {
 
 		Logger logger = LoggerFactory.getLogger("org.remotequery.RemoteQuery2.sql");
 		logger.error(logger.getName());
@@ -33,7 +33,7 @@ public class Test_Bootstrap {
 	}
 
 	@Test
-	public void serviceRepositoryIsOk() throws Exception {
+	public void serviceRepository_is_ok() throws Exception {
 		ServiceEntry se = ServiceRepositoryHolder.get().get("RQService.select");
 		Assert.assertNotNull(se);
 		Assert.assertNotNull(se.serviceId);
@@ -41,7 +41,7 @@ public class Test_Bootstrap {
 	}
 
 	@Test
-	public void sqlCommandIsOk() throws Exception {
+	public void sqlCommand_is_ok() throws Exception {
 		new Request().setServiceId("RQService.select");
 		ServiceEntry se = ServiceRepositoryHolder.get().get("RQService.select");
 		Assert.assertNotNull(se);
@@ -58,7 +58,7 @@ public class Test_Bootstrap {
 	}
 
 	@Test
-	public void setCommandIsOk() throws Exception {
+	public void setCommand_is_ok() throws Exception {
 
 		ServiceEntry se = ServiceRepositoryHolder.get().get("RQService.select");
 		Assert.assertNotNull(se);
@@ -75,7 +75,7 @@ public class Test_Bootstrap {
 	}
 
 	@Test
-	public void checkInitAppProperties() throws Exception {
+	public void AppProperties_check() throws Exception {
 
 		Result result = new Request().setServiceId("AppProperties.get").put("name", "hello").run();
 		Assert.assertNotNull(result.processLog);

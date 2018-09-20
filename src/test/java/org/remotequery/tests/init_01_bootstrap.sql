@@ -9,11 +9,13 @@
 -- T_RQ_SERVICE
 --
 
-create schema JGROUND;
+create schema JGROUND
+;
 
 
 
-create SEQUENCE JGROUND.GLOBAL_ID START with 1000;
+create SEQUENCE JGROUND.GLOBAL_ID START with 1000
+;
 
 
 
@@ -23,13 +25,15 @@ create table JGROUND.T_RQ_SERVICE (
    ROLES varchar(4000),
    DATASOURCE varchar(512),
    primary key (SERVICE_ID)
-);
+)
+;
 
 
 create table JGROUND.T_DUAL (
   TID bigint, 
   primary key(TID)
-);
+)
+;
 
 delete from JGROUND.T_DUAL;
 
@@ -72,9 +76,13 @@ values
 	(:SERVICE_ID, :statements, :ROLES)
 	',
 	'SYSTEM,APP_ADMIN'
-);
+)
+;
+
+
 
 insert into JGROUND.T_APP_PROPERTIES
 (NAME, VALUE)
 values
-('hello', 'world');
+('hello', 'world')
+;

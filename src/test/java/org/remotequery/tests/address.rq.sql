@@ -34,3 +34,12 @@ where
 select * from JGROUND.T_ADDRESS where ADDRESS_ID = :addressId
 
 
+
+--
+-- SERVICE_ID = Address.selectWithNamesArray
+-- ROLES      = ADDRESS_READER
+--
+
+select * from JGROUND.T_ADDRESS where FIRST_NAME in (:names[]) order by ADDRESS_ID
+
+

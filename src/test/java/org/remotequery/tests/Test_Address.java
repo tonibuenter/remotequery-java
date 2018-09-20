@@ -15,16 +15,19 @@ import junit.framework.Assert;
 public class Test_Address {
 
 	@Test
-	public void testAddress_filter() {
+	public void test_filter() {
+
 		Result result = new Request().setServiceId("Address.search").put("nameFilter", "Jo%").addRole("ADDRESS_READER")
 				.run();
+
 		// convert to a POJO
+
 		List<Address> list = result.asList(Address.class);
 		Assert.assertEquals(2, list.size());
 	}
 
 	@Test
-	public void testORMapping_new_address() throws Exception {
+	public void test_object_store() throws Exception {
 
 		Address address = new Address();
 		address.firstName = "Monika";
@@ -39,6 +42,7 @@ public class Test_Address {
 		ObjectStore<Address> objectStore = new ObjectStore<Address>(Address.class, roles);
 
 		address = objectStore.update("Address.save", address).asObject(Address.class);
+		
 		Assert.assertNotNull(address);
 		Assert.assertNotNull(address.addressId);
 		Assert.assertEquals("Monika", address.firstName);
@@ -46,7 +50,7 @@ public class Test_Address {
 	}
 
 	@Test
-	public void testOR() throws Exception {
+	public void test_or() throws Exception {
 
 		Request request = new Request().addRole("ADDRESS_WRITER").addRole("ADDRESS_READER");
 
