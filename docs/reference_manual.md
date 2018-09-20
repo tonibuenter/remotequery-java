@@ -1,5 +1,6 @@
 # RemoteQuery Reference Manual
 
+## Usage Model
 
 The usage model of a RQ service can be summarized as follows:
 
@@ -7,6 +8,16 @@ The usage model of a RQ service can be summarized as follows:
 * Create a request object with _a service id_, a list of _access roles_, a _parameter map_
 * Call the _run method_
 * Process the _result object_
+
+## Run Method Execution
+
+The Remote Query engine does the following with in the _run method_:
+
+* Check the provided _access roles_ to the _service roles_. If _service roles_ are not empty and the intersection between the two role list is not empty continue, else abort.
+* Process SQL as Commands with the provided _parameter map_
+* Return the last query result as a _result object_
+
+
 
 
 
