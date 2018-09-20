@@ -9,22 +9,23 @@
 
 With RemoteQuery (RQ) you get a simple but powerful tool for creating backend services for web, mobile or standalone applications.
 
-With RQ you can solve security requirements in a powerful and simple way. 
-
 With RQ you can use existing databases and database objects without changes.
+
+With RQ you can solve access requirements in a powerful and simple way. 
 
 Currently, we have a Java and Python implementation ready.
 
-## ... just another Hibernate, JPA ?
+## ... just another object relational tool like Hibernate or JPA ?
 
-Yes indeed, but a much more efficient one. RQ does not introduce another level of complexity
-and uncertainty. RQ does not provide a sophisticated and magic mapping and optimization for DB access. 
+Yes indeed, but a much lighter and more efficient one. RQ does not introduce another level of complexity
+and uncertainty. RQ does not provide a sophisticated and magic mapping and optimization for DB access. All data access is done with
+explicit SQL statement like select, insert, update, delete or stored procedures.
 
-We strongly believe that the database and the SQL query developer can build the best queries. 
+*We strongly believe that the database and the SQL query developers togethr can build the best queries.*
 
 Further, after years of the object to relational mapping, it seems obvious that a good relational database design is very important and should not be restrained by an additional layer such as Hibernate and JPAs.
 
-After starting with RQ the Java Code was reduced even using JPA and Hibernate by 80 per cent. On the other side, the RQ code, of which 90 per cent are just SQL statements, has been proven to be easily maintainable and testable.
+After starting with RQ the Java source code was reduced - even using JPA and Hibernate - by 80 per cent. On the other side, the RQ code, of which 90 per cent are just SQL statements, has been proven to be easily maintainable and testable.
 
 ## The Highlights:
 
