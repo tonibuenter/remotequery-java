@@ -4,9 +4,9 @@
 The usage model of a RQ service can be summarized as follows:
 
 
-Create a request object with _a service id_, a list of access roles, a parameter map
-Call the run method
-Process the result object
+* Create a request object with _a service id_, a list of _access roles_, a _parameter map_
+* Call the _run method_
+* Process the _result object_
 
 
 
