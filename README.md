@@ -7,11 +7,11 @@
 ## An efficient middleware for friends of SQL, Java, Python and more ...
 
 
-With RemoteQuery (RQ) you get a simple but powerful tool for creating backend services for web, mobile or standalone applications.
+* With RemoteQuery (RQ) you get a simple but powerful tool for creating backend services for web, mobile or standalone applications.
 
-With RQ you can use existing databases and database objects without changes.
+* With RQ you can use existing databases and database objects without changes.
 
-With RQ you can solve access requirements in a powerful and simple way. 
+* With RQ you can solve access requirements in a powerful and simple way. 
 
 Currently, we have a Java and Python implementation ready.
 
