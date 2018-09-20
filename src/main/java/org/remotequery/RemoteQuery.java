@@ -486,14 +486,13 @@ public class RemoteQuery {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 
-		QueryAndParams qap = new QueryAndParams();
-
 		pLog.system("sql before conversion: " + sql);
 		sqlLogger.debug("start sql **************************************");
 		sqlLogger.debug("Start sql (in service : " + serviceId + ")\n" + sql);
 
-		qap.convertQuery(sql, request.getParameterSnapshhot());
-		sql = qap.questionMarkQuery;
+		QueryAndParams qap = new QueryAndParams(sql, request.getParameterSnapshhot());
+		qap.convertQuery();
+		sql = qap.qm_query;
 		// pLog.system("sql after conversion: " + sql);
 
 		//
@@ -502,8 +501,8 @@ public class RemoteQuery {
 
 		List<Object> paramObjects = new ArrayList<Object>();
 
-		for (String param : qap.parameters) {
-			String val = qap.reqParams.get(param);
+		for (String param : qap.param_list) {
+			String val = qap.req_params.get(param);
 			if (val == null) {
 				pLog.system("processSql: No value provided for parameter: " + param + " (serviceId: "
 						+ request.serviceId + "). Will use empty string.", logger);
@@ -543,18 +542,18 @@ public class RemoteQuery {
 		}
 
 		catch (SQLException e) {
-			String warnMsg = "Warning for " + serviceId + " (parameters:" + qap.parameters + ") execption message: "
+			String warnMsg = "Warning for " + serviceId + " (parameters:" + qap.param_list + ") execption message: "
 					+ e.getMessage();
 			sqlLogger.warn(warnMsg, logger);
 		}
 
 		catch (Exception e) {
-			String errorMsg = "Error for " + serviceId + " (parameters:" + qap.parameters + ") execption message: "
+			String errorMsg = "Error for " + serviceId + " (parameters:" + qap.param_list + ") execption message: "
 					+ e.getMessage();
 			pLog.error(errorMsg, logger);
 			pLog.error(qap == null ? "-no qap-"
-					: "parameterNameQuery=" + qap.parameterNameQuery + ", questionMarkQuery=" + qap.questionMarkQuery
-							+ ", parameters=" + qap.parameters,
+					: "parameterNameQuery=" + qap.named_query + ", questionMarkQuery=" + qap.qm_query + ", parameters="
+							+ qap.param_list,
 					logger);
 		} finally {
 			Utils.closeQuietly(rs);
@@ -565,93 +564,86 @@ public class RemoteQuery {
 	}
 
 	public static class QueryAndParams {
-		public String parameterNameQuery;
-		public String questionMarkQuery;
-		public List<String> parameters = new ArrayList<String>();
-		public Map<String, String> reqParams;
 
-		@Override
-		public String toString() {
-			return "QueryAndParams [parameterNameQuery=" + parameterNameQuery + ", questionMarkQuery="
-					+ questionMarkQuery + ", parameters=" + parameters + "]";
+		public String named_query;
+		public String qm_query;
+		public Map<String, String> req_params;
+		public List<String> param_list;
+		private boolean in_param = false;
+		private String current_param;
+
+		public QueryAndParams(String named_query, Map<String, String> req_params) {
+			this.named_query = named_query;
+			this.req_params = req_params;
 		}
 
-		private StringBuffer qm_query_buffer;
-		private boolean in_param = false;
-		private boolean prot = false;
-		private List<String> param_list;
-		private StringBuffer current_param;
+		public void convertQuery() {
 
-		public void convertQuery(String query, Map<String, String> reqParams) {
+			this.qm_query = "";
+			this.in_param = false;
 
-			qm_query_buffer = new StringBuffer(query.length());
-			in_param = false;
-			prot = false;
-			param_list = new ArrayList<String>();
-			current_param = new StringBuffer();
-			this.reqParams = reqParams;
+			this.param_list = new ArrayList<String>();
+			this.current_param = "";
 
-			for (char c : query.toCharArray()) {
+			boolean prot = false;
+
+			for (char c : this.named_query.toCharArray()) {
 				if (!prot) {
-					if (in_param) {
+					if (this.in_param) {
 						if (Character.isJavaIdentifierPart(c) || c == '[' || c == ']') {
-							current_param.append(c);
+							this.current_param += c;
 							continue;
 						} else {
-							_process_param();
+							this._process_param();
 						}
 					}
-					if (!in_param && c == ':') {
-						in_param = true;
-						// buf.append('?');
+					if (!this.in_param && c == ':') {
+						this.in_param = true;
 						continue;
 					}
 				}
 				if (c == '\'') {
 					prot = !prot;
 				}
-				qm_query_buffer.append(c);
+				this.qm_query += c;
 			}
-			if (in_param) {
-				_process_param();
+			// end processing
+			if (this.in_param) {
+				this._process_param();
 			}
-
-			this.parameterNameQuery = query;
-			this.questionMarkQuery = qm_query_buffer.toString();
-			this.parameters = param_list;
-
 		}
 
 		private void _process_param() {
 
-			String param = current_param.toString();
+			String param = this.current_param.toString();
 			if (param.endsWith("[]")) {
-				String a_value = reqParams.get(param);
+				String param_base = param.substring(0, param.length() - 2);
+				String a_value = this.req_params.get(param_base);
 				if (StringUtils.isBlank(a_value)) {
-					param_list.add(param);
-					qm_query_buffer.append('?');
+					this.param_list.add(param);
+					this.qm_query += "?";
 				} else {
-					String param_base = param.substring(0, param.length() - 2);
-					String[] request_values = reqParams.get(param).split(",");
+					String[] request_values = a_value.split(",");
 					int index = 0;
 					for (String request_value : request_values) {
 						String param_indexed = param_base + "[" + index + "]";
-						reqParams.put(param_indexed, request_value);
-						param_list.add(param_indexed);
+						this.req_params.put(param_indexed, request_value);
+						this.param_list.add(param_indexed);
 						if (index == 0) {
-							qm_query_buffer.append("?");
+							this.qm_query += "?";
+
 						} else {
-							qm_query_buffer.append(",?");
+							this.qm_query += ",?";
 						}
-						index++;
+						index += 1;
 					}
 				}
 			} else {
-				param_list.add(param);
-				qm_query_buffer.append('?');// NEW
+				this.param_list.add(param);
+				this.qm_query += "?";
 			}
-			current_param = new StringBuffer();
-			in_param = false;
+			this.current_param = "";
+			this.in_param = false;
 		}
 
 	}

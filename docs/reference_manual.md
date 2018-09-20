@@ -6,26 +6,53 @@
 The command statement syntax is:
 
 ```
-command white-space parameter-part
+*command* white-space *parameter-part*
 
 ```
 
 Multiple command are separated with a semicolon `;`.
 
 
+## Parameters
+
+Parameters are references by a colon and its name.
+In the following example the value of *id* is inserted into the query:
+
+
+```
+select * from T_ADDRESS where ADDRESS_TID = :id
+
+```
+In the following example the value of *id* is assigned to the parameters *addressId*.
+
+```
+set addressId = :id
+
+```
+
+## Array Parameters
+
+A parameter such as :
+
+```
+names = 'Anna,Ralf,Sara'
+``` 
+can be used for a query with a in-clause such as:
+
+```
+select * from JGROUND.T_ADDRESS where FIRST_NAME in (:names[]) order by ADDRESS_ID
+```
+The parameter *:names[]* will automatically be filled with the three comma separated names.
 
 
 ## Commands (build-in)
 
 Command | Usage| Description
 --- | --- | ---
-*set*  | set hello = world | This sets right hand value (here: world) to the request parameter (here: hello)
-*put* | put hello = world | The same as with *set*
-*set-if-empty* | set-if-empty name = value | As if set but only if the current value of ':name' *set-if-empty* *put-if-empty* | put-if-empty name = value | The same as with *set-if-empty*
-*copy*  | copy name1 = name2 | set the value of name2 to value of name1
-*copy-if-empty*  | copy-if-empty name1 = name2 | Like copy, but only if value of :name1 is empty
-*parameters*  | parameters select * from T_ADDRESS ... | The parameter part is processed as statements and the result, actually the first row if available, is applied to the parameters.
-*parameters-if-empty*  |   | The same as with *parameters* but only for parameters that are empty
+*set*  | set hello = 'world' | This sets right hand value (here: world) to the request parameter (here: 'hello').
+*set-if-empty* | set-if-empty name = 'value' | Same as *set* but only if the current value of name is empty.
+*parameters*  | parameters select * from T_ADDRESS ... | The parameter part is processed as statements and the result - actually the first row if available - is applied to the parameters.
+*parameters-if-empty*  |   | The same as with *parameters* but only for parameters that are empty.
 
 ### Command *serviceId* 
 

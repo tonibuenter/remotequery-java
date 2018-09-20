@@ -19,6 +19,21 @@ public class Test_Services_With_Array_Parameters {
 	}
 
 	@Test
+	public void test_set_array_parameters() throws Exception {
+
+		logger.debug("start");
+
+		Request request = new Request();
+
+		request.setServiceId("Test.Command.arrayParameter").run();
+
+		Assert.assertEquals("New York,Paris,London,Peking", request.get("names"));
+		Assert.assertEquals("New York,Paris,London,Peking", request.get("namesCopy"));
+		Assert.assertEquals("", request.get("namesCopy2"));
+
+	}
+
+	@Test
 	public void test_array_parameters() throws Exception {
 
 		logger.debug("start");
@@ -27,7 +42,7 @@ public class Test_Services_With_Array_Parameters {
 
 		request.setServiceId("Address.selectWithNamesArray");
 		request.addRole("ADDRESS_READER");
-		request.put("names[]", "Anna,Ralf,Sara");
+		request.put("names", "Anna,Ralf,Sara");
 
 		List<Address> list = request.run().asList(Address.class);
 

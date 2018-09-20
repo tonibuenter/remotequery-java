@@ -27,6 +27,19 @@ set-if-empty name2 = :name
 
 
 --
+-- SERVICE_ID = Test.Command.arrayParameter
+--
+
+set names = 'New York,Paris,London,Peking'
+;
+set namesCopy = :names
+;
+set namesCopy2 = :names
+;
+set namesCopy2 = ''
+
+
+--
 -- SERVICE_ID = Test.Command.if
 --
 

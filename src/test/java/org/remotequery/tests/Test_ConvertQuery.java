@@ -38,37 +38,37 @@ public class Test_ConvertQuery {
 		assertIt(query, questionMarkQuery, parameters);
 
 		Map<String, String> map = new HashMap<>();
-		map.put("fileTids[]", "1,2,3");
+		map.put("fileTids", "1,2,3");
 		query = ":a,:x':sdf sdf' where TID in (:fileTids[])";
 		questionMarkQuery = "?,?':sdf sdf' where TID in (?,?,?)";
 		parameters = "a,x,fileTids[0],fileTids[1],fileTids[2]";
 		assertIt(query, questionMarkQuery, parameters, map);
 
 		map = new HashMap<>();
-		map.put("fileTids[]", "a,c,c,d,dd,a");
-		map.put("personId[]", "hans,toni,albert");
+		map.put("fileTids", "a,c,c,d,dd,a");
+		map.put("personId", "hans,toni,albert");
 		query = "select FIRST_NAME from JGROUND.T_PERSON where id in (:personId[])";
 		questionMarkQuery = "select FIRST_NAME from JGROUND.T_PERSON where id in (?,?,?)";
 		parameters = "personId[0],personId[1],personId[2]";
 		assertIt(query, questionMarkQuery, parameters, map);
 
 		map = new HashMap<>();
-		map.put("fileTids[]", "a,c,c,d,dd,a");
-		map.put("personId[]", "hans,toni,albert");
+		map.put("fileTids", "a,c,c,d,dd,a");
+		map.put("personId", "hans,toni,albert");
 		query = "select FIRST_NAME from JGROUND.T_PERSON where id in (:personId[])  :fileTids[]";
 		questionMarkQuery = "select FIRST_NAME from JGROUND.T_PERSON where id in (?,?,?)  ?,?,?,?,?,?";
 		parameters = "personId[0],personId[1],personId[2],fileTids[0],fileTids[1],fileTids[2],fileTids[3],fileTids[4],fileTids[5]";
 		assertIt(query, questionMarkQuery, parameters, map);
 
 		map = new HashMap<>();
-		map.put("aa[]", "12.23,765.2,1E13");
+		map.put("aa", "12.23,765.2,1E13");
 		query = "update JGROUND.T_TIME_SERIE values (:aa[])";
 		questionMarkQuery = "update JGROUND.T_TIME_SERIE values (?,?,?)";
 		parameters = "aa[0],aa[1],aa[2]";
 		assertIt(query, questionMarkQuery, parameters, map);
 
 		map = new HashMap<>();
-		map.put("aa[]", "12.23,765.2,1E13");
+		map.put("aa", "12.23,765.2,1E13");
 		map.put("b", "12.23,765.2,1E13");
 		query = ":aa[] update JGROUND.T_TIME_SERIE values (:b)";
 		questionMarkQuery = "?,?,? update JGROUND.T_TIME_SERIE values (?)";
@@ -83,11 +83,11 @@ public class Test_ConvertQuery {
 
 	public void assertIt(String query, String questionMarkQuery, String parameters, Map<String, String> map) {
 		map = map == null ? new HashMap<String, String>() : map;
-		RemoteQuery.QueryAndParams qap = new RemoteQuery.QueryAndParams();
-		qap.convertQuery(query, map);
-		Assert.assertEquals(query, qap.parameterNameQuery);
-		Assert.assertEquals(questionMarkQuery, qap.questionMarkQuery);
-		Assert.assertArrayEquals(parameters.split(","), qap.parameters.toArray());
+		RemoteQuery.QueryAndParams qap = new RemoteQuery.QueryAndParams(query, map);
+		qap.convertQuery();
+		Assert.assertEquals(query, qap.named_query);
+		Assert.assertEquals(questionMarkQuery, qap.qm_query);
+		Assert.assertArrayEquals(parameters.split(","), qap.param_list.toArray());
 	}
 
 }
