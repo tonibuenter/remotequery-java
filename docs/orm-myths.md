@@ -1,5 +1,6 @@
+![Remote Query](docs/g4932sm.png)
 
-
+  
 # A Critical View on ORM Tools
 
 Assume the situation of junior developer locking for a way to handle relational databases (RDB) with Java. Looking at common articles and blogs will harden the impression that object relational (ORM) mapping tools are the kings way to pursue. He or she may finally choose a tool such as _Hibernate_, _EJB_, _TopLink_ or others the like.
@@ -145,33 +146,42 @@ writing specific queries which optimize the process. So, it ends up where it cou
 
 **Comment**:
 
-Make your live easier and base database structure on business concept.
+What is the background for this paradigm? Modelling business concepts have been among the 
+top reasons for inventing and using RDB in the first place.
 
-CITE
+**Citation**:
 
-<cite>
-Transaction management and automatic key generation.
-</cite>
+> Transaction management and automatic key generation.
 
+**Comment**:
 
-COMMENT
+This is not a main ORM topic. ORM tools actually help on that. 
 
-This is not a specieal ORM topic. Actually, rely on the ORM transaction management is 
-complex and often rather a source of failures than an elegant solution.
+**Citation**:
 
-CITE
+> Fast development of application.
 
-<cite>
-Fast development of application.
-</cite>
+**Comment**:
 
-
-COMMENT
-
-This is a promise I haven't seen.
+Fast and stable development with low maintenance is a honest intention of ORM. We have seen that _RemoteQuery_ compared to ORM (Hibernate)
+achieves a much higher productivity. 
 
 
-## Concepts
+## When Things Get Complicated.
+
+ORM is often the center of back-end server development problems and instabilites. That said, we should not blame ORM per se for them. It is still true that 'A Fool with a Tool is still a Fool'. In case of ORM there are some caveat that often give rise the negative impacts.
+Here a not final list:
+
+* Avoid server-side state especially session level caching of data. 
+* Be very carefull with collection read and write.
+* Be very carefull with sophistated transaction handling. IMHO explicit transaction tracking with tables is by far better then implicit transaction handling.
+* ORM sees the database as a CRUD storage. This is driving on collision course with writing reports and data mining. A good RDB design is
+still crucial and has long-ranging effects even beyond IT (see also: _The Art of SQL_ [2]).
+
+## Try out our _RemoteQuery_
+
+I use _RemoteQuery_ in many business applications. So far I enjoyed the lightness and stability of SQL statements and the absent Java or Python business
+logic code ;-). Have a try.
 
 
 

@@ -1,7 +1,6 @@
 
 ![Remote Query](docs/remote-query.png)
 
-
 # RemoteQuery (RQ)
 
 ## An efficient middleware for friends of SQL, Java, Python and more ...
