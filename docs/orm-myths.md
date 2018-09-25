@@ -1,4 +1,4 @@
-![Remote Query](docs/g4932sm.png)
+![Burden of ORM](g4932sm.png)
 
   
 # A Critical View on ORM Tools
