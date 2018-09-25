@@ -440,7 +440,7 @@ Never the less if there is a need for Java specific handling inside of CRUD or o
 
 With this definitions the services are directly callable. E.g. by Ajax calls:
 
-```
+```JavaScript
 
 var employee1, employee2, employee3;
 after_insert);
