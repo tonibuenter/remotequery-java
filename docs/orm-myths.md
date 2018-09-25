@@ -23,6 +23,8 @@ I will critically comment point by point and conclude with a final statement.
 
 ### Why Object Relational Mapping (ORM)?
 
+**Citation**:
+
 
 > When we work with an object-oriented system, there is a mismatch between the object model 
 > and the relational database. RDBMSs represent 
@@ -35,99 +37,91 @@ I will critically comment point by point and conclude with a final statement.
 
 The gab between relational and object models is highly overstated. 
 As soon as you are using technical IDs for single table entries, the design
-_is_ object oriented. This is a good way to design and many ORM actually often enforce it.
+_is_ object oriented. In many cases this is a good design even without ORM applied.
 
-On the other side, if the database is really relational designed, ORM tools need a lot of hand 
-written helper code and 
-configuration. ORM tools do not help much.
+On the other side, if the database is _legacy_ and 'deep' relational designed, ORM tools do not provide elegant mappings often resulting in a lot of hand written glue code and 
+configuration. 
 
 
 
 ### Granularity
 
-<cite>
-Sometimes you will have an object model, which has more 
-classes than the number of corresponding tables in the database.
-</cite>
+**Citation**:
 
-_Comment_
-This situation is best solved with redesign the relational or object model.
-With RemoteQuery / SQL you easily can define adapter queries for the unsolvable cases.
-Even if ORM could solve this structural gab performace and maintenance are hurt.
+> Sometimes you will have an object model, which has more 
+> classes than the number of corresponding tables in the database.
+
+**Comment**:
+
+In real time this situation is very rare. As the database structure has a longer life span than the classes it is reasonable to
+design the classes according to the tables. Doing otherwise is calling for unforced difficulties.
+With _RemoteQuery_ we showed that there are no ORM data classes needed at all.
 
 
 ### Inheritance
 
-<cite>
-RDBMSs do not define anything similar to Inheritance, which is a natural 
-paradigm in object-oriented programming languages.
-</cite>
+**Citation**:
 
+> RDBMSs do not define anything similar to Inheritance, which is a natural 
+> paradigm in object-oriented programming languages.
 
-_Comment_
-Even being a fan of OO concepts, I learned that implementing inheritance on data access classes is
-painful. Avoiding inheritance implementation between OO and RDB models is by far the best solution.
+**Comment**:
 
+Even being enthusiastic about object-oriented concepts, I learned that implementing data access classes  with inheritence result in a painful experience.
+painful. Avoiding inheritance on implementation in OO and RDB models is by far the best solution.
 
 
 ### Identity
-<cite>
-An RDBMS defines exactly one notion of 'sameness': the primary key. Java, however, 
-defines both object identity (a==b) 
-and object equality (a.equals(b)).
-</cite>
 
+**Citation**:
 
-COMMENT
-This is not really a problem. You alway can overwrite the equals method.
+> An RDBMS defines exactly one notion of 'sameness': the primary key. Java, however, 
+> defines both object identity (a==b) 
+> and object equality (a.equals(b)).
 
+**Comment**:
 
-CITE
+This is true with an academic view not really a problem. If needed, you always can overwrite the equals method.
 
-Associations
-<cite>
-Object-oriented languages represent associations using object references whereas an RDBMS 
-represents an association as 
-a foreign key column.
-</cite>
+### Associations
 
+**Citation**:
 
-COMMENT
+> Object-oriented languages represent associations using object references whereas an RDBMS 
+> represents an association as 
+> a foreign key column.
 
-Most business cases can be implemented with flat table like objects and list of objects. 
-Connected objects can very easily
-connected with using hash tables over their keys.
-With RemoteQuery we just solved this by connecting objects on the client side.
+**Comment**:
 
-CITE
+Most business cases can be implemented with flat tables like objects and lists of objects. 
+Objects with relations can easily be
+connected by using hash tables over their keys.
+With _RemoteQuery_ we usually solved this by connecting objects on the client side.
 
-Navigation
+### Navigation
 
-<cite>
-The ways you access objects in Java and in RDBMS are fundamentally different.
-</cite>
+**Citation**:
 
+> The ways you access objects in Java and in RDBMS are fundamentally different.
 
-COMMENT
+**Comment**:
 
-In this absolute definition this is not true. Think about SQL join statements. 
-They do often a quite reasonable job in navigate down 
-hierarchies.
+It is true to a certain extent. If you take the SQL join and order by statements into consideration close similarities can be seen between object-oriented navigation and relational joining of tables. 
+With _RemoteQuery_ we enjoy the complementary character of RDM and object-oriented programming.
 
 
 ## Propagated Advantages
 
-Having seen now that actually the problems between 
-OO and RDB models are not that grave in real world. 
-I like to comment on the wide spread advantages that are propagated.
+Having seen now that the problems and gaps between 
+OO and RDB models are not that grave in the real world,
+I like to comment on the claimed advantages.
 
+**Citation**:
 
-<cite>
-Let’s business code access objects rather than DB tables.
-</cite>
+> Let’s business code access objects rather than DB tables.
 
+**Comment**:
 
-COMMENT
 Actually there is no natural law for that. Second, DB tables, views and even stored procedures do
 live often significantly longer than application code. I would propagate: keep business logic in
 Java code to a absolute minimum. For reasons of maintainability and performance rather use 
@@ -135,24 +129,21 @@ queries and views for
 business logic.
 With RemoteQuery we are able to put more than 95% of the business logic into the RemoteQuery scripts.
 
+**Citation**:
 
-<cite>
-Hides details of SQL queries from OO logic.
-</cite>
+> Hides details of SQL queries from OO logic.
 
+**Comment**:
 
-COMMENT
+One of ORMs central achievment is  reading and writing parent child releations. As it turns out in reality, is that 
+in many cases the queries for read and write are slowing down when number of records rise. The ORM tools solution ends up in
+writing specific queries which optimize the process. So, it ends up where it could have began.
 
-This is wishful but unrealistic.
+**Citation**:
 
-CITE
+> Entities based on business concepts rather than database structure.
 
-<cite>
-Entities based on business concepts rather than database structure.
-</cite>
-
-
-COMMENT
+**Comment**:
 
 Make your live easier and base database structure on business concept.
 
