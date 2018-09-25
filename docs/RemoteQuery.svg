@@ -9,16 +9,13 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="300mm"
-   height="300mm"
-   viewBox="0 0 1000 1000"
+   width="210mm"
+   height="297mm"
+   viewBox="0 0 744.09448819 1052.3622047"
    id="svg2"
    version="1.1"
    inkscape:version="0.91 r13725"
-   sodipodi:docname="RemoteQuery.svg"
-   inkscape:export-filename="/Users/tonibuenter/_proj/remote-query/src/web/webapp/img/remote-query-icon.png"
-   inkscape:export-xdpi="160.5575"
-   inkscape:export-ydpi="160.5575">
+   sodipodi:docname="RemoteQuery.svg">
   <defs
      id="defs4" />
   <sodipodi:namedview
@@ -28,16 +25,16 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.91223345"
-     inkscape:cx="322.40894"
-     inkscape:cy="504.1772"
+     inkscape:zoom="0.79725402"
+     inkscape:cx="398.38766"
+     inkscape:cy="567.57318"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
-     inkscape:window-width="1724"
-     inkscape:window-height="1126"
-     inkscape:window-x="1830"
-     inkscape:window-y="0"
+     inkscape:window-width="1631"
+     inkscape:window-height="1005"
+     inkscape:window-x="70"
+     inkscape:window-y="25"
      inkscape:window-maximized="0" />
   <metadata
      id="metadata7">
@@ -57,18 +54,152 @@
      id="layer1">
     <text
        xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:46.33335114px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       x="197.22156"
-       y="364.15118"
+       style="font-style:normal;font-weight:normal;font-size:33.28589249px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#42a29a;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="61.595886"
+       y="397.80426"
        id="text4136"
        sodipodi:linespacing="125%"
-       inkscape:export-filename="/Users/tonibuenter/_proj/remote-query/src/web/webapp/img/remote-query-label.png"
-       inkscape:export-xdpi="160.56"
-       inkscape:export-ydpi="160.56"><tspan
+       inkscape:export-xdpi="203.2"
+       inkscape:export-ydpi="203.2"><tspan
          sodipodi:role="line"
          id="tspan4138"
-         x="197.22156"
-         y="364.15118"
-         style="font-style:normal;font-variant:normal;font-weight:900;font-stretch:normal;font-family:Roboto;-inkscape-font-specification:'Roboto Heavy';fill:#668000">RemoteQuery</tspan></text>
+         x="61.595886"
+         y="397.80426"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Roboto;-inkscape-font-specification:Roboto;fill:#42a29a;fill-opacity:1"><tspan
+   style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:Roboto;-inkscape-font-specification:'Roboto Medium';fill:#42a29a;fill-opacity:1"
+   id="tspan4140">R</tspan>emote<tspan
+   style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:Roboto;-inkscape-font-specification:'Roboto Medium';fill:#42a29a;fill-opacity:1"
+   id="tspan4146">Q</tspan>uery</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:32.14788055px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="81.409531"
+       y="872.85156"
+       id="text4148"
+       sodipodi:linespacing="125%"
+       transform="scale(0.95298922,1.0493298)"><tspan
+         sodipodi:role="line"
+         id="tspan4150"
+         x="81.409531"
+         y="872.85156"
+         style="font-size:13.75px">Definition</tspan><tspan
+         sodipodi:role="line"
+         x="81.409531"
+         y="890.03906"
+         id="tspan4152"
+         style="font-size:13.75px">#42a29a</tspan><tspan
+         sodipodi:role="line"
+         x="81.409531"
+         y="907.22656"
+         id="tspan4154"
+         style="font-size:13.75px">Roboto</tspan></text>
+    <g
+       id="g4239"
+       transform="matrix(0.39160668,0,0,0.39160668,333.17447,355.81982)"
+       inkscape:export-xdpi="203.2"
+       inkscape:export-ydpi="203.2">
+      <g
+         id="g4241">
+        <polygon
+           id="polygon4243"
+           points="27.836,68.722 45.373,38.347 62.911,68.722 45.366,99.143 45.366,99.143 "
+           style="fill:#59666c" />
+        <polygon
+           id="polygon4245"
+           points="80.458,38.348 45.383,38.348 62.921,68.723 98.005,68.722 "
+           style="fill:#bcae79" />
+        <polygon
+           id="polygon4247"
+           points="115.523,99.157 97.986,129.532 80.449,99.157 97.993,68.736 97.993,68.736 "
+           style="fill:#59666c" />
+        <polygon
+           id="polygon4249"
+           points="62.901,129.529 97.977,129.529 80.438,99.154 45.354,99.157 "
+           style="fill:#bcae79" />
+      </g>
+      <polygon
+         id="polygon4251"
+         points="141.156,98.705 141.156,71.771 169.514,71.771 169.514,98.705 179.113,98.705 179.113,38.702 169.514,38.702 169.514,63.503 141.156,63.503 141.156,38.702 131.468,38.702 131.468,98.705 "
+         style="fill:#59666c" />
+      <polygon
+         id="polygon4253"
+         points="206.918,98.705 206.918,38.702 197.228,38.702 197.228,98.705 "
+         style="fill:#59666c" />
+      <path
+         id="path4255"
+         d="m 264.938,80.57 c 0,-6.223 -3.644,-12.178 -11.467,-13.688 l 0,-0.179 c 6.134,-2.134 10.223,-7.556 10.223,-13.689 0,-9.245 -6.756,-14.578 -19.823,-14.578 -7.289,0 -14.134,0.178 -18.846,0.267 l 0,60.003 c 6.668,0.089 12.712,0.267 16.356,0.267 18.402,0 23.557,-10.578 23.557,-18.403 l 0,0 z M 253.56,54.525 c 0,6.044 -4.71,9.689 -13.688,9.689 -2.045,0 -3.556,0 -5.155,-0.089 l 0,-17.778 c 2.311,-0.089 4.889,-0.178 7.556,-0.178 8.532,0 11.287,3.467 11.287,8.356 l 0,0 z m 1.156,26.223 c 0,6.046 -4.178,10.312 -12.979,10.312 -3.111,0 -5.511,-0.18 -7.021,-0.445 l 0,-19.111 c 1.333,-0.09 4.443,-0.09 5.422,-0.09 8.445,0 14.578,2.49 14.578,9.334 l 0,0 z"
+         inkscape:connector-curvature="0"
+         style="fill:#59666c" />
+      <polygon
+         id="polygon4257"
+         points="310.894,46.791 310.894,38.702 279.247,38.702 279.247,98.705 310.894,98.705 310.894,90.438 288.938,90.438 288.938,71.771 309.827,71.771 309.827,63.859 288.938,63.859 288.938,46.791 "
+         style="fill:#59666c" />
+      <path
+         id="path4259"
+         d="M 366.966,98.705 351.144,77.814 c -1.512,-1.955 -3.377,-4.267 -5.065,-6.4 9.777,-1.065 16.979,-7.199 16.979,-16.8 0,-11.912 -8.533,-16.268 -20.979,-16.268 -6.756,0 -11.733,0.089 -16.089,0.355 l 0,60.003 9.688,0 0,-25.956 0.444,0 18.668,25.957 12.176,0 0,0 z M 352.922,55.681 c 0,5.956 -4.711,9.956 -12.534,9.956 -2.134,0 -3.82,-0.089 -4.711,-0.178 l 0,-19.023 c 1.423,-0.089 3.201,-0.178 5.066,-0.178 8.09,0 12.179,2.845 12.179,9.423 l 0,0 z"
+         inkscape:connector-curvature="0"
+         style="fill:#59666c" />
+      <path
+         id="path4261"
+         d="m 427.562,98.705 0,-60.003 -9.425,0 0,17.778 c 0,8.801 0.27,21.69 0.624,28.536 -2.223,-4.356 -4.622,-9.157 -7.291,-13.603 l -19.821,-32.712 -12.714,0 0,60.003 9.426,0 0,-20.178 c 0,-8.534 -0.179,-20.712 -0.535,-26.579 1.867,4 4,8.267 6.669,12.622 l 20.533,34.136 12.534,0 0,0 z"
+         inkscape:connector-curvature="0"
+         style="fill:#bcae79" />
+      <path
+         id="path4263"
+         d="m 491.638,98.705 -21.778,-60.003 -10.758,0 -21.51,60.003 9.777,0 4.622,-13.246 24.268,0 4.622,13.246 10.757,0 0,0 z m -17.956,-20.979 -19.202,0 6.756,-18.578 c 1.155,-3.2 2.134,-6.489 2.758,-9.512 l 0.177,0 c 0.711,3.289 1.51,6.134 2.667,9.245 l 6.844,18.845 0,0 z"
+         inkscape:connector-curvature="0"
+         style="fill:#bcae79" />
+      <polygon
+         id="polygon4265"
+         points="532.252,46.88 532.252,38.702 489.583,38.702 489.583,46.88 506.029,46.88 506.029,98.705 515.717,98.705 515.717,46.88 "
+         style="fill:#bcae79" />
+      <polygon
+         id="polygon4267"
+         points="573.922,46.791 573.922,38.702 542.274,38.702 542.274,98.705 573.922,98.705 573.922,90.438 551.965,90.438 551.965,71.771 572.854,71.771 572.854,63.859 551.965,63.859 551.965,46.791 "
+         style="fill:#bcae79" />
+    </g>
+    <g
+       id="g4317"
+       transform="matrix(0.52592196,0,0,0.4120323,27.775416,105.81479)"
+       inkscape:export-xdpi="203.2"
+       inkscape:export-ydpi="203.2">
+      <circle
+         r="43.273537"
+         cy="650.35736"
+         cx="528.6897"
+         id="path4308"
+         style="opacity:1;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:22.5;stroke-dasharray:1, 4;stroke-dashoffset:0;stroke-opacity:0.63137255" />
+      <text
+         transform="scale(0.84569117,1.1824648)"
+         sodipodi:linespacing="125%"
+         id="text4290"
+         y="581.42706"
+         x="574.80914"
+         style="font-style:normal;font-weight:normal;font-size:88.38076019px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#ececec;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         xml:space="preserve"><tspan
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Phosphate;-inkscape-font-specification:Phosphate;fill:#ececec"
+           y="581.42706"
+           x="574.80914"
+           id="tspan4292"
+           sodipodi:role="line">VS</tspan></text>
+    </g>
+    <text
+       inkscape:export-ydpi="203.2"
+       inkscape:export-xdpi="203.2"
+       sodipodi:linespacing="125%"
+       id="text4322"
+       y="109.13568"
+       x="43.692036"
+       style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#42a29a;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Roboto;-inkscape-font-specification:Roboto;fill:#42a29a;fill-opacity:1"
+         y="109.13568"
+         x="43.692036"
+         id="tspan4324"
+         sodipodi:role="line"><tspan
+   id="tspan4326"
+   style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:Roboto;-inkscape-font-specification:'Roboto Medium';fill:#42a29a;fill-opacity:1">R</tspan>emote<tspan
+   id="tspan4328"
+   style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:Roboto;-inkscape-font-specification:'Roboto Medium';fill:#42a29a;fill-opacity:1">Q</tspan>uery</tspan></text>
   </g>
 </svg>

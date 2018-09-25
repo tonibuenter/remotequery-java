@@ -2,22 +2,24 @@
 
 # A Critical View on ORM Tools
 
-When Junior developer are starting a back-end, server application task with Java and relational databases easily get 
-the impression that there is a clear, simple and undisputed way called ORM Object Relational Mapping to be applied.
+Assume the situation of junior developer locking for a way to handle relational databases (RDB) with Java. Looking at common articles and blogs will harden the impression that object relational (ORM) mapping tools are the kings way to pursue. He or she may finally choose a tool such as _Hibernate_, _EJB_, _TopLink_ or others the like.
 
-There are many tools like Hibernate, EJB, TopLink and more available. 
+In this short article I like to point out some thought and experiences about the back-side of the ORM approach that many tools are following.
 
-The un-biased impression might occur that it seems that everybody uses it, is happy and productive with it.
+Topics like:
 
-In this article I like to show that ORM tools are far less effective 
-and that alternative mapping free tools like our RemoteQuery are providing more productivity to a far less price.
+* maintainabilty
+* implication/obstruction on design
+* priorities
+* effectiveness
 
-For this article I refer to a somehow randomly selected and interchangable 
-article from tutorialspoint that points out the positive qualities of ORM tools:
+Further I will point out our approach called _RemoteQuery_ that might be a valid alternative for many project situations.
 
- [Tutorialpoints.com](https://www.tutorialspoint.com/hibernate/orm_overview.htm).
 
-I will critically comment on point by point conclude with final statement.
+For this article I refer to a for - my purpuse interchangable - article from [Tutorialpoints.com](https://www.tutorialspoint.com/hibernate/orm_overview.htm) that points out the positive qualities of ORM tools [1].
+
+
+I will critically comment point by point and conclude with a final statement.
 
 ### Why Object Relational Mapping (ORM)?
 
@@ -180,4 +182,12 @@ This is a promise I haven't seen.
 ## Concepts
 
 
+
+
+## Reference
+
+| Nr | Reference Detail |
+| ---- | ----|
+| 1 | [ORM Overview Tutorialpoints.com](https://www.tutorialspoint.com/hibernate/orm_overview.htm) |
+| 2 | **The Art of SQL** by Stéphane Faroult with Peter Robson; 2006 O’Reilly Media, Inc |
 
