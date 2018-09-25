@@ -185,7 +185,7 @@ logic code ;-). Have a try.
 
 
 
-# ![Move from ORM to RemoteQuery](g5097.png) 
+![Move from ORM to RemoteQuery](g5097.png) 
 
 
 
