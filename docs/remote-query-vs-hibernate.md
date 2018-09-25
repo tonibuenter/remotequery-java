@@ -440,6 +440,8 @@ Never the less if there is a need for Java specific handling inside of CRUD or o
 
 With this definitions the services are directly callable by e.g. ajax calls:
 
+```javascript
+
 var employee1, employee2, employee3;
 
 var _continue = _.after(3, after_insert);
@@ -464,12 +466,14 @@ function after_insert(){
 	rQ.call('deleteEmployee',{'id':employee2.id}, callback);
 }
 
+```
+
 
 
 
 ## Reference
 
-|  | |
+| Nr | Name |
 | ---- | ----|
 | 1 | https://www.tutorialspoint.com/hibernate/hibernate_examples.htm |
 | 2 | **The Art of SQL** by Stéphane Faroult with Peter Robson; 2006 O’Reilly Media, Inc |
