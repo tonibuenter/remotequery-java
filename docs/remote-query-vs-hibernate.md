@@ -329,7 +329,7 @@ From the way the services are build, the following properties can be deduced:
 
 
 
-|             | After a code change | 
+|             | New Service or change service | 
 | ----------- | ------------ | 
 | Hibernate   | Compile, deploy and restart| 
 | RemoteQuery | DB content change without a restart (Code is saved in DB) | 
@@ -340,10 +340,10 @@ A big plus for _RemoteQuery_. No need of compile and re-deploy in case of new se
 
 
 
-            | Service role based access
------------ | ------------ 
-Hibernate   | Configured in the APP server
-RemoteQuery | Part of service definition 
+|             | Service role based access| 
+| ----------- | ------------ | 
+| Hibernate   | Configured in the APP server| 
+| RemoteQuery | Part of service definition | 
 
 As role based access is used and understood very well _RemoteQuery_ has it build in the definition.
 
@@ -381,10 +381,10 @@ _Note_: Database optimization is the best you can get.
 
 #### By the Developer
 
-            | Performance Optimization By the Developer
------------ | ------------
-Hibernate   | Configure caching, writting special ORM queries (limited)
-RemoteQuery | Create high performing table design and queries using full capacities of the DB system
+|             | Performance Optimization By the Developer| 
+| ----------- | ------------| 
+| Hibernate   | Configure caching, writting special ORM queries (limited)| 
+| RemoteQuery | Create high performing table design and queries using full capacities of the DB system| 
 
 A good read for good and strategic RDM design is the book _The Art Of SQL_ [1]. It points out that the RDB design is still central to 
 the success of a project relying on relational data.
