@@ -469,7 +469,8 @@ function after_insert(){
 
 ## Reference
 
-| - | ---|
+|  | |
+| ---- | ----|
 | 1 | https://www.tutorialspoint.com/hibernate/hibernate_examples.htm |
 | 2 | **The Art of SQL** by Stéphane Faroult with Peter Robson; 2006 O’Reilly Media, Inc |
 
