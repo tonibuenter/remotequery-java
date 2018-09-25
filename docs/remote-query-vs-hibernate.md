@@ -438,9 +438,9 @@ Never the less if there is a need for Java specific handling inside of CRUD or o
 
 ## Client Code JavaScript
 
-With this definitions the services are directly callable by e.g. ajax calls:
+With this definitions the services are directly callable. E.g. by Ajax calls:
 
-```javascript
+```
 
 var employee1, employee2, employee3;
 after_insert);
