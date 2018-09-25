@@ -390,6 +390,13 @@ A good read for good and strategic RDM design is the book _The Art Of SQL_ [1]. 
 the success of a project relying on relational data.
 
 
+## _RemoteQuery_ extensibility
+
+_RemoteQuery_ offers two simple ways to extend the _RemoteQuery_ scripts:
+
+* Register a class as a service by  ```SQL java com.myproject.MyService ``` 
+* Register programmatically an additional command. E.g.: ```create-tid id ``` 
+
 ## Conclusion
 
 I hope I could show that _RemoteQuery_ could be a valid option for many project facing RDB access. 
