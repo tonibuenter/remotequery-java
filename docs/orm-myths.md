@@ -31,7 +31,8 @@ I will critically comment point by point and conclude with a final statement.
 
 
 
-_Comment_
+**Comment**:
+
 The gab between relational and object models is highly overstated. 
 As soon as you are using technical IDs for single table entries, the design
 _is_ object oriented. This is a good way to design and many ORM actually often enforce it.
