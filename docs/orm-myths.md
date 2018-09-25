@@ -3,18 +3,21 @@
   
 # ![Burden of ORM](g4932sm.png) A Critical View on ORM Tools
 
-Assume the situation of junior developer locking for a way to handle relational databases (RDB) with Java. Looking at common articles and blogs will harden the impression that object relational (ORM) mapping tools are the kings way to pursue. He or she may finally choose a tool such as _Hibernate_, _EJB_, _TopLink_ or others the like.
+Assume the situation of junior developer starting to program with relational databases (RDB) with Java. A closer look at common articles and blogs will harden the impression that object relational (ORM) mapping tools are the way to pursue. He or she may finally choose a tool such as _Hibernate_, _EJB_, _TopLink_ or others the like.
 
-In this short article I like to point out some thought and experiences about the back-side of the ORM approach that many tools are following.
+Further, many large companies e.g. from the financial industry have an explicit policy using ORM tools for their inhouse development.
+
+In this  article I like to point out some thought and experiences about the back side of the ORM approach.
 
 Topics like:
 
-* maintainabilty
-* implication/obstruction on design
-* priorities
-* effectiveness
+* OO / RDB Properties (Granularity, Inheritance, Identity, ...)
+* Maintainabilty
+* Design Implications
+* ORM Survival Tips
+* Try _RemoteQuery_
 
-Further I will point out our approach called _RemoteQuery_ that might be a valid alternative for many project situations.
+Further I will point out our approach called _RemoteQuery_ that is a valid alternative for many project situations.
 
 
 For this article I refer to a for - my purpuse interchangable - article from [Tutorialpoints.com](https://www.tutorialspoint.com/hibernate/orm_overview.htm) that points out the positive qualities of ORM tools [1].
@@ -82,7 +85,7 @@ painful. Avoiding inheritance on implementation in OO and RDB models is by far t
 
 **Comment**:
 
-This is true with an academic view not really a problem. If needed, you always can overwrite the equals method.
+This is a truly academic view, but not really a problem. If needed, you always can overwrite the equals method.
 
 ### Associations
 
@@ -119,6 +122,8 @@ I like to comment on the claimed advantages.
 
 **Citation**:
 
+### Business Object over DB Tables
+
 > Let’s business code access objects rather than DB tables.
 
 **Comment**:
@@ -130,6 +135,8 @@ queries and views for
 business logic.
 With RemoteQuery we are able to put more than 95% of the business logic into the RemoteQuery scripts.
 
+### Encapsulation
+
 **Citation**:
 
 > Hides details of SQL queries from OO logic.
@@ -140,6 +147,9 @@ One of ORMs central achievment is  reading and writing parent child releations. 
 in many cases the queries for read and write are slowing down when number of records rise. The ORM tools solution ends up in
 writing specific queries which optimize the process. So, it ends up where it could have began.
 
+### Business Concepts
+
+
 **Citation**:
 
 > Entities based on business concepts rather than database structure.
@@ -149,6 +159,8 @@ writing specific queries which optimize the process. So, it ends up where it cou
 What is the background for this paradigm? Modelling business concepts have been among the 
 top reasons for inventing and using RDB in the first place.
 
+### Transaction Management and Key Generation
+
 **Citation**:
 
 > Transaction management and automatic key generation.
@@ -156,6 +168,8 @@ top reasons for inventing and using RDB in the first place.
 **Comment**:
 
 This is not a main ORM topic. ORM tools actually help on that. 
+
+### Productivity
 
 **Citation**:
 
@@ -167,7 +181,18 @@ Fast and stable development with low maintenance is a honest intention of ORM. W
 achieves a much higher productivity. 
 
 
-## When Things Get Complicated.
+### Maintainabilty
+
+ORM tools require the maintenance of overlapping concepts and sources. Relational design, Java POJO code mapping configuration. Maintenance is considered to be a costly and error prone task.
+
+
+### Design Implications
+
+ORM driven persistency produces strong dependencies between the object-oriented world and the relational world. A successful design is always a trade-off between these worlds. The victims of this compromise are simplicity, elegance, performance and readability.
+
+
+
+### ORM Survival Tips
 
 ORM is often the center of back-end server development problems and instabilites. That said, we should not blame ORM per se for them. It is still true that 'A Fool with a Tool is still a Fool'. In case of ORM there are some caveat that often give rise the negative impacts.
 Here a not final list:
@@ -178,11 +203,35 @@ Here a not final list:
 * ORM sees the database as a CRUD storage. This is driving on collision course with writing reports and data mining. A good RDB design is
 still crucial and has long-ranging effects even beyond IT (see also: _The Art of SQL_ [2]).
 
-## Try out our _RemoteQuery_
+### Try _RemoteQuery_
 
-I use _RemoteQuery_ in many business applications. So far I enjoyed the lightness and stability of SQL statements and the absent Java or Python business
+_RemoteQuery_ tries to minimize the object-oriented part to its minimum. This gives the RDB design priority over the OO design. Experience so far - over 2000 services build and running - is encouraging. 
+
+
+For complicated requirements and system-oriented tasks Java / Python program show their strength. Examples are:
+
+* Calculating work time according to a set of rules about vacation, overtime, break time etc.
+* Processing spreadsheet data (RDBMS are not good in spreasheet processing)
+* File management
+
+On the other side the following applications have been build just with SQL and the less then 10 _RemoteQuery_ commands:
+
+* Company Accounting
+* HR Data Management
+* Training and Skill tool
+* Chat Application
+* Meeting Application
+* Parking Space Rental Application
+
+
+So far we enjoyed the lightness, maintenability and stability of SQL and the 10 _RemoteQuery_ commands
 logic code ;-). Have a try.
 
+### Positve Reaction
+
+We had positive reaction from project manager such as:
+
+> Usually the middle tier (business logic with ORM) is the slow, error prone and costly part in development, but with _RemoteQuery_ it's a totally different story.
 
 ![Move from ORM to RemoteQuery](g5097.png) 
 
