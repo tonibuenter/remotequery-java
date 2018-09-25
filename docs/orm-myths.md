@@ -184,7 +184,6 @@ I use _RemoteQuery_ in many business applications. So far I enjoyed the lightnes
 logic code ;-). Have a try.
 
 
-
 ![Move from ORM to RemoteQuery](g5097.png) 
 
 
