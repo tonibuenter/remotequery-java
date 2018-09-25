@@ -443,8 +443,7 @@ With this definitions the services are directly callable by e.g. ajax calls:
 ```javascript
 
 var employee1, employee2, employee3;
-
-var _continue = _.after(3, after_insert);
+after_insert);
 
 rQ.call('addEmployee',{'firstName':'Zara','lastName':'Ali','salary':1000}, function(data){
 	employee1 = rQ.toList(data)[0];
@@ -458,12 +457,13 @@ rQ.call('addEmployee',{'firstName':'John','lastName':'Paul','salary':10000}, fun
 	_continue();
 });
 
-function after_insert(){
+function after_insert() {
+
 	rQ.call('listEmployees',{}, list_result);
 
-	rQ.call('updateEmployee',{'id':employee1.id,'salary':5000}, callback);
+	rQ.call('updateEmployee', {'id':employee1.id,'salary':5000}, callback);
 	
-	rQ.call('deleteEmployee',{'id':employee2.id}, callback);
+	rQ.call('deleteEmployee', {'id':employee2.id}, callback);
 }
 
 ```
