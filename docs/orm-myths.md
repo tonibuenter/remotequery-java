@@ -23,12 +23,12 @@ I will critically comment point by point and conclude with a final statement.
 
 ### Why Object Relational Mapping (ORM)?
 
-<cite>
-When we work with an object-oriented system, there is a mismatch between the object model 
-and the relational database. RDBMSs represent 
-data in a tabular format whereas object-oriented languages, 
-such as Java or C# represent it as an interconnected graph of objects.
-</cite>
+
+> When we work with an object-oriented system, there is a mismatch between the object model 
+> and the relational database. RDBMSs represent 
+> data in a tabular format whereas object-oriented languages, 
+> such as Java or C# represent it as an interconnected graph of objects.
+
 
 
 _Comment_
