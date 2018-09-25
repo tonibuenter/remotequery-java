@@ -28,6 +28,10 @@ create table JGROUND.T_RQ_SERVICE (
 )
 ;
 
+delete from JGROUND.T_RQ_SERVICE
+;
+
+
 
 create table JGROUND.T_DUAL (
   TID bigint, 
@@ -35,7 +39,8 @@ create table JGROUND.T_DUAL (
 )
 ;
 
-delete from JGROUND.T_DUAL;
+delete from JGROUND.T_DUAL
+;
 
 insert into JGROUND.T_DUAL (TID) values (0);
 
@@ -47,12 +52,20 @@ create table JGROUND.T_APP_PROPERTIES (
    primary key (NAME)
 );
 
+delete from JGROUND.T_APP_PROPERTIES
+;
+
 
 --
 -- T_PERSON
 --
 
-create table JGROUND.T_PERSON(FIRST_NAME varchar(1024), LAST_NAME varchar(1024));
+create table JGROUND.T_PERSON(FIRST_NAME varchar(1024), LAST_NAME varchar(1024))
+;
+
+delete from JGROUND.T_PERSON
+;
+
 
 --
 -- RQService.save

@@ -291,7 +291,7 @@ public class RemoteQuery {
 		while (pointer < statementList.size()) {
 			StatementNode statementNode = null;
 
-			Triple<String, String, String> t = Utils.parseStatement(statementList.get(pointer));
+			Triple<String, String, String> t = Utils.parse_statement(statementList.get(pointer));
 			pointer++;
 
 			if (t == null) {
@@ -329,7 +329,7 @@ public class RemoteQuery {
 			if (stmt.startsWith("include")) {
 				String serviceId = "";
 				try {
-					Triple<String, String, String> t = Utils.parseStatement(stmt);
+					Triple<String, String, String> t = Utils.parse_statement(stmt);
 					serviceId = t.getMiddle();
 					ServiceEntry se = ServiceRepositoryHolder.get().get(serviceId);
 					String includeStatements = se.statements;
@@ -409,7 +409,7 @@ public class RemoteQuery {
 
 	public static Result processCommand(String commandString, Request request, Result currentResult,
 			ServiceEntry serviceEntry) {
-		Triple<String, String, String> t = Utils.parseStatement(commandString);
+		Triple<String, String, String> t = Utils.parse_statement(commandString);
 		String cmd = t.getLeft();
 		String parameter = t.getMiddle();
 		String statement = t.getRight();
@@ -2368,32 +2368,25 @@ public class RemoteQuery {
 			return IsoTimeTL.get().parse(date);
 		}
 
-		public static Triple<String, String, String> parseStatement(String statement) {
+		public static Triple<String, String, String> parse_statement(String statement) {
 			statement = statement.trim();
 			if (statement.isEmpty()) {
 				return null;
 			}
 
-			String cmd = statement;
-			String parameters = "";
-
-			int endCmd = statement.length();
+			int firstWhiteSpace = statement.length();
 			for (int i = 0; i < statement.length(); i++) {
 				char ch = statement.charAt(i);
-				if (Character.isWhitespace(ch) || ch == ':') {
-					cmd = statement.substring(0, i);
-					endCmd = i;
+				if (Character.isWhitespace(ch)) {
+					firstWhiteSpace = i;
 					break;
 				}
 			}
 
-			for (int i = endCmd; i < statement.length(); i++) {
-				char ch = statement.charAt(i);
-				if (Character.isWhitespace(ch) || ch == ':') {
-					continue;
-				}
-				parameters = statement.substring(i);
-				break;
+			String cmd = statement.substring(0, firstWhiteSpace).trim();
+			String parameters = "";
+			if (firstWhiteSpace != statement.length()) {
+				parameters = statement.substring(firstWhiteSpace).trim();
 			}
 
 			if (Commands.isCmd(cmd)) {
@@ -3178,7 +3171,7 @@ public class RemoteQuery {
 			return map;
 		}
 
-		public static String resolveValue(String term, Request request) {
+		public static String resolve_value(String term, Request request) {
 			String val = "";
 			// reference to parameter
 			term = term == null ? "" : term.trim();
@@ -3199,17 +3192,6 @@ public class RemoteQuery {
 				logger.debug(e.getMessage());
 			}
 			return term == null ? "" : term;
-		}
-
-		public static String resolveNodeParameter(String statement) {
-			String v = statement;
-			for (int index = 0; index < statement.length(); index++) {
-				if (Character.isWhitespace(statement.charAt(index))) {
-					v = statement.substring(index);
-					return v;
-				}
-			}
-			return "";
 		}
 
 	}
@@ -3734,7 +3716,7 @@ public class RemoteQuery {
 			String n = nv[0];
 			String v = nv.length > 1 ? nv[1] : null;
 			n = Utils.trim(n);
-			v = Utils.resolveValue(v, request);
+			v = Utils.resolve_value(v, request);
 			String requestValue = request.get(n);
 
 			if (overwrite || Utils.isBlank(requestValue)) {
@@ -3791,7 +3773,7 @@ public class RemoteQuery {
 
 			StatementNode iCb = null;
 
-			Triple<String, String, String> t = Utils.parseStatement(statementNode.parameter);
+			Triple<String, String, String> t = Utils.parse_statement(statementNode.parameter);
 			String cmd = t.getLeft();
 			String parameter = t.getMiddle();
 			String statement = t.getRight();
@@ -3867,8 +3849,7 @@ public class RemoteQuery {
 		public Result run(Request request, Result currentResult, StatementNode statementNode,
 				ServiceEntry serviceEntry) {
 
-			String nodeParameter = Utils.resolveNodeParameter(statementNode.statement);
-			String condition = Utils.resolveValue(nodeParameter, request);
+			String condition = Utils.resolve_value(statementNode.parameter, request);
 
 			// boolean isThen =
 			// !Utils.isBlank(request.get(statementNode.parameter));
@@ -3903,15 +3884,7 @@ public class RemoteQuery {
 		public Result run(Request request, Result currentResult, StatementNode statementNode,
 				ServiceEntry serviceEntry) {
 
-			// Result ifResult =
-			// RemoteQuery2.processCommand(statementNode.parameter,
-			// request,
-			// currentResult, serviceEntry);
-
-			// String switchValue = request.get(statementNode.parameter);
-			// switchValue = switchValue == null ? "" : switchValue;
-
-			String switchValue = Utils.resolveValue(Utils.resolveNodeParameter(statementNode.statement), request);
+			String switchValue = Utils.resolve_value(statementNode.parameter, request);
 
 			boolean inSwitch = false;
 			boolean caseFound = false;
@@ -3924,11 +3897,7 @@ public class RemoteQuery {
 				}
 
 				if ("case".equals(cbChild.cmd)) {
-					String caseParameter = Utils.resolveValue(Utils.resolveNodeParameter(cbChild.statement), request);
-					// String caseParameter = cbChild.parameter;
-					// caseParameter = caseParameter == null ? "" :
-					// caseParameter;
-
+					String caseParameter = Utils.resolve_value(cbChild.parameter, request);
 					if (caseParameter.equals(switchValue)) {
 						caseFound = true;
 						inSwitch = true;
@@ -3985,8 +3954,7 @@ public class RemoteQuery {
 				ServiceEntry serviceEntry) {
 			int counter = 0;
 			while (counter < MAX_WHILE) {
-				String whileCondition = request.get(statementNode.parameter);
-				// Request iRequest = request.deepCopy();
+				String whileCondition = Utils.resolve_value(statementNode.parameter, request);
 				if (Utils.isBlank(whileCondition)) {
 					break;
 				}

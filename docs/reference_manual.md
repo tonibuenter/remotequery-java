@@ -14,10 +14,8 @@ The usage model of a RQ service can be summarized as follows:
 The Remote Query engine does the following with in the _run method_:
 
 * Check the provided _access roles_ to the _service roles_. If _service roles_ are not empty and the intersection between the two role list is not empty continue, else abort.
-* Process SQL as Commands with the provided _parameter map_
+* Process SQL and Commands with the provided _parameter map_
 * Return the last query result as a _result object_
-
-
 
 
 

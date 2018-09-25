@@ -98,7 +98,7 @@ parameters
 -- INFO       = Overwrite for mysql
 -- 
 
-set semicolon = '\\';
+set semicolon = '\\;'
 ;
 insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE) values ('semicolon', :semicolon)
 ;

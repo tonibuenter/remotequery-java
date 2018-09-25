@@ -86,12 +86,15 @@ delete from JGROUND.T_APP_PROPERTIES where NAME like 'Test.Command.switch%'
 ;
 parameters select 'A12' as "SWITCH_VALUE" from JGROUND.T_DUAL
 ;
-switch :switchValue;
+switch :switchValue
+;
   case 'A12';
   case 'A13';
   case 'A14';
-    insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  
-    values ('Test.Command.switch-1', 'ok');
+    insert into JGROUND.T_APP_PROPERTIES 
+      (NAME, VALUE)  
+    values 
+      ('Test.Command.switch-1', 'ok');
   break;
   
   case 'A13';
@@ -105,7 +108,7 @@ switch :switchValue;
   
   case 'A12';
     insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE)  values ('Test.Command.switch-4', 'ok');
-end;
+end
 ;
 select * from JGROUND.T_APP_PROPERTIES where NAME like 'Test.Command.switch%'
 ;
@@ -260,13 +263,23 @@ parameters
 -- SERVICE_ID = Test.Command.while
 --
 
-insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE) values ('while-1', '1');
-insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE) values ('while-2', '2');
-insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE) values ('while-3', '3');
-set whileName = start;
-while whileName;
-  delete from JGROUND.T_APP_PROPERTIES where NAME = :whileName;
-  parameters select NAME as "WHILE_NAME" from JGROUND.T_APP_PROPERTIES where NAME like 'while%';
-end;
+insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE) values ('while-1', '1')
+;
+insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE) values ('while-2', '2')
+;
+insert into JGROUND.T_APP_PROPERTIES (NAME, VALUE) values ('while-3', '3')
+;
+set whileName = 'start'
+;
+while :whileName
+;
+  delete from JGROUND.T_APP_PROPERTIES where NAME = :whileName
+  ;
+  parameters 
+    select NAME as "WHILE_NAME" 
+    from JGROUND.T_APP_PROPERTIES where NAME like 'while%'
+  ;
+end
+;
 select * from JGROUND.T_APP_PROPERTIES where NAME like 'while%'
   
