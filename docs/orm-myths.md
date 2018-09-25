@@ -185,6 +185,9 @@ logic code ;-). Have a try.
 
 
 
+# ![Move from ORM to RemoteQuery](g5065.png) 
+
+
 
 ## Reference
 
