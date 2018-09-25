@@ -1,3 +1,7 @@
+
+![RemoteQuery vs Hibernate](g4317.png)
+
+
 # A Comparison between _RemoteQuery_ and _Hibernate_
 
 This is a quick comparison between our _RemoteQuery_ approach and the well know ORM tool _Hiberante_.
@@ -390,12 +394,12 @@ A good read for good and strategic RDM design is the book _The Art Of SQL_ [1]. 
 the success of a project relying on relational data.
 
 
-## _RemoteQuery_ extensibility
+## _RemoteQuery_ Extensibility
 
 _RemoteQuery_ offers two simple ways to extend the _RemoteQuery_ scripts:
 
-* Register a class as a service by  ```SQL java com.myproject.MyService ``` 
-* Register programmatically an additional command. E.g.: ```create-tid id ``` 
+* Register a class as a service by  **java com.myproject.MyService**
+* Register programmatically an additional command. E.g.: **create-tid id**
 
 ## Conclusion
 
@@ -480,7 +484,7 @@ function after_insert() {
 
 ## Reference
 
-| Nr | Name |
+| Nr | Reference Detail |
 | ---- | ----|
 | 1 | https://www.tutorialspoint.com/hibernate/hibernate_examples.htm |
 | 2 | **The Art of SQL** by Stéphane Faroult with Peter Robson; 2006 O’Reilly Media, Inc |
