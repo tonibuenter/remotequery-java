@@ -1,7 +1,7 @@
-![Burden of ORM](g4932sm.png)
+
 
   
-# A Critical View on ORM Tools
+# ![Burden of ORM](g4932sm.png) A Critical View on ORM Tools
 
 Assume the situation of junior developer locking for a way to handle relational databases (RDB) with Java. Looking at common articles and blogs will harden the impression that object relational (ORM) mapping tools are the kings way to pursue. He or she may finally choose a tool such as _Hibernate_, _EJB_, _TopLink_ or others the like.
 
