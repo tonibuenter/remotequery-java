@@ -7,7 +7,7 @@ We like to achieve **two things** with this comparison:
 * Is _RemoteQuery_ better than _Hibernate_ ?
 * Understand, how _RemoteQuery_ could improve your development tasks.
 
-The example shown here is base on the _Hibernate_ example on [Tutorialspoint.com (Hiberante)](https://www.tutorialspoint.com/hibernate/hibernate_examples.htm).
+The example shown here is base on the _Hibernate_ example on [Tutorialspoint.com (Hiberante) [1]](https://www.tutorialspoint.com/hibernate/hibernate_examples.htm).
 
 
 ## Steps
@@ -323,17 +323,18 @@ delete from EMPLOYEE where id = :id
 ## Development Efficency
 
 
-From the way the services are build the following properties can be deduced:
+From the way the services are build, the following properties can be deduced:
 
 ### Service changes
 
 
 
-            | After a code change 
------------ | ------------ 
-Hibernate   | Compile, deploy and restart
-RemoteQuery | DB content change without a restart (Code is saved in DB) 
+|             | After a code change | 
+| ----------- | ------------ | 
+| Hibernate   | Compile, deploy and restart| 
+| RemoteQuery | DB content change without a restart (Code is saved in DB) | 
 
+A big plus for _RemoteQuery_. No need of compile and re-deploy in case of new services or SQL and _RemoteQuery_ commands changes. 
 
 ### Service roles
 
@@ -344,26 +345,36 @@ RemoteQuery | DB content change without a restart (Code is saved in DB)
 Hibernate   | Configured in the APP server
 RemoteQuery | Part of service definition 
 
+As role based access is used and understood very well _RemoteQuery_ has it build in the definition.
+
+
 
 ### Service Composition
 
 
 
-            | Service Composition
------------ | ------------ 
-Hibernate   | Source Code
-RemoteQuery | Part of service script (call service, include service code)
+|             | Service Composition| 
+| ----------- | ------------ | 
+| Hibernate   | Source Code (?!)| 
+| RemoteQuery | Part of service script (call service, include service code)| 
 
+_RemoteQuery_ commands like **include** and **serviceId** are ready to combine services on the server side. 
+In addition there is a possibity to combine service calls at client side (e.g. JavaScript/Ajax).
 
 
 ### Performance Optimization
 
 #### By the System
 
-            | Performance Optimization By the System
------------ | ------------
-Hibernate   | As good as hibernate optimization
-RemoteQuery | As good as database optimization
+|             | Performance Optimization By the System| 
+| ----------- | ------------| 
+| Hibernate   | As good as hibernate optimization| 
+| RemoteQuery | As good as database optimization| 
+
+_Hibernate_ offers many possibility to optimize database access by minimizing the number of calls to the database. 
+But more effective database optimizations are done on the level of database and query design. Designing a database for using _Hibernate_ often comes with the price that reporting is sub-optimal. Or on the on the other hand, re-design for optimization is implies enormous maintainance work
+on _Hibernate_ configuration and code.
+
 
 _Note_: Database optimization is the best you can get.
 
@@ -373,18 +384,24 @@ _Note_: Database optimization is the best you can get.
             | Performance Optimization By the Developer
 ----------- | ------------
 Hibernate   | Configure caching, writting special ORM queries (limited)
-RemoteQuery | Create high performing queries using full capacities of the DB system
+RemoteQuery | Create high performing table design and queries using full capacities of the DB system
 
-_Note_: _RemoteQuery_ is completly un-biased on how data is read or written in different services.
-
+A good read for good and strategic RDM design is the book _The Art Of SQL_ [1]. It points out that the RDB design is still central to 
+the success of a project relying on relational data.
 
 
 ## Conclusion
 
-I hope I could show that _RemoteQuery_ could be a valid option for many project facing RDB access.
+I hope I could show that _RemoteQuery_ could be a valid option for many project facing RDB access. 
+
+_RemoteQuery_ puts RDB in the center of the
+scene which in fact is still the case in many projects. 
+
 _RemoteQuery_ is used with many hundreds of services and so far showed not limits in performance or project size.
-The real benefict and superiority over populare ORM tools 
-like _Hibernate_ actually starts when the back end starts to be complex and demanding.
+
+_RemoteQuery_ scales very well with small and big projects. With project size _RemoteQuery_ written source code grows much less than typical ORM tools like _Hibernate_.
+
+
 
 
 
@@ -450,6 +467,10 @@ function after_insert(){
 
 
 
-Reference
+## Reference
 
-https://www.tutorialspoint.com/hibernate/hibernate_examples.htm
+| - | ---|
+| 1 | https://www.tutorialspoint.com/hibernate/hibernate_examples.htm |
+| 2 | **The Art of SQL** by Stéphane Faroult with Peter Robson; 2006 O’Reilly Media, Inc |
+
+
