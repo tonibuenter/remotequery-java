@@ -1,5 +1,5 @@
 
-![Remote Query](docs/remote-query.png)
+![Remote Query](docs/text4164.png)
 
 # RemoteQuery (RQ)
 
