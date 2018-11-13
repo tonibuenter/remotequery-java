@@ -104,7 +104,7 @@ Here some hints for the directory layout of this repository:
 
 ### Python version
 
-A pytion version is soon released on this page.
+See: [https://github.com/tonibuenter/remote-query-py]
 
 ### Standalone
 
