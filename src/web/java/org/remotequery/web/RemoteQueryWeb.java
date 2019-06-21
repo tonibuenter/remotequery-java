@@ -24,13 +24,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The RemoteQueryWeb is probably the most simple way using RemoteQuery with
+ * This servlet class is a simple way using RemoteQuery with
  * Java web server technology.
  * 
- * If the web server provides proper user authentication RemoteQueryWeb is also
- * secured.
  * 
- * For role detection it is assumed the a service Role.select is available.
+ * For role detection it is assumed the a service *Role.select* is available.
  * 
  */
 public class RemoteQueryWeb extends HttpServlet {

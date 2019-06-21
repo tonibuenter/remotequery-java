@@ -39,6 +39,7 @@ set namesCopy2 = :names
 set namesCopy2 = ''
 
 
+
 --
 -- SERVICE_ID = Test.Command.if
 --
@@ -55,6 +56,24 @@ if :doesExist
 	;
 	select 'false' as "VALUE" from JGROUND.T_APP_PROPERTIES
 	;
+end
+
+
+
+--
+-- SERVICE_ID = Test.Command.if-empty
+--
+
+set else = 'false'
+;
+if-empty :doesNotExist
+  ;
+  parameters select 'true' as "EMPTY_VISITED" from JGROUND.T_DUAL
+  ;
+  else
+  ;
+  set else = 'true'
+  ;
 end
 
 

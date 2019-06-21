@@ -7,6 +7,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
@@ -84,7 +86,7 @@ public class RemoteQueryUtils {
 	 * @return
 	 */
 	public static Result saveRQService(String saveServiceId, Map<String, String> parameters, String statements,
-			String source) {
+	    String source) {
 		parameters.put("source", source);
 		parameters.put("statements", statements);
 		return new Request().setServiceId(saveServiceId).addRole("SYSTEM").put(parameters).run();
@@ -152,6 +154,29 @@ public class RemoteQueryUtils {
 		}
 		logger.info(source + " : " + counter + " sql statements done.");
 		return counter;
+	}
+
+	public static String texting(String templateString, Map<String, String> map) {
+
+		if (map == null) {
+			return templateString;
+		}
+
+		Pattern ptn = Pattern.compile("\\:\\w+");
+
+		Matcher matcher = ptn.matcher(templateString);
+		StringBuffer stringBuffer = new StringBuffer();
+		while (matcher.find()) {
+			String s = matcher.group();
+			String key = s.substring(1);
+			if (map.containsKey(key)) {
+				matcher.appendReplacement(stringBuffer, map.get(key));
+			} else {
+				matcher.appendReplacement(stringBuffer, s);
+			}
+		}
+		return stringBuffer.toString();
+
 	}
 
 }

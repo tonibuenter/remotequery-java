@@ -3,7 +3,7 @@ var rQ = {};
 (function() {
 
   //
-  // ELEMENT FUN
+  // ELEMENT FUN -start-
   //
   function elementFun(ele, firstClass) {
     return function(arg0, arg1) {
@@ -13,6 +13,10 @@ var rQ = {};
         ele$ = $('<' + ele + '>', arg0);
       } else {
         ele$ = $('<' + ele + '>');
+      }
+
+      if (_.isObject(arg1)) {
+        ele$.css(arg1);
       }
 
       if (!_.isObject(arg0) && !_.isUndefined(arg0)) {
@@ -29,11 +33,9 @@ var rQ = {};
       return ele$;
     }
   }
-  // ELEMENT FUN -end-
 
   rQ.div = elementFun('div', true);
 
-  rQ.p = elementFun('p');
   rQ.span = elementFun('span');
   rQ.cite = elementFun('cite');
   rQ.pre = elementFun('pre');
@@ -69,24 +71,23 @@ var rQ = {};
   rQ.section = elementFun('section', true);
   rQ.nav = elementFun('nav', true);
 
+  // ELEMENT FUN -end-
+
   //
-  // TEMPLATE UI
+  // TEMPLATE UI -start-
   //
   /**
    * @memberOf rQ
    */
-  function templateUi(arg0) {
-
+  function templateUi(settings) {
+    settings = settings || {};
     var ui, view$;
     var name, id, cx;
-    var state = {};
     var callbacks = {};
 
-    if (arg0 instanceof $) {
-      view$ = arg0;
-    } else {
-      view$ = rQ.div();
-    }
+    name = settings.name;
+
+    view$ = settings.view$ || settings.view || rQ.div();
 
     ui = {
       'id' : function(arg0) {
@@ -141,7 +142,7 @@ var rQ = {};
         return view$.length;
       },
       'context' : function(arg0) {
-        if (arg0 == undefined) {
+        if (!_.isUndefined(arg0)) {
           cx = arg0;
         }
         return cx;
@@ -149,9 +150,8 @@ var rQ = {};
       'editable' : function(arg0) {
         return rQ.handleDisabledAttr(view$, arg0);
       },
-      'value' : function() {
-        view$.val(arguments);
-      },
+      'label' : _.noop,
+      'value' : _.noop,
       'data' : _.noop
     };
     return ui;
@@ -173,24 +173,115 @@ var rQ = {};
   // TEMPLATE UI -end-
 
   //
-  // INPUT UI
+  // INPUT UI -start-
   //
+  /**
+   * @memberOf rQ_ui_md
+   */
   function inputUi(settings) {
-    return rQ.ui(rQ.input(settings));
+
+    settings = settings || {};
+    var ui, view$, input$, label$, icon$, id, isTextarea;
+    //
+    isTextarea = settings.isTextarea;
+    //
+    ui = rQ.ui();
+    view$ = ui.view().addClass('input-field');
+    input$ = isTextarea ? rQ.textarea('', 'materialize-textarea') : rQ
+        .input();
+    label$ = rQ.label();
+    id = rQ_base.newId();
+    label$.attr('for', id);
+    input$.attr('id', id);
+    input$.attr('type', settings.type || 'text').css('color', 'black');
+    if (settings.name) {
+      input$.attr('name', settings.name);
+    }
+    if (settings.active) {
+      window.setTimeout(function() {
+        input$.trigger('autoresize');
+        label$.addClass('active');
+      }, 0);
+    }
+    label$.text(settings.label).css('color', 'gray');
+    if (settings.icon) {
+      icon$ = rQ.i(settings.icon, 'material-icons prefix');
+      view$.append(icon$);
+    }
+    view$.append(input$, label$);
+
+    if (!isTextarea) {
+      input$.keypress(function(e) {
+        var code;
+        if (e) {
+          code = (e.keyCode ? e.keyCode : e.which);
+        } else {
+          code = 13;
+        }
+        if (code == 13) {
+          e.preventDefault();
+          ui.action(input$.text());
+        }
+        ui.change(input$.text());
+      });
+    }
+    if (settings.css) {
+      input$.css(settings.css);
+    }
+
+    ui.input$ = input$;
+    ui.value = value;
+    ui.editable = editable;
+
+    return ui;
+
+    function editable(is) {
+      if (!is || is === 'false') {
+        input$.attr('disabled', 'disabled');
+        input$.css('color', 'gray');
+      } else {
+        input$.removeAttr('disabled');
+        input$.css('color', 'black');
+      }
+    }
+
+    function value(arg0) {
+      if (!_.isUndefined(arg0)) {
+        input$.val(arg0);
+        window.setTimeout(function() {
+          input$.trigger('autoresize');
+          label$.addClass('active');
+        }, 1);
+      }
+      return input$.val();
+    }
+
   }
   rQ.inputUi = inputUi;
 
+  // INPUT UI -end-
+
   //
-  // TEXTAREA UI
+  // TEXTAREA UI -start-
   //
+  /**
+   * @memberOf rQ_ui_md
+   */
   function textareaUi(settings) {
-    return rQ.ui(rQ.textarea(settings));
+    settings = settings || settings;
+    settings.isTextarea = true;
+    return inputUi(settings);
   }
   rQ.textareaUi = textareaUi;
 
+  // TEXTAREA UI -end-
+
   //
-  // BUTTON UI
+  // BUTTON UI -start-
   //
+  /**
+   * @memberOf rQ_ui_md
+   */
   function buttonUi(label, cb) {
     var ui, a$, disabled;
 
@@ -226,9 +317,29 @@ var rQ = {};
   }
   rQ.buttonUi = buttonUi;
 
+  // BUTTON UI -end-
+
+  //
+  // BUTTON -start-
+  //
+  /**
+   * @memberOf rQ_ui_md
+   */
+  function button(label, cb) {
+    var a$ = rQ.a().attr('href', '#').text(label).click(cb);
+    a$.addClass('waves-effect waves-green btn');
+    return a$;
+  }
+  rQ.button = button;
+
+  // BUTTON -end-
+
   //
   // TINYMCE UI
   //
+  /**
+   * @memberOf rQ
+   */
   function tinymceUi(settings) {
 
     settings = settings || {};
@@ -394,16 +505,22 @@ var rQ = {};
 
   }
   rQ.tinymceEditorUi = tinymceEditorUi;
-  // TINYMCE EDITOR UI -end-
+
+  // TINYMCE EDITOR UI
 
   //
   // TOAST
   //
-  function toast(settings) {
-    return rQ.div(settings).addClass('rq-toast');
+  /**
+   * @memberOf rQ_ui_md
+   */
+  function toast() {
+    var s = rQ.span();
+    Materialize.toast(s.append.apply(s, arguments), 5000, 'rounded');
   }
   rQ.toast = toast;
 
   // TOAST
+
 
 })();

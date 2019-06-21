@@ -85,14 +85,14 @@ The type are automatically recognized by RemoteQuery. Commands start with the co
 - *set-if-empty* (synonym *put-if-empty*): only set the parameter when empty
 - *copy* : copy value from parameter to parameter
 - *copy-if-empty* :  copy value from parameter to parameter only when empty
-- *parameters*: setting parameter values with a query
-- *parameters-if-empty*: setting parameter values with a query when empty
+- *parameters*: setting parameter values with a query. The first result row is used for setting the key/value pairs to the request. If the query produces not row all header names from the result are set to empty string in the request.
+- *parameters-if-empty*: setting parameter values with a query when corresponding parameter is empty
 - *serviceId*: calling another service
 - *include*: include the statements or content of another service, without role check of the included service entry statements
 - *java*: referencing a Java class that implements the IQuery interface
 - *if*, *else*, *end*  :  conditional execution of statements
 - *switch*, *case*, *default*, *break*, *end*  : switch execution of statements
-- *foreach*, *end*  :  loop over a result
+- *foreach*, *end*  :  loop over a result from a query. Within the foreach the result of the query is available as parameter entries. An additional parameter *$INDEX* is available starting as 1 (not zero!).
 - *while*, *end*  : simple conditional execution of statements
 
 

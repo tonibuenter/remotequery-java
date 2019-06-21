@@ -8,7 +8,7 @@
 
     editDiv$ = $('#editDiv');
 
-    tinymceEditorUi = rQ_ui.tinymceEditorUi({
+    tinymceEditorUi = rQ.tinymceEditorUi({
       'htmlText' : editDiv$.text(),
       'htmlTextId' : editDiv$.attr('id'),
       'saveServiceId' : 'HtmlText.save',
@@ -33,13 +33,13 @@
 
     var view$, tinymceUi, toolbar$, editor$, saveUi, toggle$, isView;
 
-    view$ = rQ_ui.div('tinymce');
-    toolbar$ = rQ_ui.div('section');
-    editor$ = rQ_ui.div('section');
-    view$.append(toolbar$, rQ_ui.div('divider'), editor$);
+    view$ = rQ.div('tinymce');
+    toolbar$ = rQ.div('section');
+    editor$ = rQ.div('section');
+    view$.append(toolbar$, rQ.div('divider'), editor$);
 
-    saveUi = rQ_ui.buttonUi('save', saveHtmlText);
-    toggle$ = rQ_ui.button('...', toogleViewEdit);
+    saveUi = rQ.buttonUi('save', saveHtmlText);
+    toggle$ = rQ.button('...', toogleViewEdit);
     toolbar$.append(saveUi.view(), ' ', toggle$);
 
     toogleViewEdit();
@@ -54,7 +54,7 @@
         if (e) {
           cb(e.htmlText);
         } else {
-          rQ_ui.toast('No_Text_for ' + htmlTextId);
+          rQ.toast('No_Text_for ' + htmlTextId);
         }
       });
     }
@@ -65,7 +65,7 @@
           'htmlTextId' : htmlTextId,
           'htmlText' : tinymceUi.value()
         }, function() {
-          rQ_ui.toast('Save_Done');
+          rQ.toast('Save_Done');
         });
       }
     }
@@ -81,14 +81,14 @@
         saveUi.disable(true);
         toggle$.text('edit');
         getHtmlText(function(htmlText) {
-          editor$.empty().append(rQ_ui.div('html-text-view').html(htmlText));
+          editor$.empty().append(rQ.div('html-text-view').html(htmlText));
         });
 
       } else {
         saveUi.disable(false);
         toggle$.text('view');
         getHtmlText(function(htmlText) {
-          tinymceUi = rQ_ui.tinymceUi();
+          tinymceUi = rQ.tinymceUi();
           editor$.empty().append(tinymceUi.view());
           tinymceUi.value(htmlText);
         });

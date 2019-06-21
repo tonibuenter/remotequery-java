@@ -25,16 +25,16 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.79725402"
-     inkscape:cx="398.38766"
-     inkscape:cy="567.57318"
+     inkscape:zoom="1.0804206"
+     inkscape:cx="254.36778"
+     inkscape:cy="488.45275"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
      inkscape:window-width="1631"
      inkscape:window-height="1005"
-     inkscape:window-x="70"
-     inkscape:window-y="25"
+     inkscape:window-x="40"
+     inkscape:window-y="0"
      inkscape:window-maximized="0" />
   <metadata
      id="metadata7">
@@ -44,7 +44,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -55,16 +55,16 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:33.28589249px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#42a29a;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       x="61.595886"
-       y="397.80426"
+       x="115.53101"
+       y="199.62398"
        id="text4136"
        sodipodi:linespacing="125%"
        inkscape:export-xdpi="203.2"
        inkscape:export-ydpi="203.2"><tspan
          sodipodi:role="line"
          id="tspan4138"
-         x="61.595886"
-         y="397.80426"
+         x="115.53101"
+         y="199.62398"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Roboto;-inkscape-font-specification:Roboto;fill:#42a29a;fill-opacity:1"><tspan
    style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:Roboto;-inkscape-font-specification:'Roboto Medium';fill:#42a29a;fill-opacity:1"
    id="tspan4140">R</tspan>emote<tspan
@@ -73,179 +73,144 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:32.14788055px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       x="81.409531"
-       y="872.85156"
+       x="128.02826"
+       y="417.71173"
        id="text4148"
        sodipodi:linespacing="125%"
-       transform="scale(0.95298922,1.0493298)"><tspan
+       transform="scale(0.95298923,1.0493298)"><tspan
          sodipodi:role="line"
          id="tspan4150"
-         x="81.409531"
-         y="872.85156"
+         x="128.02826"
+         y="417.71173"
          style="font-size:13.75px">Definition</tspan><tspan
          sodipodi:role="line"
-         x="81.409531"
-         y="890.03906"
+         x="128.02826"
+         y="434.89923"
          id="tspan4152"
          style="font-size:13.75px">#42a29a</tspan><tspan
          sodipodi:role="line"
-         x="81.409531"
-         y="907.22656"
+         x="128.02826"
+         y="452.08673"
          id="tspan4154"
          style="font-size:13.75px">Roboto</tspan></text>
-    <g
-       id="g4239"
-       transform="matrix(0.39160668,0,0,0.39160668,333.17447,355.81982)"
-       inkscape:export-xdpi="203.2"
-       inkscape:export-ydpi="203.2">
-      <g
-         id="g4241">
-        <polygon
-           id="polygon4243"
-           points="27.836,68.722 45.373,38.347 62.911,68.722 45.366,99.143 45.366,99.143 "
-           style="fill:#59666c" />
-        <polygon
-           id="polygon4245"
-           points="80.458,38.348 45.383,38.348 62.921,68.723 98.005,68.722 "
-           style="fill:#bcae79" />
-        <polygon
-           id="polygon4247"
-           points="115.523,99.157 97.986,129.532 80.449,99.157 97.993,68.736 97.993,68.736 "
-           style="fill:#59666c" />
-        <polygon
-           id="polygon4249"
-           points="62.901,129.529 97.977,129.529 80.438,99.154 45.354,99.157 "
-           style="fill:#bcae79" />
-      </g>
-      <polygon
-         id="polygon4251"
-         points="141.156,98.705 141.156,71.771 169.514,71.771 169.514,98.705 179.113,98.705 179.113,38.702 169.514,38.702 169.514,63.503 141.156,63.503 141.156,38.702 131.468,38.702 131.468,98.705 "
-         style="fill:#59666c" />
-      <polygon
-         id="polygon4253"
-         points="206.918,98.705 206.918,38.702 197.228,38.702 197.228,98.705 "
-         style="fill:#59666c" />
-      <path
-         id="path4255"
-         d="m 264.938,80.57 c 0,-6.223 -3.644,-12.178 -11.467,-13.688 l 0,-0.179 c 6.134,-2.134 10.223,-7.556 10.223,-13.689 0,-9.245 -6.756,-14.578 -19.823,-14.578 -7.289,0 -14.134,0.178 -18.846,0.267 l 0,60.003 c 6.668,0.089 12.712,0.267 16.356,0.267 18.402,0 23.557,-10.578 23.557,-18.403 l 0,0 z M 253.56,54.525 c 0,6.044 -4.71,9.689 -13.688,9.689 -2.045,0 -3.556,0 -5.155,-0.089 l 0,-17.778 c 2.311,-0.089 4.889,-0.178 7.556,-0.178 8.532,0 11.287,3.467 11.287,8.356 l 0,0 z m 1.156,26.223 c 0,6.046 -4.178,10.312 -12.979,10.312 -3.111,0 -5.511,-0.18 -7.021,-0.445 l 0,-19.111 c 1.333,-0.09 4.443,-0.09 5.422,-0.09 8.445,0 14.578,2.49 14.578,9.334 l 0,0 z"
-         inkscape:connector-curvature="0"
-         style="fill:#59666c" />
-      <polygon
-         id="polygon4257"
-         points="310.894,46.791 310.894,38.702 279.247,38.702 279.247,98.705 310.894,98.705 310.894,90.438 288.938,90.438 288.938,71.771 309.827,71.771 309.827,63.859 288.938,63.859 288.938,46.791 "
-         style="fill:#59666c" />
-      <path
-         id="path4259"
-         d="M 366.966,98.705 351.144,77.814 c -1.512,-1.955 -3.377,-4.267 -5.065,-6.4 9.777,-1.065 16.979,-7.199 16.979,-16.8 0,-11.912 -8.533,-16.268 -20.979,-16.268 -6.756,0 -11.733,0.089 -16.089,0.355 l 0,60.003 9.688,0 0,-25.956 0.444,0 18.668,25.957 12.176,0 0,0 z M 352.922,55.681 c 0,5.956 -4.711,9.956 -12.534,9.956 -2.134,0 -3.82,-0.089 -4.711,-0.178 l 0,-19.023 c 1.423,-0.089 3.201,-0.178 5.066,-0.178 8.09,0 12.179,2.845 12.179,9.423 l 0,0 z"
-         inkscape:connector-curvature="0"
-         style="fill:#59666c" />
-      <path
-         id="path4261"
-         d="m 427.562,98.705 0,-60.003 -9.425,0 0,17.778 c 0,8.801 0.27,21.69 0.624,28.536 -2.223,-4.356 -4.622,-9.157 -7.291,-13.603 l -19.821,-32.712 -12.714,0 0,60.003 9.426,0 0,-20.178 c 0,-8.534 -0.179,-20.712 -0.535,-26.579 1.867,4 4,8.267 6.669,12.622 l 20.533,34.136 12.534,0 0,0 z"
-         inkscape:connector-curvature="0"
-         style="fill:#bcae79" />
-      <path
-         id="path4263"
-         d="m 491.638,98.705 -21.778,-60.003 -10.758,0 -21.51,60.003 9.777,0 4.622,-13.246 24.268,0 4.622,13.246 10.757,0 0,0 z m -17.956,-20.979 -19.202,0 6.756,-18.578 c 1.155,-3.2 2.134,-6.489 2.758,-9.512 l 0.177,0 c 0.711,3.289 1.51,6.134 2.667,9.245 l 6.844,18.845 0,0 z"
-         inkscape:connector-curvature="0"
-         style="fill:#bcae79" />
-      <polygon
-         id="polygon4265"
-         points="532.252,46.88 532.252,38.702 489.583,38.702 489.583,46.88 506.029,46.88 506.029,98.705 515.717,98.705 515.717,46.88 "
-         style="fill:#bcae79" />
-      <polygon
-         id="polygon4267"
-         points="573.922,46.791 573.922,38.702 542.274,38.702 542.274,98.705 573.922,98.705 573.922,90.438 551.965,90.438 551.965,71.771 572.854,71.771 572.854,63.859 551.965,63.859 551.965,46.791 "
-         style="fill:#bcae79" />
-    </g>
-    <g
-       id="g4317"
-       transform="matrix(0.52592196,0,0,0.4120323,27.775416,105.81479)"
-       inkscape:export-xdpi="203.2"
-       inkscape:export-ydpi="203.2">
-      <circle
-         r="43.273537"
-         cy="650.35736"
-         cx="528.6897"
-         id="path4308"
-         style="opacity:1;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:22.5;stroke-dasharray:1, 4;stroke-dashoffset:0;stroke-opacity:0.63137255" />
-      <text
-         transform="scale(0.84569117,1.1824648)"
-         sodipodi:linespacing="125%"
-         id="text4290"
-         y="581.42706"
-         x="574.80914"
-         style="font-style:normal;font-weight:normal;font-size:88.38076019px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#ececec;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-         xml:space="preserve"><tspan
-           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Phosphate;-inkscape-font-specification:Phosphate;fill:#ececec"
-           y="581.42706"
-           x="574.80914"
-           id="tspan4292"
-           sodipodi:role="line">VS</tspan></text>
-    </g>
     <text
        inkscape:export-ydpi="203.2"
        inkscape:export-xdpi="203.2"
        sodipodi:linespacing="125%"
-       id="text4322"
-       y="109.13568"
-       x="43.692036"
-       style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#42a29a;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       id="text4226"
+       y="415.28073"
+       x="121.08441"
+       style="font-style:normal;font-weight:normal;font-size:33.28589249px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#42a29a;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        xml:space="preserve"><tspan
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Roboto;-inkscape-font-specification:Roboto;fill:#42a29a;fill-opacity:1"
-         y="109.13568"
-         x="43.692036"
-         id="tspan4324"
+         y="415.28073"
+         x="121.08441"
+         id="tspan4228"
          sodipodi:role="line"><tspan
-   id="tspan4326"
-   style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:Roboto;-inkscape-font-specification:'Roboto Medium';fill:#42a29a;fill-opacity:1">R</tspan>emote<tspan
-   id="tspan4328"
-   style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:Roboto;-inkscape-font-specification:'Roboto Medium';fill:#42a29a;fill-opacity:1">Q</tspan>uery</tspan></text>
+   style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:Roboto;-inkscape-font-specification:'Roboto Medium'"
+   id="tspan4245">R</tspan>oboto</tspan></text>
   </g>
-  
-  
-  <path fill-rule="evenodd" clip-rule="evenodd" d="M48.859,43.518c8.424,17.64,2.736,140.832-7.128,184.032
-  c-9.864,43.272-19.728,98.28-22.032,144.576c-1.008,19.728,2.016,27.504,14.904,27.504c22.752,0,51.624-47.952,87.84-46.872
-  c36.288,1.08,47.808,55.008,64.8,54.648c16.992-0.36,30.672-6.264,30.816-58.752C218.563,191.981,87.235,64.973,48.859,43.518
-  L48.859,43.518L48.859,43.518L48.859,43.518z"/>
-<path fill-rule="evenodd" clip-rule="evenodd" d="M162.763,168.726c7.992,13.464,28.368,3.096,29.232-12.096
-  c0.864-15.192-1.368-34.344-11.232-35.064c-9.864-0.72-16.92-10.584-26.784-11.304c-9.864-0.72-20.448,9.144-25.056-3.96
-  s12.384-18.648,25.056-20.736c-11.304-11.304-17.928-23.832-22.896-36.864c-4.968-13.032-8.64-24.984,5.256-30.096
-  c13.896-5.112,12.744,21.168,28.656,33.192c-4.68-17.712-6.408-25.056-6.048-35.352s-0.36-18.144,14.256-16.128
-  c14.616,2.016,8.28,32.4,19.656,44.784c3.456-11.736,5.544-26.64,13.896-32.76s27.36-6.264,15.264,18.864
-  c-12.096,25.128,3.528,38.736-0.144,58.536c-3.672,19.8-15.048,16.2-19.944,28.944c-4.896,12.744,2.88,41.76-6.336,54.792
-  c-9.216,13.032-10.872,33.048-4.896,49.032C172.339,205.374,162.763,168.726,162.763,168.726L162.763,168.726L162.763,168.726
-  L162.763,168.726z"/>
-<path fill-rule="evenodd" clip-rule="evenodd" d="M48.355,185.646c-7.416,50.832-33.192,56.88-34.488,77.976
-  c-1.296,21.096,6.84,23.112,6.336,42.624c-0.504,19.512-17.856,27.432-19.944,38.016s8.928,13.968,15.336,13.968
-  c6.408,0,12.816-28.08,15.408-45.936s-8.496-28.368-8.496-40.608c0-12.24,16.056-34.632,13.104-14.976
-  C48.931,235.686,55.268,208.901,48.355,185.646L48.355,185.646L48.355,185.646L48.355,185.646z"/>
-<path fill-rule="evenodd" clip-rule="evenodd" fill="#FFFFFF" d="M58.292,205.013c-5.616,27.504-40.68,181.08-22.824,183.024
-  c17.856,1.944,43.272-47.52,84.888-47.16c41.688,0.36,58.104,55.44,68.256,55.08c10.152-0.36,16.848,3.6,17.928-58.464
-  c1.08-62.064-36.792-141.336-59.184-176.256C116.971,163.181,84.283,187.518,58.292,205.013L58.292,205.013L58.292,205.013
-  L58.292,205.013z"/>
-<g>
-  <path fill="none" d="M139.162,172.181c-1.95-18.251-19.12-25.421-35.661-23.168c-13.889,1.893-32.403,13.613-34.107,28.64
-    c-1.921,16.937,11.402,32.522,28.361,33.203c15.03,0.604,31.176-6.668,37.93-20.79
-    C138.415,184.362,139.482,178.488,139.162,172.181"/>
-  <path d="M147.082,171.533c-1.662-17.195-14.407-27.988-30.895-30.627c-15.924-2.549-33.26,4.998-44.408,16.146
-    c-12.538,12.538-13.039,29.978-4.26,44.833c8.661,14.657,27.847,19.501,43.563,15.835
-    C132.588,212.705,148.48,193.896,147.082,171.533"/>
-  <radialGradient id="SVGID_1_" cx="86.6299" cy="167.0693" r="54.7155" gradientUnits="userSpaceOnUse">
-    <stop  offset="0" style="stop-color:#FFFFFF"/>
-    <stop  offset="0.0604" style="stop-color:#FBC8B4"/>
-    <stop  offset="0.0712" style="stop-color:#FBC3B0"/>
-    <stop  offset="0.1829" style="stop-color:#F7978B"/>
-    <stop  offset="0.2995" style="stop-color:#F4716B"/>
-    <stop  offset="0.4199" style="stop-color:#F15251"/>
-    <stop  offset="0.5453" style="stop-color:#EF3A3D"/>
-    <stop  offset="0.6778" style="stop-color:#EE292F"/>
-    <stop  offset="0.822" style="stop-color:#ED1F27"/>
-    <stop  offset="1" style="stop-color:#ED1C24"/>
-  </radialGradient>
-  <path fill="url(#SVGID_1_)" stroke="#000000" d="M139.162,177.941c-1.493,15.627-13.947,28.182-28.944,31.824
-    c-15.87,3.854-33.393-2.257-39.096-18.576c-2.912-8.332-2.37-16.879,2.637-24.198c4.223-6.171,11.033-11,17.779-14.066
-    c13.924-6.326,33.832-7.029,43.531,7.077C138.744,165.348,139.387,171.641,139.162,177.941"/>
-</g>
-  
+  <g
+     id="g4201"
+     transform="matrix(0.10716223,0,0,0.10716223,317.8573,180.62049)"
+     inkscape:export-xdpi="203.2"
+     inkscape:export-ydpi="203.2">
+    <path
+       id="path38"
+       d="m 48.859,43.518 c 8.424,17.64 2.736,140.832 -7.128,184.032 -9.864,43.272 -19.728,98.28 -22.032,144.576 -1.008,19.728 2.016,27.504 14.904,27.504 22.752,0 51.624,-47.952 87.84,-46.872 36.288,1.08 47.808,55.008 64.8,54.648 16.992,-0.36 30.672,-6.264 30.816,-58.752 C 218.563,191.981 87.235,64.973 48.859,43.518 l 0,0 0,0 0,0 z"
+       inkscape:connector-curvature="0"
+       style="clip-rule:evenodd;fill-rule:evenodd" />
+    <path
+       id="path40"
+       d="m 162.763,168.726 c 7.992,13.464 28.368,3.096 29.232,-12.096 0.864,-15.192 -1.368,-34.344 -11.232,-35.064 -9.864,-0.72 -16.92,-10.584 -26.784,-11.304 -9.864,-0.72 -20.448,9.144 -25.056,-3.96 -4.608,-13.104 12.384,-18.648 25.056,-20.736 -11.304,-11.304 -17.928,-23.832 -22.896,-36.864 -4.968,-13.032 -8.64,-24.984 5.256,-30.096 13.896,-5.112 12.744,21.168 28.656,33.192 -4.68,-17.712 -6.408,-25.056 -6.048,-35.352 0.36,-10.296 -0.36,-18.144 14.256,-16.128 14.616,2.016 8.28,32.4 19.656,44.784 3.456,-11.736 5.544,-26.64 13.896,-32.76 8.352,-6.12 27.36,-6.264 15.264,18.864 -12.096,25.128 3.528,38.736 -0.144,58.536 -3.672,19.8 -15.048,16.2 -19.944,28.944 -4.896,12.744 2.88,41.76 -6.336,54.792 -9.216,13.032 -10.872,33.048 -4.896,49.032 -18.36,-17.136 -27.936,-53.784 -27.936,-53.784 l 0,0 0,0 0,0 z"
+       inkscape:connector-curvature="0"
+       style="clip-rule:evenodd;fill-rule:evenodd" />
+    <path
+       id="path42"
+       d="m 48.355,185.646 c -7.416,50.832 -33.192,56.88 -34.488,77.976 -1.296,21.096 6.84,23.112 6.336,42.624 -0.504,19.512 -17.856,27.432 -19.944,38.016 -2.088,10.584 8.928,13.968 15.336,13.968 6.408,0 12.816,-28.08 15.408,-45.936 2.592,-17.856 -8.496,-28.368 -8.496,-40.608 0,-12.24 16.056,-34.632 13.104,-14.976 13.32,-21.024 19.657,-47.809 12.744,-71.064 l 0,0 0,0 0,0 z"
+       inkscape:connector-curvature="0"
+       style="clip-rule:evenodd;fill-rule:evenodd" />
+    <path
+       id="path44"
+       d="m 58.292,205.013 c -5.616,27.504 -40.68,181.08 -22.824,183.024 17.856,1.944 43.272,-47.52 84.888,-47.16 41.688,0.36 58.104,55.44 68.256,55.08 10.152,-0.36 16.848,3.6 17.928,-58.464 1.08,-62.064 -36.792,-141.336 -59.184,-176.256 -30.385,1.944 -63.073,26.281 -89.064,43.776 l 0,0 0,0 0,0 z"
+       inkscape:connector-curvature="0"
+       style="clip-rule:evenodd;fill:#ffffff;fill-rule:evenodd" />
+    <g
+       id="g46">
+      <path
+         id="path48"
+         d="m 139.162,172.181 c -1.95,-18.251 -19.12,-25.421 -35.661,-23.168 -13.889,1.893 -32.403,13.613 -34.107,28.64 -1.921,16.937 11.402,32.522 28.361,33.203 15.03,0.604 31.176,-6.668 37.93,-20.79 2.73,-5.704 3.797,-11.578 3.477,-17.885"
+         inkscape:connector-curvature="0"
+         style="fill:none" />
+      <path
+         id="path50"
+         d="m 147.082,171.533 c -1.662,-17.195 -14.407,-27.988 -30.895,-30.627 -15.924,-2.549 -33.26,4.998 -44.408,16.146 -12.538,12.538 -13.039,29.978 -4.26,44.833 8.661,14.657 27.847,19.501 43.563,15.835 21.506,-5.015 37.398,-23.824 36,-46.187"
+         inkscape:connector-curvature="0" />
+      <radialGradient
+         gradientUnits="userSpaceOnUse"
+         r="54.7155"
+         cy="167.06931"
+         cx="86.629898"
+         id="SVGID_1_">
+        <stop
+           id="stop53"
+           style="stop-color:#FFFFFF"
+           offset="0" />
+        <stop
+           id="stop55"
+           style="stop-color:#FBC8B4"
+           offset="0.0604" />
+        <stop
+           id="stop57"
+           style="stop-color:#FBC3B0"
+           offset="0.0712" />
+        <stop
+           id="stop59"
+           style="stop-color:#F7978B"
+           offset="0.1829" />
+        <stop
+           id="stop61"
+           style="stop-color:#F4716B"
+           offset="0.2995" />
+        <stop
+           id="stop63"
+           style="stop-color:#F15251"
+           offset="0.4199" />
+        <stop
+           id="stop65"
+           style="stop-color:#EF3A3D"
+           offset="0.5453" />
+        <stop
+           id="stop67"
+           style="stop-color:#EE292F"
+           offset="0.6778" />
+        <stop
+           id="stop69"
+           style="stop-color:#ED1F27"
+           offset="0.822" />
+        <stop
+           id="stop71"
+           style="stop-color:#ED1C24"
+           offset="1" />
+      </radialGradient>
+      <path
+         id="path73"
+         d="m 139.162,177.941 c -1.493,15.627 -13.947,28.182 -28.944,31.824 -15.87,3.854 -33.393,-2.257 -39.096,-18.576 -2.912,-8.332 -2.37,-16.879 2.637,-24.198 4.223,-6.171 11.033,-11 17.779,-14.066 13.924,-6.326 33.832,-7.029 43.531,7.077 3.675,5.346 4.318,11.639 4.093,17.939"
+         style="fill:url(#SVGID_1_);stroke:#000000"
+         inkscape:connector-curvature="0" />
+    </g>
+  </g>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-weight:normal;font-size:3.04273605px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#808080;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     x="307.00076"
+     y="227.24805"
+     id="text4222"
+     sodipodi:linespacing="125%"
+     inkscape:export-xdpi="203.2"
+     inkscape:export-ydpi="203.2"><tspan
+       sodipodi:role="line"
+       id="tspan4224"
+       x="307.00076"
+       y="227.24805">© Sun Microsystems Inc.</tspan></text>
 </svg>

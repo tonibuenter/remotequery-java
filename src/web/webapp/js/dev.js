@@ -11,31 +11,31 @@
     var ui, view$, header$, body$, serviceIdUi, rolesUi;
     var reload$, save$, run$, back$;
 
-    ui = rQ_ui.templateUi();
+    ui = rQ.ui();
     view$ = ui.view().addClass('edit-service-ui');
-    header$ = rQ_ui.div('section').append(reload$ = rQ_ui.button('reload'),
-        ' ', save$ = rQ_ui.button('save'), ' ',
-        run$ = rQ_ui.button('save and run'), ' ', back$ = rQ_ui.button('back'));
+    header$ = rQ.div('section').append(reload$ = rQ.button('reload'),
+        ' ', save$ = rQ.button('save'), ' ',
+        run$ = rQ.button('save and run'), ' ', back$ = rQ.button('back'));
 
-    serviceIdUi = rQ_ui.inputUi({
+    serviceIdUi = rQ.inputUi({
       'label' : 'Service Id',
       'type' : 'text'
     });
 
-    rolesUi = rQ_ui.inputUi({
+    rolesUi = rQ.inputUi({
       'label' : 'Roles',
       'type' : 'text'
     });
 
-    statementsUi = rQ_ui.textareaUi({
+    statementsUi = rQ.textareaUi({
       'label' : 'Statements',
       'type' : 'text'
     });
 
-    body$ = rQ_ui.div('row').append(
-        rQ_ui.div('col s12 red-text darken-4-text ').append(serviceIdUi.view(),
+    body$ = rQ.div('row').append(
+        rQ.div('col s12 red-text darken-4-text ').append(serviceIdUi.view(),
             rolesUi.view()),
-        rQ_ui.div(' col s12 grey lighten-2 statements').append(
+        rQ.div(' col s12 grey lighten-2 statements').append(
             statementsUi.view()));
 
     view$.append(header$, body$);
@@ -63,47 +63,47 @@
     }
 
     function reload() {
-      rQ_ui.toast('relaod...');
+      rQ.toast('relaod...');
       rQ.call('RQService.get', {
         'serviceId' : serviceIdUi.value()
       }, function(data) {
         var e = rQ.toList(data)[0];
         if (e) {
-          rQ_ui.toast('relaod done!');
+          rQ.toast('relaod done!');
           value(e);
         } else {
-          rQ_ui.toast('no service found for:' + serviceIdUi.value());
+          rQ.toast('no service found for:' + serviceIdUi.value());
         }
       });
     }
 
     function saveService(doneCb) {
-      rQ_ui.toast('save service...');
+      rQ.toast('save service...');
       rQ.call('RQService.save', {
         'SERVICE_ID' : serviceIdUi.value(),
         'ROLES' : rolesUi.value(),
         'statements' : statementsUi.value()
       }, function() {
-        rQ_ui.toast('service saved!')
+        rQ.toast('service saved!')
         _.isFunction(doneCb) ? doneCb() : 0;
       });
     }
     function runService() {
       saveService(function() {
         var serviceId = serviceIdUi.value();
-        rQ_ui.toast('run: ' + serviceId + '...');
+        rQ.toast('run: ' + serviceId + '...');
         rQ.call(serviceId, {}, function(data) {
-          rQ_ui.toast('done: ' + serviceId);
-          rQ_ui.toast('header.length: ' + data.header.length);
-          rQ_ui.toast('tablelength: ' + data.table.length);
-          rQ_ui.toast('from: ' + data.from);
-          rQ_ui.toast('totalCount: ' + data.totalCount);
-          rQ_ui.toast('rowsAffected: ' + data.rowsAffected);
+          rQ.toast('done: ' + serviceId);
+          rQ.toast('header.length: ' + data.header.length);
+          rQ.toast('tablelength: ' + data.table.length);
+          rQ.toast('from: ' + data.from);
+          rQ.toast('totalCount: ' + data.totalCount);
+          rQ.toast('rowsAffected: ' + data.rowsAffected);
         });
       });
     }
   }
-  rQ_ui.serviceEditUi = serviceEditUi;
+  rQ.serviceEditUi = serviceEditUi;
 
   // EDIT SERVICE UI -end-
 })();
