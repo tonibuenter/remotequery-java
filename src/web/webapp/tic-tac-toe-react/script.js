@@ -1,49 +1,58 @@
-class Square extends React.Component {
-  // TODO: remove the constructor
-  constructor(props) {
-    super(props);
-    this.state = {
-      value: null };
+var re = React.createElement;
 
-  }
-
-  render() {
-    // TODO: use onClick={this.props.onClick}
-    // TODO: replace this.state.value with this.props.value
-    return (
-      React.createElement("button", { className: "square", onClick: () => this.setState({ value: 'X' }) },
-      this.state.value));
-
-
-  }}
-
+function Square(props) {
+  return (
+    re("button", { className: "square", onClick: props.onClick },
+    props.value));
+}
 
 class Board extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      squares: Array(9).fill(null) };
+      squares: Array(9).fill(null),
+      xIsNext: true };
+
+  }
+
+  handleClick(i) {
+    const squares = this.state.squares.slice();
+    squares[i] = this.state.xIsNext ? 'X' : 'O';
+    this.setState({
+      squares: squares,
+      xIsNext: !this.state.xIsNext });
 
   }
 
   renderSquare(i) {
-    return React.createElement(Square, { value: this.state.squares[i] });
+    return (
+      re(Square, {
+        value: this.state.squares[i],
+        onClick: () => this.handleClick(i) }));
+
+
   }
 
   render() {
-    const status = 'Next player: X';
+    const status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
 
     return (
-      React.createElement("div", null,
-      React.createElement("div", { className: "status" }, status),
-      React.createElement("div", { className: "board-row" },
-      this.renderSquare(0), this.renderSquare(1), this.renderSquare(2)),
+      re("div", null,
+      re("div", { className: "status" }, status),
+      re("div", { className: "board-row" },
+      this.renderSquare(0),
+      this.renderSquare(1),
+      this.renderSquare(2)),
 
-      React.createElement("div", { className: "board-row" },
-      this.renderSquare(3), this.renderSquare(4), this.renderSquare(5)),
+      re("div", { className: "board-row" },
+      this.renderSquare(3),
+      this.renderSquare(4),
+      this.renderSquare(5)),
 
-      React.createElement("div", { className: "board-row" },
-      this.renderSquare(6), this.renderSquare(7), this.renderSquare(8))));
+      re("div", { className: "board-row" },
+      this.renderSquare(6),
+      this.renderSquare(7),
+      this.renderSquare(8))));
 
 
 
@@ -53,13 +62,13 @@ class Board extends React.Component {
 class Game extends React.Component {
   render() {
     return (
-      React.createElement("div", { className: "game" },
-      React.createElement("div", { className: "game-board" },
-      React.createElement(Board, null)),
+      re("div", { className: "game" },
+      re("div", { className: "game-board" },
+      re(Board, null)),
 
-      React.createElement("div", { className: "game-info" },
-      React.createElement("div", null),
-      React.createElement("ol", null))));
+      re("div", { className: "game-info" },
+      re("div", null),
+      re("ol", null))));
 
 
 
@@ -69,5 +78,5 @@ class Game extends React.Component {
 // ========================================
 
 ReactDOM.render(
-React.createElement(Game, null),
+re(Game, null),
 document.getElementById('root'));

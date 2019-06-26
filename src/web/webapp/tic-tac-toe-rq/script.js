@@ -1,105 +1,111 @@
-//class Square extends React.Component {
-//  // TODO: remove the constructor
-//  constructor(props) {
-//    super(props);
-//    this.state = {
-//      value: null };
-//
-//  }
-//
-//  render() {
-//    // TODO: use onClick={this.props.onClick}
-//    // TODO: replace this.state.value with this.props.value
-//    return (
-//      React.createElement("button", { className: "square", onClick: () => this.setState({ value: 'X' }) },
-//      this.state.value));
-//
-//
-//  }}
+//function Square(props) {
+//  return (
+//    re("button", { className: "square", onClick: props.onClick },
+//    props.value));
+//}
 
-function squareUi() {
-  var state, ui, view$;
+function squareUi(props) {
 
-  state = {
-    'value' : null
-  };
-
-  view$ = $('<button>', {
+  return rQ.ui($('<button>', {
     'class' : 'square',
-    'click' : function() {
-      state.value = 'X';
-      render();
-    }
-  });
+    'click' : props.onClick,
+    'text' : props.value
+  }));
 
-  ui = rQ.ui(view$);
-
-  return ui;
-
-  function render() {
-    ui.view().text(state.value);
-  }
 }
 
 // class Board extends React.Component {
 // constructor(props) {
 // super(props);
 // this.state = {
-// squares: Array(9).fill(null) };
+// squares: Array(9).fill(null),
+// xIsNext: true };
+//
+// }
+//
+// handleClick(i) {
+// const squares = this.state.squares.slice();
+// squares[i] = this.state.xIsNext ? 'X' : 'O';
+// this.setState({
+// squares: squares,
+// xIsNext: !this.state.xIsNext });
 //
 // }
 //
 // renderSquare(i) {
-// return React.createElement(Square, { value: this.state.squares[i] });
+// return (
+// re(Square, {
+// value: this.state.squares[i],
+// onClick: () => this.handleClick(i) }));
+//
+//
 // }
 //
 // render() {
-// const status = 'Next player: X';
+// const status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
 //
 // return (
-// React.createElement("div", null,
-// React.createElement("div", { className: "status" }, status),
-// React.createElement("div", { className: "board-row" },
-// this.renderSquare(0), this.renderSquare(1), this.renderSquare(2)),
+// re("div", null,
+// re("div", { className: "status" }, status),
+// re("div", { className: "board-row" },
+// this.renderSquare(0),
+// this.renderSquare(1),
+// this.renderSquare(2)),
 //
-// React.createElement("div", { className: "board-row" },
-// this.renderSquare(3), this.renderSquare(4), this.renderSquare(5)),
+// re("div", { className: "board-row" },
+// this.renderSquare(3),
+// this.renderSquare(4),
+// this.renderSquare(5)),
 //
-// React.createElement("div", { className: "board-row" },
-// this.renderSquare(6), this.renderSquare(7), this.renderSquare(8))));
+// re("div", { className: "board-row" },
+// this.renderSquare(6),
+// this.renderSquare(7),
+// this.renderSquare(8))));
 //
 //
 //
 // }}
 
 function boardUi() {
-  var ui, view$, status, state;
+  var ui, view$, state;
 
   state = {
-    'squares' : Array(9).fill(null)
+    squares : Array(9).fill(null),
+    xIsNext : true
   };
 
   ui = rQ.ui(view$ = rQ.div());
-  init();
+  render();
 
   return ui;
 
-  function renderSquare(i) {
-    var t = squareUi(state.squares[i]);
-    return t;
+  function handleClick(i) {
+    var squares = state.squares.slice();
+    squares[i] = state.xIsNext ? 'X' : 'O';
+    state = {
+      squares : squares,
+      xIsNext : !state.xIsNext
+    };
+    render();
   }
 
-  function init() {
-    var status, row$, t;
-    status = 'Next player: X';
-    view$.append(rQ.div(status, 'status'));
+  function renderSquare(i) {
+    return squareUi({
+      'value' : state.squares[i],
+      'onClick' : () => handleClick(i)
+    })
+  }
 
+  function render() {
+    var status, row$;
+    status = 'Next player: ' + (state.xIsNext ? 'X' : 'O');
+    view$.empty();
+    view$.append(rQ.div(status, 'status'));
     _.each(state.squares, function(sq, i) {
       if (i % 3 == 0) {
         row$ = rQ.div('board-row').appendTo(view$)
       }
-      t = renderSquare(i).view()
-      row$.append(t);
+      row$.append(renderSquare(i).view());
     });
   }
 }
@@ -134,5 +140,5 @@ $(function() {
   // React.createElement(Game, null),
   // document.getElementById('root'));
 
-  $('body').append(gameUi().view());
+  $('#game').append(gameUi().view());
 });
