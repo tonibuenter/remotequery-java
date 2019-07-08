@@ -1,0 +1,3 @@
+ReactDOM.render(
+re(Game, null),
+document.getElementById('game-re'));

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<title>Comparison remoteQuery/jQuery vs ReactJS</title>
+
+<link rel="stylesheet"
+	href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
+
+
+<link rel="stylesheet" href="./style.css">
+
+<link rel="stylesheet"
+	href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.8/styles/default.min.css">
+<link rel="stylesheet"
+	href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.8/styles/agate.min.css">
+<script
+	src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.8/highlight.min.js"></script>
+
+<style type="text/css">
+#ctable td {
+  vertical-align: top;
+  border: solid 1px lightGray;
+  padding: 0.4em;
+}
+</style>
+
+</head>
+
+<body>
+
+	<h2>Comparison remoteQuery/jQuery vs ReactJS</h2>
+
+	<script src="https://code.jquery.com/jquery-3.4.1.min.js"
+		integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+		crossorigin="anonymous"></script>
+
+	<script type="text/javascript" src="../libs/underscore.js"></script>
+
+
+	<script type="text/javascript">
+    window.REMOTE_QUERY_NAME = 'remoteQuery';
+  </script>
+	<script src='../js/rq-base.js'></script>
+	<script src='../js/rq-ui.js'></script>
+
+	<script src="./index.js"></script>
+
+
+
+
+
+	<table id="ctable">
+		<tr class="gamerow">
+			<td><div id="game-ui"></div></td>
+			<td><div id="game-re"></div></td>
+		</tr>
+		<tr class="titlerow">
+			<td><h4>remoteQuery/jQuery</h4></td>
+			<td><h4>ReactJS</h4></td>
+		</tr>
+	</table>
+
+
+
+
+	<script src='https://unpkg.com/react@16/umd/react.development.js'></script>
+	<script
+		src='https://unpkg.com/react-dom@16/umd/react-dom.development.js'></script>
+
+	<script src="./script-ui.js"></script>
+	<script src="./script-re.js"></script>
+	<script>
+    $(function() {
+      INDEX.ready();
+    });
+  </script>
+
+</body>
+
+</html>

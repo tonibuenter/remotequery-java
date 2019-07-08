@@ -1,0 +1,9 @@
+function gameUi() {
+  var ui;
+  ui = rQ.ui();
+  ui.view().append(rQ.div('game'));
+  ui.view().append(rQ.div('game-board'));
+  ui.view().append(boardUi().view().append());
+  ui.view().append(rQ.div('game-info'), rQ.div(), rQ.ol());
+  return ui;
+}

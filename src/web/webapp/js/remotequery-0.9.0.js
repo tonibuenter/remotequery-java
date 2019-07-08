@@ -1,68 +1,12 @@
-(function(root) {
+var rQ = rQ || {};
 
-  var url = 'remoteQuery';
-  var REMOTE_QUERY_NAME = root['REMOTE_QUERY_NAME'];
+(function() {
 
-  var memoFn = (function() {
-    var cache = {};
-    var funPerServiceId = {};
+  var noSessionFn, parameterWrapperFn;
 
-    function memocall(serviceId, parameters, cb) {
-      if (cache[serviceId]) {
-        cb(cache[serviceId]);
-      } else {
-        if (_.isArray(funPerServiceId[serviceId])) {
-          funPerServiceId[serviceId].push(cb);
-        } else {
-          funPerServiceId[serviceId] = [ cb ];
-          callRq(serviceId, parameters, function(data) {
-            _.each(funPerServiceId[serviceId], function(fn, index) {
-              fn(data);
-            });
-            funPerServiceId[serviceId] = false;
-          });
-        }
-      }
-    }
+  rQ.url = 'remoteQuery';
 
-    return {
-      'call' : memocall
-    };
-  })();
-
-  //
-
-  var noSessionHandler, noSessionFn, parameterWrapperFn;
-
-  if (typeof REMOTE_QUERY_NAME !== 'string') {
-    REMOTE_QUERY_NAME = 'rQ';
-  }
-
-  root[REMOTE_QUERY_NAME] = {
-    'call' : callRq,
-    'callForm' : callRqForm,
-    'url' : function(arg0) {
-      if (typeof arg0 === 'string') {
-        url = arg0;
-      }
-      return url;
-    },
-    'names' : {
-      'RegisterService' : 'RegisterService'
-    },
-    'toList' : toList,
-    'asList' : toList,
-    'toMap' : toMap,
-    'asMap' : toMap,
-    'noSession' : settingNoSessionFn,
-    'parameterWrapper' : settingParameterWrapperFn,
-    'memo' : memoFn
-  };
-
-  /**
-   * @memberOf rQ
-   */
-  function callRq(serviceId, arg1, arg2, arg3) {
+  function call(serviceId, arg1, arg2, arg3) {
     var parameters, callback, errorCb;
 
     if (_.isArray(serviceId)) {
@@ -84,14 +28,14 @@
     }
 
     $.ajax({
-      'url' : url + '/' + serviceId,
+      'url' : rQ.url + '/' + serviceId,
       'dataType' : 'json',
       'data' : parameters,
       'async' : true,
       'cache' : false,
       'type' : 'POST',
       'success' : function(arg0) {
-        if (noSessionHandler(arg0)) {
+        if (rQ.noSessionHandler(arg0)) {
           if (callback !== undefined) {
             callback.apply(this, arguments);
           }
@@ -104,11 +48,12 @@
       }
     });
   }
+  rQ.call = call;
 
   /**
    * @memberOf rQ
    */
-  function callRqForm(form$, serviceId, arg2, arg3) {
+  function callForm(form$, serviceId, arg2, arg3) {
     var params, cb;
     if (typeof arg3 === 'function') {
       cb = arg3;
@@ -119,7 +64,7 @@
     }
     form$.attr('enctype', 'multipart/form-data');
     form$.ajaxSubmit({
-      'url' : url + '/' + serviceId,
+      'url' : rQ.url + '/' + serviceId,
       'dataType' : 'json',
       'data' : params,
       'clearForm' : false,
@@ -128,19 +73,20 @@
         alert('error ' + e);
       },
       'success' : function(arg0) {
-        if (noSessionHandler(arg0)) {
+        if (rQ.noSessionHandler(arg0)) {
           cb.apply(this, arguments);
         }
       }
     });
   }
+  rQ.callForm = callForm;
 
   /**
    * @memberOf rQ
    */
   function callRqMulti(requestArray, mainCb) {
     var requestArrayStr = JSON.stringify(requestArray);
-    callRq('MultiService', {
+    call('MultiService', {
       'requestArray' : requestArrayStr
     }, processSuccess);
 
@@ -158,12 +104,9 @@
       }
     }
   }
-  root[REMOTE_QUERY_NAME].callRqMulti = callRqMulti;
+  rQ.callRqMulti = callRqMulti;
 
-  /**
-   * @memberOf rQ
-   */
-  noSessionHandler = function(arg0) {
+  function noSessionHandler(arg0) {
     if (arg0 && arg0.exception === 'NOSESSION') {
       if (_.isFunction(noSessionFn)) {
         noSessionFn.apply(this, arguments);
@@ -173,24 +116,27 @@
       return false;
     }
     return true;
-  };
+  }
+  rQ.noSessionHandler = noSessionHandler;
 
   /**
    * @memberOf rQ
    */
-  function settingNoSessionFn(arg0) {
+  function noSession(arg0) {
     if (_.isFunction(arg0)) {
       noSessionFn = arg0;
     }
     return noSessionFn;
   }
+  rQ.noSession = noSession;
 
-  function settingParameterWrapperFn(arg0) {
+  function parameterWrapper(arg0) {
     if (_.isFunction(arg0)) {
       parameterWrapperFn = arg0;
     }
     return parameterWrapperFn;
   }
+  rQ.parameterWrapper = parameterWrapper;
 
   /**
    * @memberOf rQ
@@ -210,21 +156,11 @@
           obj[head] = row[j];
         }
       }
-      // $.each(serviceData.table, function(rowIndex, row) {
-      // var obj = {};
-      // list.push(obj);
-      // $.each(serviceData.header, function(colIndex, head) {
-      // obj[head] = row[colIndex];
-      // });
-      // });
-      // list.header = serviceData.header;
     }
     return list;
   }
+  rQ.toList = toList;
 
-  /**
-   * @memberOf rQ
-   */
   function toMap(serviceData, keyColumns) {
     var map = {}, keys, keyIndexes = [], i;
     var rowCounter, row, currentMap;
@@ -261,10 +197,8 @@
     }
     return map;
   }
+  rQ.toMap = toMap;
 
-  /**
-   * @memberOf rQ
-   */
   function toMap2(list, attributeName) {
     var map = {}, i, o;
     for (i = 0; i < list.length; i++) {
@@ -275,11 +209,8 @@
     }
     return map;
   }
-  root[REMOTE_QUERY_NAME].toMap2 = toMap2;
+  rQ.toMap2 = toMap2;
 
-  /**
-   * @memberOf rQ
-   */
   function sortBy(serviceData, headerName, asc) {
     asc = _.isBoolean(asc) ? asc : true;
     var array, index;
@@ -321,11 +252,8 @@
     }
 
   }
-  root[REMOTE_QUERY_NAME].sortBy = sortBy;
+  rQ.sortBy = sortBy;
 
-  /**
-   * @memberOf rQ
-   */
   function firstAsObject(serviceData) {
     var i, header, head, res = {};
     if (serviceData && serviceData.header && serviceData.table
@@ -338,11 +266,8 @@
     }
     return res;
   }
-  root[REMOTE_QUERY_NAME].firstAsObject = firstAsObject;
+  rQ.firstAsObject = firstAsObject;
 
-  /**
-   * @memberOf rQ
-   */
   function toHierMap(serviceData, keyColumns) {
     var map = {}, keys, keyIndexes = [], i, j;
     var rowCounter, row, currentMap;
@@ -390,11 +315,8 @@
     }
     return map;
   }
-  root[REMOTE_QUERY_NAME].toHierMap = toHierMap;
+  rQ.toHierMap = toHierMap;
 
-  /**
-   * @memberOf rQ
-   */
   function toListMap(arg0, name) {
 
     var list, i, o, map = {};
@@ -417,8 +339,7 @@
     }
     return map;
   }
-  root[REMOTE_QUERY_NAME].toListMap = toListMap;
-  root[REMOTE_QUERY_NAME].asListMap = toListMap;
+  rQ.toListMap = toListMap;
 
   function camelCaseToTitle(camelCase) {
     var p;
@@ -426,8 +347,7 @@
     p = camelCase.match(/[A-Z][a-z0-9]*/g);
     return p.join(' ');
   }
-
-  root[REMOTE_QUERY_NAME].camelCaseToTitle = camelCaseToTitle;
+  rQ.camelCaseToTitle = camelCaseToTitle;
 
   //
   // AJAX FILE UPLOAD
@@ -468,7 +388,7 @@
 
       $.ajax({
         'type' : "POST",
-        'url' : url + '/' + serviceId, // "script",
+        'url' : rQ.url + '/' + serviceId, // "script",
 
         'dataType' : 'json',
 
@@ -523,6 +443,6 @@
     upload.doUpload();
   }
 
-  root[REMOTE_QUERY_NAME].ajaxFileUpload = ajaxFileUpload;
+  rQ.ajaxFileUpload = ajaxFileUpload;
 
-})(this);
+})();

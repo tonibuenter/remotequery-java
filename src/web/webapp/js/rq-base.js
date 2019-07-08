@@ -1,4 +1,4 @@
-var rQ_base = rQ_base || {};
+var rQ = rQ || {};
 
 (function() {
 
@@ -6,14 +6,10 @@ var rQ_base = rQ_base || {};
   //
   // NEW ID
   //
-  /**
-   * @memberOf rQ_base
-   */
   function newId(name) {
     counter++;
     return name ? name + counter : '' + counter;
   }
-  rQ_base.newId = newId;
-  // NEW ID
+  rQ.newId = newId;
 
 })();

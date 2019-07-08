@@ -1,176 +1,8 @@
-var rQ = {};
+var rQ = rQ || {};
 
 (function() {
 
-  //
-  // ELEMENT FUN -start-
-  //
-  function elementFun(ele, firstClass) {
-    return function(arg0, arg1) {
-      var ele$;
 
-      if (_.isObject(arg0)) {
-        ele$ = $('<' + ele + '>', arg0);
-      } else {
-        ele$ = $('<' + ele + '>');
-      }
-
-      if (_.isObject(arg1)) {
-        ele$.css(arg1);
-      }
-
-      if (!_.isObject(arg0) && !_.isUndefined(arg0)) {
-        if (_.isUndefined(arg1) && firstClass) {
-          ele$.addClass(arg0);
-        } else {
-          ele$.text(arg0);
-        }
-      }
-
-      if (!_.isObject(arg1) && !_.isUndefined(arg1)) {
-        ele$.addClass(arg1);
-      }
-      return ele$;
-    }
-  }
-
-  rQ.div = elementFun('div', true);
-
-  rQ.span = elementFun('span');
-  rQ.cite = elementFun('cite');
-  rQ.pre = elementFun('pre');
-  rQ.i = elementFun('i');
-  rQ.a = elementFun('a');
-
-  rQ.ul = elementFun('ul', true);
-  rQ.ol = elementFun('ol', true);
-  rQ.li = elementFun('li');
-
-  rQ.img = elementFun('img', true);
-
-  rQ.h1 = elementFun('h1');
-  rQ.h2 = elementFun('h2');
-  rQ.h3 = elementFun('h3');
-  rQ.h4 = elementFun('h4');
-  rQ.h5 = elementFun('h5');
-  rQ.h6 = elementFun('h6');
-
-  rQ.table = elementFun('table', true);
-  rQ.thead = elementFun('thead', true);
-  rQ.tbody = elementFun('tbody', true);
-  rQ.tr = elementFun('tr', true);
-  rQ.td = elementFun('td');
-
-  rQ.form = elementFun('form', true);
-  rQ.input = elementFun('input', true);
-  rQ.label = elementFun('label');
-  rQ.textarea = elementFun('textarea', true);
-  rQ.select = elementFun('select', true);
-  rQ.option = elementFun('option');
-
-  rQ.section = elementFun('section', true);
-  rQ.nav = elementFun('nav', true);
-
-  // ELEMENT FUN -end-
-
-  //
-  // TEMPLATE UI -start-
-  //
-  /**
-   * @memberOf rQ
-   */
-  function templateUi(settings) {
-    settings = settings || {};
-    var ui, view$;
-    var name, id, cx;
-    var callbacks = {};
-
-    name = settings.name;
-
-    view$ = settings.view$ || settings.view || rQ.div();
-
-    ui = {
-      'id' : function(arg0) {
-        if (_.isString(arg0)) {
-          id = arg0;
-          view$.attr('id', id);
-          return ui;
-        } else {
-          return id;
-        }
-      },
-      'view' : function(arg0) {
-        if (_.isObject(arg0)) {
-          view$ = arg0;
-          return ui;
-        }
-        return view$;
-      },
-      'hide' : function() {
-        view$.hide.apply(view$, arguments);
-        return ui;
-      },
-      'show' : function() {
-        view$.show.apply(view$, arguments);
-        return ui;
-      },
-      'name' : function(arg) {
-        if (_.isString(arg)) {
-          name = arg;
-          return ui;
-        }
-        return name;
-      },
-      'destroy' : function() {
-        view$.remove();
-        view$ = undefined;
-      },
-      'disable' : _.noop,
-      'select' : function(arg0) {
-        return handleCallback('select', arg0);
-      },
-      'change' : function(arg0) {
-        return handleCallback('change', arg0);
-      },
-      'done' : function(arg0) {
-        return handleCallback('done', arg0);
-      },
-      'action' : function(arg0) {
-        return handleCallback('action', arg0);
-      },
-      'size' : function() {
-        return view$.length;
-      },
-      'context' : function(arg0) {
-        if (!_.isUndefined(arg0)) {
-          cx = arg0;
-        }
-        return cx;
-      },
-      'editable' : function(arg0) {
-        return rQ.handleDisabledAttr(view$, arg0);
-      },
-      'label' : _.noop,
-      'value' : _.noop,
-      'data' : _.noop
-    };
-    return ui;
-
-    function handleCallback(name, fun) {
-      if (_.isFunction(fun)) {
-        callbacks[name] = fun;
-      } else {
-        if (_.isFunction(callbacks[name])) {
-          callbacks[name].apply(this, arguments);
-        }
-      }
-      return ui;
-    }
-
-  }
-  rQ.ui = templateUi;
-
-  // TEMPLATE UI -end-
 
   //
   // INPUT UI -start-
@@ -190,7 +22,7 @@ var rQ = {};
     input$ = isTextarea ? rQ.textarea('', 'materialize-textarea') : rQ
         .input();
     label$ = rQ.label();
-    id = rQ_base.newId();
+    id = rQ.newId();
     label$.attr('for', id);
     input$.attr('id', id);
     input$.attr('type', settings.type || 'text').css('color', 'black');
@@ -350,7 +182,7 @@ var rQ = {};
 
     view$ = ui.view();
 
-    id = 'tinymce' + rQ_base.newId();
+    id = 'tinymce' + rQ.newId();
 
     view$.attr('id', id);
 
@@ -408,8 +240,8 @@ var rQ = {};
 
     ui = rQ.ui();
 
-    idToolbar = 'tinymceToolbar' + rQ_base.newId();
-    idEditor = 'tinymce' + rQ_base.newId();
+    idToolbar = 'tinymceToolbar' + rQ.newId();
+    idEditor = 'tinymce' + rQ.newId();
 
     toolbar$ = rQ.div('toolbar').attr('id', idToolbar);
     editor$ = rQ.div('editor').attr('id', idEditor);

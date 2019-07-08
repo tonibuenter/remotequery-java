@@ -1,4 +1,4 @@
-var rQ = {};
+var rQ = rQ || {};
 
 (function() {
 
@@ -6,10 +6,10 @@ var rQ = {};
   // ELEMENT FUN
   //
   function elementFun(ele, firstClass) {
-    return function(arg0, arg1) {
+    return function(arg0, arg1, children) {
       var ele$;
 
-      if (_.isObject(arg0)) {
+      if (typeof arg0 == 'object') {
         ele$ = $('<' + ele + '>', arg0);
       } else {
         ele$ = $('<' + ele + '>');
@@ -37,6 +37,7 @@ var rQ = {};
   rQ.span = elementFun('span');
   rQ.cite = elementFun('cite');
   rQ.pre = elementFun('pre');
+  rQ.code = elementFun('code');
   rQ.i = elementFun('i');
   rQ.a = elementFun('a');
 
@@ -70,11 +71,101 @@ var rQ = {};
   rQ.nav = elementFun('nav', true);
 
   //
-  // TEMPLATE UI
+  // UI
   //
-  /**
-   * @memberOf rQ
-   */
+  
+  function templateUi(settings) {
+    settings = settings || {};
+    var ui, view$;
+    var name, id, cx;
+    var callbacks = {};
+
+    name = settings.name;
+
+    view$ = settings.view$ || settings.view || rQ.div();
+
+    ui = {
+      'id' : function(arg0) {
+        if (_.isString(arg0)) {
+          id = arg0;
+          view$.attr('id', id);
+          return ui;
+        } else {
+          return id;
+        }
+      },
+      'view' : function(arg0) {
+        if (_.isObject(arg0)) {
+          view$ = arg0;
+          return ui;
+        }
+        return view$;
+      },
+      'hide' : function() {
+        view$.hide.apply(view$, arguments);
+        return ui;
+      },
+      'show' : function() {
+        view$.show.apply(view$, arguments);
+        return ui;
+      },
+      'name' : function(arg) {
+        if (_.isString(arg)) {
+          name = arg;
+          return ui;
+        }
+        return name;
+      },
+      'destroy' : function() {
+        view$.remove();
+        view$ = undefined;
+      },
+      'disable' : _.noop,
+      'select' : function(arg0) {
+        return handleCallback('select', arg0);
+      },
+      'change' : function(arg0) {
+        return handleCallback('change', arg0);
+      },
+      'done' : function(arg0) {
+        return handleCallback('done', arg0);
+      },
+      'action' : function(arg0) {
+        return handleCallback('action', arg0);
+      },
+      'size' : function() {
+        return view$.length;
+      },
+      'context' : function(arg0) {
+        if (!_.isUndefined(arg0)) {
+          cx = arg0;
+        }
+        return cx;
+      },
+      'editable' : function(arg0) {
+        return rQ.handleDisabledAttr(view$, arg0);
+      },
+      'label' : _.noop,
+      'value' : _.noop,
+      'data' : _.noop
+    };
+    return ui;
+
+    function handleCallback(name, fun) {
+      if (_.isFunction(fun)) {
+        callbacks[name] = fun;
+      } else {
+        if (_.isFunction(callbacks[name])) {
+          callbacks[name].apply(this, arguments);
+        }
+      }
+      return ui;
+    }
+
+  }
+  rQ.ui = templateUi;
+  rQ.templateUi = templateUi;
+  
   function templateUi(arg0) {
 
     var ui, view$;
@@ -149,8 +240,11 @@ var rQ = {};
       'editable' : function(arg0) {
         return rQ.handleDisabledAttr(view$, arg0);
       },
-      'value' : function() {
-        view$.val(arguments);
+      'value' : function(args) {
+        if (args != undefined) {
+          view$.val(args);
+        }
+        return view$.val();
       },
       'data' : _.noop
     };
@@ -173,6 +267,28 @@ var rQ = {};
   // TEMPLATE UI -end-
 
   //
+  // Y
+  //
+  function y(componentOrTag, properties, children) {
+    var r;
+    if (typeof componentOrTag == 'string') {
+      r = $('<' + componentOrTag + '>', properties);
+    } else if (typeof componentOrTag == 'function') {
+      r = componentOrTag(properties);
+    }
+    if (r instanceof $) {
+      if (typeof children == 'string') {
+        r.text(children);
+      } else if (typeof children == 'object' && children.length) {
+        for (var i = 0; i < children.length; i++) {
+          r.append(h);
+        }
+      }
+    }
+  }
+  rQ.y = y;
+
+  //
   // INPUT UI
   //
   function inputUi(settings) {
@@ -187,6 +303,10 @@ var rQ = {};
     return rQ.ui(rQ.textarea(settings));
   }
   rQ.textareaUi = textareaUi;
+
+  rQ.button = function(label, callback) {
+    return $('<button>').text(label).on('click', callback);
+  }
 
   //
   // BUTTON UI
@@ -239,7 +359,7 @@ var rQ = {};
 
     view$ = ui.view();
 
-    id = 'tinymce' + rQ_base.newId();
+    id = 'tinymce' + rQ.newId();
 
     view$.attr('id', id);
 
@@ -297,8 +417,8 @@ var rQ = {};
 
     ui = rQ.ui();
 
-    idToolbar = 'tinymceToolbar' + rQ_base.newId();
-    idEditor = 'tinymce' + rQ_base.newId();
+    idToolbar = 'tinymceToolbar' + rQ.newId();
+    idEditor = 'tinymce' + rQ.newId();
 
     toolbar$ = rQ.div('toolbar').attr('id', idToolbar);
     editor$ = rQ.div('editor').attr('id', idEditor);

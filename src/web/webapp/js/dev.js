@@ -1,5 +1,15 @@
 (function() {
 
+  function btn(prop) {
+    prop = typeof prop == 'object' ? prop : {
+      'text' : prop
+    };
+    return rQ.a(_.extend({}, prop, {
+      'class' : 'btn'
+    }));
+  }
+  rQ.btn = btn;
+
   //
   // EDIT SERVICE UI -start-
   //
@@ -13,9 +23,9 @@
 
     ui = rQ.ui();
     view$ = ui.view().addClass('edit-service-ui');
-    header$ = rQ.div('section').append(reload$ = rQ.button('reload'),
-        ' ', save$ = rQ.button('save'), ' ',
-        run$ = rQ.button('save and run'), ' ', back$ = rQ.button('back'));
+    header$ = rQ.div('section').append(reload$ = rQ.btn('reload'), ' ',
+        save$ = rQ.btn('save'), ' ', run$ = rQ.btn('save and run'), ' ',
+        back$ = rQ.btn('back'));
 
     serviceIdUi = rQ.inputUi({
       'label' : 'Service Id',
@@ -35,8 +45,8 @@
     body$ = rQ.div('row').append(
         rQ.div('col s12 red-text darken-4-text ').append(serviceIdUi.view(),
             rolesUi.view()),
-        rQ.div(' col s12 grey lighten-2 statements').append(
-            statementsUi.view()));
+        rQ.div(' col s12 grey lighten-2 statements')
+            .append(statementsUi.view()));
 
     view$.append(header$, body$);
 

@@ -1,9 +1,0 @@
-function squareUi(props) {
-
-  return rQ.ui($('<button>', {
-    'class' : 'square',
-    'click' : props.onClick,
-    'text' : props.value
-  }));
-
-}

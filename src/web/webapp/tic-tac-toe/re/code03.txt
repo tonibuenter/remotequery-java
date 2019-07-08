@@ -1,0 +1,11 @@
+class Game extends React.Component {
+  render() {
+    return (
+      re("div", { className: "game" },
+      re("div", { className: "game-board" },
+      re(Board, null)),
+
+      re("div", { className: "game-info" },
+      re("div", null),
+      re("ol", null))));
+  }}
