@@ -12,7 +12,7 @@
 *This and more is actually fullfilled by RemoteQuery*
 
 
-|            | RemoteQuery fullfilment   |
+|            | RemoteQuery fullfillment   |
 | ----------- | ------------ | 
 | fine-grained   | ![alt Checked](path6006.png) RQ services can be as small as a single select query  |
 | protocols are lightweight |![alt Checked](path6006.png) RQ services to no assume a fixed protocol. Any RQ service can be call stand-alone. |
@@ -21,7 +21,7 @@
 | resilient to architecture erosion |![alt Checked](path6006.png) There are no architectural presumptions than having mainly an SQL database. Even a migration of the complete RQ middleware to another programming language is a matter of 5 to 10 person days.|
 | parallelizes development |![alt Checked](path6006.png) This is highly supported. |
 | deploy and scale their respective services independently|![alt Checked](path6006.png) Deploying services can be done in RQ in almost all cases without restart the server. |
-| enable continuous delivery and deployment|![alt Checked](path6006.png) Deploying services can be done in RQ in almost all cases without restart the server. |
+| enable continuous delivery and deployment|![alt Checked](path6006.png) This is provided in the most flexible way. |
 
 
 
