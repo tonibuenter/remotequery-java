@@ -1,5 +1,5 @@
 
-![RemoteQuery are Microservices!](g4317.png)
+![RemoteQuery are Microservices!](microservices.png)
 
 
 # RemoteQuery Services == Mircroservices
