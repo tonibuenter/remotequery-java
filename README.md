@@ -32,6 +32,7 @@ After starting with RQ the Java source code was reduced - even using JPA and Hib
 + Any RQ service can be protected with a list of roles
 + SQL parameters are directly mapped into the query (still preventing SQL injection)
 + A Java class (or Python function) can be used for a RQ service
++  [RemoteQuery are Microservices!](docs/remotequery_are_microservices.md)
 + A simple yet powerfull object-relational support without obfuscation is provided for the Java and Python coding [OR Support](docs/object_relational_support.md)
 
 
