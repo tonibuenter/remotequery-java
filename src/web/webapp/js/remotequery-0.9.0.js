@@ -164,6 +164,11 @@ var rQ = rQ || {};
   function toMap(serviceData, keyColumns) {
     var map = {}, keys, keyIndexes = [], i;
     var rowCounter, row, currentMap;
+
+    if (_.isArray(serviceData)) {
+      return toMap2(serviceData, keyColumns);
+    }
+
     if (_.isArray(keyColumns)) {
       keys = keyColumns;
     } else {

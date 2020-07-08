@@ -57,22 +57,6 @@ public class Test_Bootstrap {
 		Assert.assertTrue(!se.getRoles().contains("APP_USER"));
 	}
 
-	@Test
-	public void setCommand_is_ok() throws Exception {
-
-		ServiceEntry se = ServiceRepositoryHolder.get().get("RQService.select");
-		Assert.assertNotNull(se);
-		Assert.assertNotNull(se.serviceId);
-		Assert.assertEquals("RQService.select", se.serviceId);
-
-		//
-		se = ServiceRepositoryHolder.get().get("RQService.delete");
-		Assert.assertNotNull(se);
-		Assert.assertNotNull(se.serviceId);
-		Assert.assertEquals("RQService.delete", se.serviceId);
-		Assert.assertTrue(se.getRoles().contains("SYSTEM"));
-		Assert.assertTrue(!se.getRoles().contains("APP_USER"));
-	}
 
 	@Test
 	public void AppProperties_check() throws Exception {

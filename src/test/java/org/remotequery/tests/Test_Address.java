@@ -33,8 +33,8 @@ public class Test_Address {
 		address.firstName = "Monika";
 		address.lastName = "Gilic";
 		address.street = "Blumenweg 73";
-		address.street = "8676";
-		address.street = "Underwiler";
+		address.zip = "8676";
+		address.city = "Underwiler";
 
 		Set<String> roles = new HashSet<String>();
 		roles.add("ADDRESS_WRITER");

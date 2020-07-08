@@ -14,7 +14,7 @@
 
 Currently, we have a Java and Python implementation ready.
 
-## ... just another object relational tool like Hibernate or JPA ?
+## Just another object relational tool like Hibernate or JPA ?
 
 Yes indeed, but a much lighter and more efficient one. RQ does not introduce another level of complexity
 and uncertainty. RQ does not provide a sophisticated and magic mapping and optimization for DB access. All data access is done with
@@ -25,6 +25,19 @@ explicit SQL statement like select, insert, update, delete or stored procedures.
 Further, after years of the object to relational mapping, it seems obvious that a good relational database design is very important and should not be restrained by an additional layer such as Hibernate and JPAs.
 
 After starting with RQ the Java source code was reduced - even using JPA and Hibernate - by 80 per cent. On the other side, the RQ code, of which 90 per cent are just SQL statements, has been proven to be easily maintainable and testable.
+
+## RemoteQuery are Microservices!
+
+According to the [Microservices? Please, Don't (DZone)](https://dzone.com/articles/microservices-please-dont?edition=615291&utm_source=Daily%20Digest&utm_medium=email&utm_campaign=Daily%20Digest%202020-07-07)
+the following criteria can be applied
+
+|Criteria|Description|
+|---|----|
+|Cleaner Code|A simple SQL query is a very clean code statement (if done reasonable)|
+|Easy to write, one purpose|A simple SQL query is a very clean code statement (if done reasonable)|
+|Faster than monolith|RQ applies no big interception layer such as Hibernate or JPS|
+|Not all engineer work on the same codebase|One RQ service is finally one DB entry.|
+|Autoscaling|RQ does not assume or restrict anything about scaling.|
 
 ## The Highlights:
 

@@ -7,3 +7,10 @@ create table JGROUND.T_ADDRESS (
    CITY varchar(256),
    primary key (ADDRESS_ID)
 );
+
+
+create table JGROUND.T_ROLE (
+   USER_ID varchar(256),
+   ROLE varchar(256),
+   primary key (USER_ID, ROLE)
+);

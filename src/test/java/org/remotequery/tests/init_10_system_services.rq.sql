@@ -112,7 +112,6 @@ class org.remotequery.tests.UuidQuery
 python UuidQuery
 
 
-
 --
 -- SERVICE_ID = UUID.method.createNew
 -- ROLES      = SYSTEM

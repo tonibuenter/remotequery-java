@@ -205,7 +205,7 @@ select * from JGROUND.T_APP_PROPERTIES where NAME like :prefix
 parameters select count(*) as "TOTAL1" from JGROUND.T_APP_PROPERTIES where NAME like 'Test.Command.switch%'
 ;
 delete from JGROUND.T_APP_PROPERTIES where NAME like :prefix
-;
+
 
 
 

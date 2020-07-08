@@ -73,7 +73,7 @@ var rQ = rQ || {};
   //
   // UI
   //
-  
+
   function templateUi(settings) {
     settings = settings || {};
     var ui, view$;
@@ -142,12 +142,13 @@ var rQ = rQ || {};
         }
         return cx;
       },
-      'editable' : function(arg0) {
+      editable : function(arg0) {
         return rQ.handleDisabledAttr(view$, arg0);
       },
-      'label' : _.noop,
-      'value' : _.noop,
-      'data' : _.noop
+      label : _.noop,
+      value : _.noop,
+      data : _.noop,
+      render : _.noop
     };
     return ui;
 
@@ -165,7 +166,7 @@ var rQ = rQ || {};
   }
   rQ.ui = templateUi;
   rQ.templateUi = templateUi;
-  
+
   function templateUi(arg0) {
 
     var ui, view$;

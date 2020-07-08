@@ -1,4 +1,6 @@
-insert into JGROUND.T_ADDRESS 
+delete from JGROUND.T_ADDRESS 
+;
+insert into JGROUND.T_ADDRESS
 (ADDRESS_ID, FIRST_NAME, LAST_NAME, STREET, ZIP, CITY)
 values
 (1, 'John', 'Maier', 'Bahnhofstrasse 12', '8001', 'Zuerich'),

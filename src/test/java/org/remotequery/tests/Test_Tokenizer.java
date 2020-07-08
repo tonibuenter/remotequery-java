@@ -33,6 +33,13 @@ public class Test_Tokenizer {
 		Assert.assertEquals("this,is", Utils.joinTokens(new String[] { "this", "is" }));
 		Assert.assertEquals("t\\,his,is", Utils.joinTokens(new String[] { "t,his", "is" }));
 
+		System.out.println("set semicolon = '\\;'; bla");
+		String[] arr = Utils.tokenize("set semicolon = '\\;'; bla");
+		for (int i = 0; i < arr.length; i++) {
+			System.out.println(arr[i]);
+		}
+		System.out.println(Utils.joinTokens(arr));
+
 	}
 
 	@Test

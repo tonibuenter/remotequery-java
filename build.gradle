@@ -3,9 +3,12 @@ apply plugin: 'java'
 version = '1.0'
 
 dependencies {
-	compile fileTree(dir: 'java-libs', include: '*.jar')
 	compile fileTree(dir: 'java-test-libs', include: '*.jar')
 	compile fileTree(dir: 'java-web-libs', include: '*.jar')
+	implementation 'org.slf4j:slf4j-api:1.7.9'
+    implementation 'org.slf4j:slf4j-log4j12:1.7.9'
+	implementation 'com.google.code.gson:gson:2.8.6'
+	implementation 'org.apache.commons:commons-lang3:3.3.2'
 }
 
 javadoc {
@@ -22,4 +25,8 @@ task fatJar(type: Jar) {
 	baseName = project.name + '-all'
 	from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
 	with jar
+}
+
+repositories {
+    mavenCentral()
 }

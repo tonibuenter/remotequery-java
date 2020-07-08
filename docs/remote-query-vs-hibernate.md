@@ -480,7 +480,10 @@ function after_insert() {
 ```
 
 
+## One Last Thing
 
+Basic caveats about OOP (object-oriented programming) that dominates the JPA and Hibernate world are discussed in the following article:
+[Object-Oriented Programming — The Trillion Dollar Disaster [3] ](https://medium.com/codeiq/object-oriented-programming-the-trillion-dollar-disaster-%EF%B8%8F-92a4b666c7c7). The conclusion resulting in the article supports a simple, staight-forward, rather relational than object-oriented approach for a save, secure and maintainable software development. RemoteQuery was build for that.
 
 ## Reference
 
@@ -488,5 +491,6 @@ function after_insert() {
 | ---- | ----|
 | 1 | https://www.tutorialspoint.com/hibernate/hibernate_examples.htm |
 | 2 | **The Art of SQL** by Stéphane Faroult with Peter Robson; 2006 O’Reilly Media, Inc |
+| 3 | **Object-Oriented Programming — The Trillion Dollar Disaster**, by Ilya Suzdalnitski; 2019 medium.com/codeiq  |
 
 
