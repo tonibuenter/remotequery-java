@@ -1,13 +1,5 @@
 package org.remotequery.tests;
 
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.sql.Connection;
-
-import javax.sql.DataSource;
-
 import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.commons.io.IOUtils;
 import org.remotequery.RemoteQuery.DataSources;
@@ -17,93 +9,118 @@ import org.remotequery.RemoteQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.sql.DataSource;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.sql.Connection;
+
 public class TestCentral {
 
-	private static Logger logger = LoggerFactory.getLogger(TestCentral.class);
+  private static Logger logger = LoggerFactory.getLogger(TestCentral.class);
 
-	private static DataSource dataSource;
+  static {
+    System.out.println("CLASSPATH " + System.getProperty("java.class.path"));
+  }
 
-	private static String sqlfileNames[] = { "init_01_bootstrap.sql", "address.sql", "address_testdata.sql",
-			"html-text.sql" };
+  private static DataSource dataSource;
 
-	private static String rqSqlfileNames[] = { "init_02_commands.rq.sql", "init_03_includes.rq.sql",
-			"init_10_system_services.rq.sql", "address.rq.sql", "html-text.rq.sql" };
+  private static String sqlfileNames[] = {"init_01_bootstrap.sql", "address.sql", "address_testdata.sql",
+          "html-text.sql"};
 
-	public static void init() throws Exception {
+  private static String rqSqlfileNames[] = {"init_02_commands.rq.sql", "init_03_includes.rq.sql",
+          "init_10_system_services.rq.sql", "address.rq.sql", "html-text.rq.sql"};
 
-		if (TestCentral.dataSource != null) {
-			logger.info("TestCentral already initialized, will do nothing...");
-			return;
-		}
+  public static void init() throws Exception {
 
-		//
-		// 1. Database : Create a temporary directory for a Appache Derby DB
-		// with with embedded driver
-		//
+    if (TestCentral.dataSource != null) {
+      logger.info("TestCentral already initialized, will do nothing...");
+      return;
+    }
 
-		Path tmpDbPath = Files.createTempDirectory("remoteQueryTestDb");
-		logger.info("Will try to temporary db in folder: " + tmpDbPath.toAbsolutePath());
+    //
+    // 1. Database : Create a temporary directory for a Appache Derby DB
+    // with with embedded driver
+    //
 
-		String dbdriver = "org.apache.derby.jdbc.EmbeddedDriver";
-		String dburl = "jdbc:derby:" + tmpDbPath.toAbsolutePath() + "/test;create=true";
-		String dbuserid = "derby";
-		String dbpasswd = "derby";
+    Path tmpDbPath = Files.createTempDirectory("remoteQueryTestDb");
+    logger.info("Will try to temporary db in folder: " + tmpDbPath.toAbsolutePath());
 
-		//
-		// 2. DataSource : Create a data source object with Apache
-		// BasicDataSource
-		//
+    String dbdriver = "org.apache.derby.jdbc.EmbeddedDriver";
+    String dburl = "jdbc:derby:" + tmpDbPath.toAbsolutePath() + "/test;create=true";
+    String dbuserid = "derby";
+    String dbpasswd = "derby";
 
-		BasicDataSource basicDataSource = new BasicDataSource();
-		basicDataSource.setDriverClassName(dbdriver);
-		basicDataSource.setUrl(dburl);
-		basicDataSource.setUsername(dbuserid);
-		basicDataSource.setPassword(dbpasswd);
-		Connection connection = basicDataSource.getConnection();
-		logger.info("Connection from Apache BasicDataSource: " + connection);
+    //
+    // 2. DataSource : Create a data source object with Apache
+    // BasicDataSource
+    //
 
-		//
-		// 3. DB Objects : Create schema and tables, insert bootstrap service
-		// entry
-		//
+    BasicDataSource basicDataSource = new BasicDataSource();
+    basicDataSource.setDriverClassName(dbdriver);
+    basicDataSource.setUrl(dburl);
+    basicDataSource.setUsername(dbuserid);
+    basicDataSource.setPassword(dbpasswd);
+    Connection connection = basicDataSource.getConnection();
+    logger.info("Connection from Apache BasicDataSource: " + connection);
 
-		for (String sqlfileName : sqlfileNames) {
-			Reader input = new InputStreamReader(
-					TestCentral.class.getResourceAsStream("/org/remotequery/tests/" + sqlfileName), "UTF-8");
-			String sqlText = IOUtils.toString(input);
-			input.close();
-			RemoteQueryUtils.processSqlText(connection, sqlText, sqlfileName);
-		}
-		connection.close();
+    //
+    // 3. DB Objects : Create schema and tables, insert bootstrap service
+    // entry
+    //
 
-		//
-		// 4. Initialize RemoteQuery : Register data source, create and register
-		// an sql service
-		// repository with the service table JGROUND.T_RQ_SERVICE
-		//
+    for (String sqlfileName : sqlfileNames) {
+      URL url = TestCentral.class.getClassLoader().getResource( sqlfileName);
+      if (url == null) {
+        logger.error("Did not find: " + sqlfileName);
+        continue;
+      }
+      Reader input = new InputStreamReader(
+              TestCentral.class.getClassLoader().getResourceAsStream(sqlfileName), "UTF-8");
+      String sqlText = IOUtils.toString(input);
+      input.close();
+      RemoteQueryUtils.processSqlText(connection, sqlText, sqlfileName);
+    }
+    connection.close();
 
-		logger.info("Register default data source...");
-		DataSources.register(basicDataSource);
+    //
+    // 4. Initialize RemoteQuery : Register data source, create and register
+    // an sql service
+    // repository with the service table JGROUND.T_RQ_SERVICE
+    //
 
-		logger.info("Register default ...");
-		ServiceRepositorySql serviceRepository = new ServiceRepositorySql(basicDataSource, "JGROUND.T_RQ_SERVICE");
-		ServiceRepositoryHolder.set(serviceRepository);
+    logger.info("Register default data source...");
+    DataSources.register(basicDataSource);
 
-		//
-		// 5. Load RQ Services : Read application's service definitions from
-		// rq.sql files
-		//
+    logger.info("Register default ...");
+    ServiceRepositorySql serviceRepository = new ServiceRepositorySql(basicDataSource, "JGROUND.T_RQ_SERVICE");
+    ServiceRepositoryHolder.set(serviceRepository);
 
-		for (String fileName : rqSqlfileNames) {
-			Reader input = new InputStreamReader(
-					TestCentral.class.getResourceAsStream("/org/remotequery/tests/" + fileName), "UTF-8");
-			String rqSqlText = IOUtils.toString(input);
-			input.close();
-			RemoteQueryUtils.processRqSqlText(rqSqlText, "RQService.save", fileName);
-		}
+    //
+    // 5. Load RQ Services : Read application's service definitions from
+    // rq.sql files
+    //
 
-		dataSource = basicDataSource;
+    for (String fileName : rqSqlfileNames) {
+       URL url = TestCentral.class.getClassLoader().getResource( fileName);
+      if (url == null) {
+        logger.error("Did not find: " + fileName);
+        continue;
+      }
+      try (Reader input = new InputStreamReader(
+              TestCentral.class.getClassLoader().getResourceAsStream( fileName), "UTF-8");) {
+        String rqSqlText = IOUtils.toString(input);
+        RemoteQueryUtils.processRqSqlText(rqSqlText, "RQService.save", fileName);
+      } catch (Exception e) {
+        logger.error(e.getMessage(), e);
+      }
 
-	}
+    }
+
+    dataSource = basicDataSource;
+
+  }
 
 }

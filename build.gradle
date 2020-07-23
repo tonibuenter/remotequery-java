@@ -1,32 +1,32 @@
-apply plugin: 'java'
+plugins {
+    id 'java'
+}
 
 version = '1.0'
 
 dependencies {
-	compile fileTree(dir: 'java-test-libs', include: '*.jar')
-	compile fileTree(dir: 'java-web-libs', include: '*.jar')
-	implementation 'org.slf4j:slf4j-api:1.7.9'
+    compile fileTree(dir: 'java-test-libs', include: '*.jar')
+    compile fileTree(dir: 'java-web-libs', include: '*.jar')
+    implementation 'org.slf4j:slf4j-api:1.7.9'
     implementation 'org.slf4j:slf4j-log4j12:1.7.9'
-	implementation 'com.google.code.gson:gson:2.8.6'
-	implementation 'org.apache.commons:commons-lang3:3.3.2'
+    implementation 'com.google.code.gson:gson:2.8.6'
+    implementation 'org.apache.commons:commons-lang3:3.3.2'
+
+    // https://mvnrepository.com/artifact/log4j/log4j
+    implementation group: 'log4j', name: 'log4j', version: '1.2.12'
+
 }
 
 javadoc {
-	source = sourceSets.main.allJava
-	classpath = configurations.compile
+    source = sourceSets.main.allJava
+    classpath = configurations.compile
 }
 
-task fatJar(type: Jar) {
-	manifest {
-		attributes 'Implementation-Title': 'Gradle Fat Jar File Example',
-			'Implementation-Version': version,
-			'Main-Class': 'org.remotequery.web.StartJetty'
-	}
-	baseName = project.name + '-all'
-	from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
-	with jar
+test {
+    project.sourceSets.test.runtimeClasspath + files("${projectDir}/tests")
 }
 
 repositories {
     mavenCentral()
+    maven { url 'https://jitpack.io' }
 }
