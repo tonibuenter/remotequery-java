@@ -12,7 +12,8 @@
 
 * With RQ you can solve access requirements in a powerful and simple way. 
 
-Currently, we have a Java and Python implementation ready.
+Currently, we have a Java, JavaScript (Node) and Python implementation ready.
+
 
 ## Just another object relational tool like Hibernate or JPA ?
 
@@ -26,18 +27,6 @@ Further, after years of the object to relational mapping, it seems obvious that 
 
 After starting with RQ the Java source code was reduced - even using JPA and Hibernate - by 80 per cent. On the other side, the RQ code, of which 90 per cent are just SQL statements, has been proven to be easily maintainable and testable.
 
-## RemoteQuery are Microservices!
-
-According to the [Microservices? Please, Don't (DZone)](https://dzone.com/articles/microservices-please-dont?edition=615291&utm_source=Daily%20Digest&utm_medium=email&utm_campaign=Daily%20Digest%202020-07-07)
-the following criteria can be applied
-
-|Criteria|Description|
-|---|----|
-|Cleaner Code|A simple SQL query is a very clean code statement (if done reasonable)|
-|Easy to write, one purpose|A simple SQL query is a very clean code statement (if done reasonable)|
-|Faster than monolith|RQ applies no big interception layer such as Hibernate or JPS|
-|Not all engineer work on the same codebase|One RQ service is finally one DB entry.|
-|Autoscaling|RQ does not assume or restrict anything about scaling.|
 
 ## The Highlights:
 
@@ -48,8 +37,36 @@ the following criteria can be applied
 +  [RemoteQuery are Microservices!](docs/remotequery_are_microservices.md)
 + A simple yet powerfull object-relational support without obfuscation is provided for the Java and Python coding [OR Support](docs/object_relational_support.md)
 
+## RemoteQuery Services are Microservices!
 
-## Example RemoteQuery Web
+According to the [Microservices? Please, Don't (DZone)](https://dzone.com/articles/microservices-please-dont?edition=615291&utm_source=Daily%20Digest&utm_medium=email&utm_campaign=Daily%20Digest%202020-07-07)
+ and [Microservices (Wikipedia)](https://en.wikipedia.org/wiki/Microservices) the following criteriae can be applied
+
+|Criteria|Description|
+|---|----|
+|Cleaner Code|A simple SQL query is a very clean code statement (if done reasonable)|
+|Easy to write, one purpose|A simple SQL query is a very clean code statement (if done reasonable)|
+|Faster than monolith, independently deployable|RQ applies no big interception layer such as Hibernate or JPS|
+|Not all engineer work on the same codebase|One RQ service is finally one DB entry.|
+|Autoscaling|RQ does not assume or restrict anything about scaling.|
+|Small in Sizes (WP)|An RQ service can be as small as a  single, parameterized select statement.|
+|Continous Delivery|An RQ service can be deployed event without re-start of a single component.|
+
+### Some Microservices criticism and concerns do not apply to RQ!
+
+Microservices criticism and concerns are well described in [Microservices criticism and concerns (Wikipedia)](https://en.wikipedia.org/wiki/Microservices#Criticism_and_concerns).
+Let's look at some and how they are treadted by RQ.
+
+|Criticism and Concerns of Microservices|Does it apply to RQ?|
+|---|----|
+|Inter-service calls over a network have a higher cost in terms of network...|RQ does not require any networing other than DB access protocols.|
+|Testing and deployment are more complicated.|Due to the simple model of RQ programming testing is very straight forward and independent.|
+|Two-phased commits are regarded as an anti-pattern in microservices-based architectures as this results in a tighter coupling of all the participants within the transaction.|RQ bundles a single service (event call sub-services) as a single transaction. |
+|The very concept of microservice is misleading, since there are only services. There is no sound definition of when a service starts or stops being a microservice.|We totaly agree on that. RQ does not differentiate on that in any way.|
+
+
+
+## Example RemoteQuery with Web Access
 
 Let us assume we have the following RQ service entry: 
 
@@ -87,7 +104,7 @@ will return - for users with the APP_USER role - the following JSON:
 ## Example Standalone RemoteQuery
 
 ```java
-public static class Address {
+public class Address {
   public String firstName;
   public String lastName;
   public String city;
@@ -104,10 +121,10 @@ List<Address> list = result.asList(Address.class);
 ```
 
 
-## Quick Start
+## Quick Start with Java
 
 Download or clone this repository. The repository is a Eclipse project (`Java Project`). 
-It expects Java 8, but RemoteQuery runs with Java 7 as well.
+It expects Java 8 an later, but RemoteQuery runs with Java 7 as well.
 
 Here some hints for the directory layout of this repository:
 
