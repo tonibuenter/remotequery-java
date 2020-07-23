@@ -1,2 +1,13 @@
 git add *; git commit -m "docs: Polish"; git push
 
+Using as maven repository
+
+dependencies {
+    ...
+    implementation 'com.github.tonibuenter:remote-query:master-63a2644b86-1'
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}

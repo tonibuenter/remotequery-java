@@ -121,6 +121,27 @@ List<Address> list = result.asList(Address.class);
 ```
 
 
+## Quick Start with Gradle
+
+The jar is hosted on jitpack.io by the following dependency definition.
+
+
+```gradle
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    implementation 'com.github.tonibuenter:remote-query:master-SNAPSHOT'
+}
+
+
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
+
+```
+
+
 ## Quick Start with Java
 
 Download or clone this repository. The repository is a Eclipse project (`Java Project`). 
@@ -132,6 +153,8 @@ Here some hints for the directory layout of this repository:
 * JUnit tests : `src/test/java/` with `java-test-libs/` together with RQ main
 * Web : `src/web/java/`, `src/web/webapp/` with `java-web-libs/` together with Unit tests
 * Documentation : `docs/`
+
+
 
 ### Python version
 
