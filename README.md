@@ -130,7 +130,7 @@ The jar is hosted on jitpack.io by the following dependency definition.
 
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
-    implementation 'com.github.tonibuenter:remote-query:master-SNAPSHOT'
+    implementation 'com.github.tonibuenter:remotequery:master-SNAPSHOT'
 }
 
 
@@ -140,7 +140,7 @@ repositories {
 }
 
 ```
-
+(complete getstarted project : [Remotequery Java Getstarted](https://github.com/tonibuenter/remotequery-java-getstarted)
 
 ## Quick Start with Java
 
@@ -176,6 +176,7 @@ More details:
 
 ## Remote Query Documentation
 
+* [https://github.com/tonibuenter/remotequery-java-getstarted](https://github.com/tonibuenter/remotequery-java-getstarted)
 * [RemoteQuery User Manual](docs/user_manual.md)
 * [RemoteQuery Reference Manual](docs/reference_manual.md)
 

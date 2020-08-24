@@ -22,7 +22,6 @@ public class RemoteQueryUtils {
 	private static Logger logger = LoggerFactory.getLogger(RemoteQueryUtils.class);
 
 	/**
-	 * @param con
 	 * @param rqSqlText
 	 * @param saveServiceId
 	 * @param source
@@ -93,7 +92,7 @@ public class RemoteQueryUtils {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param parameters
 	 * @param line
 	 */
