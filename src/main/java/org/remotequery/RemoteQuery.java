@@ -11,6 +11,8 @@ import javax.sql.DataSource;
 import java.io.*;
 import java.lang.reflect.Array;
 import java.lang.reflect.*;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -58,7 +60,7 @@ public class RemoteQuery {
 
   public static class Commands {
 
-    public static final Set<String> StartBlock = new HashSet<String>();
+    public static final Set<String> StartBlock = new HashSet<>();
 
     static {
       StartBlock.add("if");
@@ -68,7 +70,7 @@ public class RemoteQuery {
       StartBlock.add("foreach");
     }
 
-    public static final Set<String> EndBlock = new HashSet<String>();
+    public static final Set<String> EndBlock = new HashSet<>();
 
     static {
       EndBlock.add("fi");
@@ -76,7 +78,7 @@ public class RemoteQuery {
       EndBlock.add("end");
     }
 
-    public static final Map<String, Object> Registry = new HashMap<String, Object>();
+    public static final Map<String, Object> Registry = new HashMap<>();
 
     static {
       Registry.put("serviceRoot", new ServiceRootCommand());
@@ -126,7 +128,7 @@ public class RemoteQuery {
   // START OF SQL VALUE
   //
 
-  public static Map<Integer, ISqlValue> SqlValueMap = new HashMap<Integer, ISqlValue>();
+  public static Map<Integer, ISqlValue> SqlValueMap = new HashMap<>();
 
   /**
    * This interface is used for creating customized conversions of JDBC ResultSet
@@ -169,7 +171,7 @@ public class RemoteQuery {
    */
   public static class DataSources {
 
-    private static final Map<String, DataSource> dss = new HashMap<String, DataSource>();
+    private static final Map<String, DataSource> dss = new HashMap<>();
 
     public static DataSource get() {
       return dss.get(DEFAULT_DATASOURCE);
@@ -195,19 +197,15 @@ public class RemoteQuery {
   /**
    * @author tonibuenter
    */
-  public static interface IQuery {
-
-    public Result run(Request request);
-
+  public interface IQuery {
+    Result run(Request request);
   }
 
   /**
    * @author tonibuenter
    */
   public interface ICommand {
-
-    public Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry);
-
+    Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry);
   }
 
   /**
@@ -216,44 +214,44 @@ public class RemoteQuery {
    *
    * @author tonibuenter
    */
-  public static interface IServiceRepository {
+  public interface IServiceRepository {
 
     ServiceEntry get(String serviceId) throws Exception;
 
-    // void add(ServiceEntry serviceEntry) throws Exception;
+  }
+
+  public interface IResultListener {
+
+    IResultListener start();
+
+    IResultListener done();
+
+    IResultListener setName(String name);
+
+    IResultListener setFrom(int from);
+
+    IResultListener setHeader(List<String> header);
+
+    IResultListener setTypes(List<String> header);
+
+    IResultListener addRow(String[] row);
+
+    IResultListener setTable(List<List<String>> table);
+
+    IResultListener setTotalCount(int totalCount);
+
+    IResultListener setException(String e);
+
+    IResultListener setRowsAffected(int rowsAffected);
 
   }
 
-  public static interface IResultListener {
-
-    public IResultListener start();
-
-    public IResultListener done();
-
-    public IResultListener setName(String name);
-
-    public IResultListener setFrom(int from);
-
-    public IResultListener setHeader(List<String> header);
-
-    public IResultListener setTypes(List<String> header);
-
-    public IResultListener addRow(String[] row);
-
-    public IResultListener setTable(List<List<String>> table);
-
-    public IResultListener setTotalCount(int totalCount);
-
-    public IResultListener setException(String e);
-
-    public IResultListener setRowsAffected(int rowsAffected);
-
-  }
+  public static final Map<String, String> PARAM_CONVERT = new HashMap<>();
 
   public static int buildCommandBlockTree(StatementNode root, List<String> statementList, int pointer) {
 
     while (pointer < statementList.size()) {
-      StatementNode statementNode = null;
+      StatementNode statementNode;
 
       Triple<String, String, String> t = Utils.parse_statement(statementList.get(pointer));
       pointer++;
@@ -286,20 +284,23 @@ public class RemoteQuery {
 
   public static List<String> resolveIncludes(String statements, Map<String, Integer> recursionCounter) {
     List<String> statementList = Utils.asList(Utils.tokenize(statements.trim(), STATEMENT_DELIMITER, STATEMENT_ESCAPE));
-    List<String> resolvedList = new ArrayList<String>(statementList.size());
+    List<String> resolvedList = new ArrayList<>(statementList.size());
     for (String stmt : statementList) {
       stmt = Utils.trim(stmt);
       if (stmt.startsWith("include")) {
         String serviceId = "";
         try {
           Triple<String, String, String> t = Utils.parse_statement(stmt);
+          if (t == null || t.getMiddle() == null) {
+            throw new Exception("Can not process include stmt:  " + stmt);
+          }
           serviceId = t.getMiddle();
           ServiceEntry se = ServiceRepositoryHolder.get().get(serviceId);
           if (se == null) {
             throw new Exception("Did not find service for include command:  " + serviceId);
           }
           String includeStatements = se.statements;
-          Integer counter = recursionCounter.get(serviceId) == null ? 0 : recursionCounter.get(serviceId);
+          int counter = recursionCounter.get(serviceId) == null ? 0 : recursionCounter.get(serviceId);
           counter++;
           if (counter < MAX_INCLUDES) {
             recursionCounter.put(serviceId, counter);
@@ -320,7 +321,7 @@ public class RemoteQuery {
   }
 
   public static StatementNode prepareCommandBlock(ServiceEntry serviceEntry) {
-    List<String> statementList = resolveIncludes(serviceEntry.statements, new HashMap<String, Integer>());
+    List<String> statementList = resolveIncludes(serviceEntry.statements, new HashMap<>());
     StatementNode statementNode = new StatementNode("serviceRoot", serviceEntry.serviceId, "");
     buildCommandBlockTree(statementNode, statementList, 0);
     return statementNode;
@@ -375,7 +376,12 @@ public class RemoteQuery {
   public static Result processCommand(String commandString, Request request, Result currentResult,
                                       ServiceEntry serviceEntry) {
     Triple<String, String, String> t = Utils.parse_statement(commandString);
+    if (t == null || t.getLeft() == null) {
+      logger.error("Can not process command: " + commandString);
+      return currentResult;
+    }
     String cmd = t.getLeft();
+
     String parameter = t.getMiddle();
     String statement = t.getRight();
     StatementNode statementNode = new StatementNode(cmd, parameter, statement);
@@ -383,8 +389,7 @@ public class RemoteQuery {
   }
 
   public static Result processJava(String parameter, String parameterString, Request request, Result currentResult,
-                                   StatementNode statementNode, ServiceEntry serviceEntry)
-          throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException {
+                                   StatementNode statementNode, ServiceEntry serviceEntry) {
 
     ProcessLog pLog = ProcessLog.Current();
     String[] parts = StringUtils.split(parameter, "::");
@@ -442,7 +447,7 @@ public class RemoteQuery {
     }
   }
 
-  private static DataCache dataCache = new DataCache();
+  private static final DataCache dataCache = new DataCache();
 
   public static void processSql(Connection con, String sql, Request request, IResultListener irl, int cacheSeconds) {
 
@@ -466,20 +471,40 @@ public class RemoteQuery {
     // PREPARE SERVICE_STMT
     //
 
-    List<Object> paramObjects = new ArrayList<Object>();
-    String cacheKey = serviceId + ";";
+    List<Object> paramObjects = new ArrayList<>();
+    StringBuilder cacheKey = new StringBuilder(serviceId + ";");
 
     for (String param : qap.param_list) {
       String val = qap.req_params.get(param);
+      String conv = PARAM_CONVERT.getOrDefault(param, "");
       if (val == null) {
         pLog.system("processSql: No value provided for parameter: " + param + " (serviceId: " + request.serviceId
                 + "). Will use empty string.", logger);
         paramObjects.add("");
         sqlLogger.debug("sql-parameter:  " + param + " : ");
       } else {
-        paramObjects.add(val);
+        Object obj;
+        String _type = PARAM_CONVERT.getOrDefault(param, "");
+        if ("int".equalsIgnoreCase(_type)) {
+          obj = Integer.parseInt(val);
+        } else if ("long".equalsIgnoreCase(_type)) {
+          obj = Long.parseLong(val);
+        } else if ("float".equalsIgnoreCase(_type)) {
+          obj = Float.parseFloat(val);
+        } else if ("double".equalsIgnoreCase(_type)) {
+          obj = Double.parseDouble(val);
+        } else if ("boolean".equalsIgnoreCase(_type)) {
+          obj = Boolean.valueOf(val);
+        } else if ("BigInteger".equalsIgnoreCase(_type)) {
+          obj = new BigInteger(val);
+        } else if ("BigDecimal".equalsIgnoreCase(_type)) {
+          obj = new BigDecimal(val);
+        } else {
+          obj = val;
+        }
+        paramObjects.add(obj);
         sqlLogger.debug("sql-parameter:  " + param + " : " + val);
-        cacheKey += param + ":" + val;
+        cacheKey.append(param).append(":").append(val);
       }
     }
     //
@@ -492,7 +517,7 @@ public class RemoteQuery {
 
     // Check data cache
 
-    Result r_cache = dataCache.get(cacheKey, cacheSeconds);
+    Result r_cache = dataCache.get(cacheKey.toString(), cacheSeconds);
     if (r_cache != null) {
       Utils.copyResult(r_cache, irl);
     }
@@ -514,7 +539,7 @@ public class RemoteQuery {
         pLog.system("ServiceEntry : " + serviceId + "; rowsAffected : " + rowsAffected);
         irl.setRowsAffected(rowsAffected);
         sqlLogger.debug("sql-rows-affected : " + rowsAffected);
-        dataCache.put(cacheKey, irl, cacheSeconds);
+        dataCache.put(cacheKey.toString(), irl, cacheSeconds);
       }
     } catch (SQLException e) {
       String warnMsg = "Warning for " + serviceId + " (parameters:" + qap.param_list + ") execption message: "
@@ -524,8 +549,7 @@ public class RemoteQuery {
       String errorMsg = "Error for " + serviceId + " (parameters:" + qap.param_list + ") execption message: "
               + e.getMessage();
       pLog.error(errorMsg, logger);
-      pLog.error(qap == null ? "-no qap-"
-                      : "parameterNameQuery=" + qap.named_query + ", questionMarkQuery=" + qap.qm_query + ", parameters="
+      pLog.error("parameterNameQuery=" + qap.named_query + ", questionMarkQuery=" + qap.qm_query + ", parameters="
                       + qap.param_list,
               logger);
     } finally {
@@ -555,7 +579,7 @@ public class RemoteQuery {
       this.qm_query = "";
       this.in_param = false;
 
-      this.param_list = new ArrayList<String>();
+      this.param_list = new ArrayList<>();
       this.current_param = "";
 
       boolean prot = false;
@@ -588,7 +612,7 @@ public class RemoteQuery {
 
     private void _process_param() {
 
-      String param = this.current_param.toString();
+      String param = this.current_param;
       if (param.endsWith("[]")) {
         String param_base = param.substring(0, param.length() - 2);
         String a_value = this.req_params.get(param_base);
@@ -694,7 +718,7 @@ public class RemoteQuery {
 
         StatementNode statementNode = prepareCommandBlock(serviceEntry);
 
-        result = processCommandBlock(statementNode, request, result, serviceEntry);
+        result = processCommandBlock(statementNode, request, null, serviceEntry);
 
       } catch (Exception e) {
         log.error(e, logger);
@@ -703,9 +727,7 @@ public class RemoteQuery {
         log.decrRecursion();
         log.serviceEntry_End();
       }
-      if (result == null) {
-        // Default result object ?
-      } else {
+      if (result != null) {
         result.userId = userId;
       }
       return result;
@@ -732,16 +754,16 @@ public class RemoteQuery {
       @SuppressWarnings("rawtypes")
       @Override
       public Result run(Request request) {
-        Request requestC = null;
-        Result resultC = null;
-        ProcessLog pLog = null;
+        Request requestC;
+        Result resultC;
+        ProcessLog pLog;
         ProcessLog mainLog = ProcessLog.Current();
         Result mainResult = new Result("MultiResult");
         mainResult.processLog = mainLog;
         String requestArray = request.get("requestArray");
         List requestList = JsonUtils.toObject(requestArray, List.class);
         Runner mainQuery = new Runner();
-        for (int i = 0; i < requestList.size(); i++) {
+        for (int i = 0; i < (requestList == null ? 0 : requestList.size()); i++) {
           pLog = ProcessLog.Current(new ProcessLog(request.getUserId()));
           requestC = request.deepCopy();
           requestC.remove("requestArray");
@@ -805,7 +827,7 @@ public class RemoteQuery {
     private static final long serialVersionUID = 1L;
     private static final String FILE_ID = "_FILE_ID_";
 
-    public static final Map<String, Integer> USER_CODE_MAP = new HashMap<String, Integer>();
+    public static final Map<String, Integer> USER_CODE_MAP = new HashMap<>();
 
     static {
       USER_CODE_MAP.put(OK, USER_OK_CODE);
@@ -813,12 +835,7 @@ public class RemoteQuery {
       USER_CODE_MAP.put(Error, USER_ERROR_CODE);
     }
 
-    public static final ThreadLocal<ProcessLog> TL = new ThreadLocal<ProcessLog>() {
-      @Override
-      protected ProcessLog initialValue() {
-        return new ProcessLog();
-      }
-    };
+    public static final ThreadLocal<ProcessLog> TL = ThreadLocal.withInitial(ProcessLog::new);
 
     public static class LogLine implements Serializable, Comparable<LogLine> {
 
@@ -856,7 +873,7 @@ public class RemoteQuery {
       public int compareTo(LogLine o) {
         int i = this.prio(state) - prio(o.state);
         if (i == 0) {
-          i = this.time == o.time ? 0 : (this.time < o.time ? 1 : -1);
+          i = Long.compare(o.time, this.time);
         }
         return i;
       }
@@ -918,10 +935,7 @@ public class RemoteQuery {
         } else if (!state.equals(other.state)) {
           return false;
         }
-        if (time != other.time) {
-          return false;
-        }
-        return true;
+        return time == other.time;
       }
 
       public int getMsgCode() {
@@ -946,8 +960,8 @@ public class RemoteQuery {
 
     private String state = OK;
     public String statusCode = OK;
-    public List<LogLine> lines = new ArrayList<LogLine>();
-    private final Map<String, String> attributes = new HashMap<String, String>();
+    public List<LogLine> lines = new ArrayList<>();
+    private final Map<String, String> attributes = new HashMap<>();
 
     private Long lastUsedTime;
     private String userId;
@@ -962,7 +976,7 @@ public class RemoteQuery {
     }
 
     public void reduceLinesByCode(int maxCode) {
-      List<LogLine> lines = new ArrayList<LogLine>();
+      List<LogLine> lines = new ArrayList<>();
       for (LogLine p : this.lines) {
         if (p.code <= maxCode) {
           lines.add(p);
@@ -1162,7 +1176,7 @@ public class RemoteQuery {
       public String name;
       public List<String[]> contents;
       public Map<String, String> parameters;
-      public List<DebugContext> children = new ArrayList<DebugContext>();
+      public List<DebugContext> children = new ArrayList<>();
       public transient DebugContext parent;
 
       public DebugContext(int type) {
@@ -1207,18 +1221,18 @@ public class RemoteQuery {
     private static final long serialVersionUID = 1L;
 
     public String serviceId;
-    public Map<String, String> parameters = new HashMap<String, String>();
+    public Map<String, String> parameters = new HashMap<>();
     public String userId;
-    public Set<String> roles = new HashSet<String>();
+    public Set<String> roles = new HashSet<>();
 
-    public transient Map<String, Object> transientAttributes = new HashMap<String, Object>();
+    public transient Map<String, Object> transientAttributes = new HashMap<>();
 
     @SuppressWarnings("unchecked")
     public final Map<String, Serializable>[] fileList = new Map[4];
 
     {
       for (int i = 0; i < 4; i++) {
-        fileList[i] = new HashMap<String, Serializable>();
+        fileList[i] = new HashMap<>();
       }
     }
 
@@ -1264,7 +1278,7 @@ public class RemoteQuery {
 
     public Request setParameters(Map<String, String> parametersIn) {
       this.parameters = parametersIn;
-      this.parameters = this.parameters == null ? new HashMap<String, String>() : this.parameters;
+      this.parameters = this.parameters == null ? new HashMap<>() : this.parameters;
       return this;
     }
 
@@ -1283,8 +1297,7 @@ public class RemoteQuery {
 
     // TODO junit
     public Map<String, String> getParameterSnapshhot() {
-      Map<String, String> map = new HashMap<String, String>(this.parameters);
-      return map;
+      return new HashMap<>(this.parameters);
     }
 
     public Request put(String key, Object value) {
@@ -1352,7 +1365,7 @@ public class RemoteQuery {
     }
 
     public Request setRoles(Collection<String> roles) {
-      this.roles = new HashSet<String>();
+      this.roles = new HashSet<>();
       return addRoles(roles);
     }
 
@@ -1380,12 +1393,12 @@ public class RemoteQuery {
   public static class ResultUtils {
     @SuppressWarnings("rawtypes")
     public static Result asResult(Object obj) {
-      Map<String, String> pm = null;
+      Map<String, String> pm;
       Result result = null;
-      String[] header = null;
-      String[] row = null;
-      Collection coll = null;
-      int i = 0;
+      String[] header;
+      String[] row;
+      Collection coll;
+      int i;
       if (obj instanceof Collection) {
         coll = (Collection) obj;
       } else {
@@ -1432,9 +1445,9 @@ public class RemoteQuery {
     public int rowsAffected = 0;
     public boolean hasMore = false;
 
-    public List<List<String>> table = new ArrayList<List<String>>();
-    public List<String> header = new ArrayList<String>();
-    public List<String> types = new ArrayList<String>();
+    public List<List<String>> table = new ArrayList<>();
+    public List<String> header = new ArrayList<>();
+    public List<String> types = new ArrayList<>();
     public String exception = null;
     public ProcessLog processLog = null;
 
@@ -1443,9 +1456,7 @@ public class RemoteQuery {
     }
 
     private void _header(String[] header) {
-      for (int i = 0; i < header.length; i++) {
-        this.header.add(header[i]);
-      }
+      this.header.addAll(Arrays.asList(header));
     }
 
     public void append(Result result) {
@@ -1479,10 +1490,8 @@ public class RemoteQuery {
 
     @Override
     public Result addRow(String[] row) {
-      List<String> l = new ArrayList<String>(row.length);
-      for (int i = 0; i < row.length; i++) {
-        l.add(row[i]);
-      }
+      List<String> l = new ArrayList<>(row.length);
+      l.addAll(Arrays.asList(row));
       table.add(l);
       update();
       return this;
@@ -1501,29 +1510,15 @@ public class RemoteQuery {
 
     public Result addObject(Object o) {
       Map<String, String> map = Utils.asPropertyMap(o);
-      List<String> row = new ArrayList<String>(header.size());
-      for (int i = 0; i < header.size(); i++) {
-        String e = map.get(header.get(i));
+      List<String> row = new ArrayList<>(header.size());
+      for (String s : header) {
+        String e = map.get(s);
         row.add(e == null ? "" : e);
       }
       addRow(row);
       return this;
     }
 
-    public Result addColumnsWithExtension(Object o) {
-      Map<String, String> map = Utils.asPropertyMap(o);
-
-      for (String key : map.keySet()) {
-        int index = getHeaderIndex(key);
-        List<String> row = new ArrayList<String>(header.size());
-        if (index < 0) {
-          header.add(key);
-          index = header.size();
-        }
-        row.set(index, map.get(key));
-      }
-      return this;
-    }
 
     /**
      * If the table list is empty it add an empty list. Then all entries in the map
@@ -1534,7 +1529,7 @@ public class RemoteQuery {
      */
     public Result addColumns(Map<String, String> map) {
       if (table.size() == 0) {
-        table.add(new ArrayList<String>());
+        table.add(new ArrayList<>());
       }
       for (Entry<String, String> e : map.entrySet()) {
         addColumn(e.getKey(), e.getValue());
@@ -1544,7 +1539,7 @@ public class RemoteQuery {
 
     public Result addColumn(String head, String value) {
       if (table.size() == 0) {
-        table.add(new ArrayList<String>());
+        table.add(new ArrayList<>());
       }
       List<String> row = table.get(0);
       header.add(head);
@@ -1553,7 +1548,7 @@ public class RemoteQuery {
     }
 
     public Map<String, String> getRowAsMap(int index) {
-      Map<String, String> map = new HashMap<String, String>();
+      Map<String, String> map = new HashMap<>();
       if (table != null && table.size() > index) {
         List<String> row = table.get(index);
         for (int i = 0; i < header.size(); i++) {
@@ -1589,12 +1584,11 @@ public class RemoteQuery {
     }
 
     public Map<String, Map<String, String>> toMap(String keyHead) {
-      Map<String, Map<String, String>> map = new HashMap<String, Map<String, String>>();
+      Map<String, Map<String, String>> map = new HashMap<>();
       int index = getColIndex(keyHead);
 
-      for (int i = 0; i < table.size(); i++) {
-        List<String> row = table.get(i);
-        Map<String, String> subMap = new HashMap<String, String>();
+      for (List<String> row : table) {
+        Map<String, String> subMap = new HashMap<>();
         String key = row.get(index);
         map.put(key, subMap);
         for (int j = 0; j < row.size(); j++) {
@@ -1605,9 +1599,8 @@ public class RemoteQuery {
     }
 
     public Map<String, List<String>> toMap(int... indexes) {
-      Map<String, List<String>> map = new HashMap<String, List<String>>();
-      for (int j = 0; j < table.size(); j++) {
-        List<String> value = table.get(j);
+      Map<String, List<String>> map = new HashMap<>();
+      for (List<String> value : table) {
         String key = createMapKey(value, indexes);
         map.put(key, value);
       }
@@ -1615,11 +1608,10 @@ public class RemoteQuery {
     }
 
     public Map<String, String> toTwoColumnMap(String keyHeader, String valueHeader) {
-      Map<String, String> map = new HashMap<String, String>();
+      Map<String, String> map = new HashMap<>();
       int keyIndex = getColIndex(keyHeader);
       int valueIndex = getColIndex(valueHeader);
-      for (int j = 0; j < table.size(); j++) {
-        List<String> row = table.get(j);
+      for (List<String> row : table) {
         String key = row.get(keyIndex);
         String value = row.get(valueIndex);
         map.put(key, value);
@@ -1628,30 +1620,25 @@ public class RemoteQuery {
     }
 
     public Map<String, List<List<String>>> toMultiMap(int... indexes) {
-      Map<String, List<List<String>>> map = new HashMap<String, List<List<String>>>();
-      for (int j = 0; j < table.size(); j++) {
-        List<String> value = table.get(j);
+      Map<String, List<List<String>>> map = new HashMap<>();
+      for (List<String> value : table) {
         String key = createMapKey(value, indexes);
-        List<List<String>> rows = map.get(key);
-        if (rows == null) {
-          rows = new ArrayList<List<String>>();
-          map.put(key, rows);
-        }
+        List<List<String>> rows = map.computeIfAbsent(key, k -> new ArrayList<>());
         rows.add(value);
       }
       return map;
     }
 
     public static String createMapKey(List<String> row, int... indexes) {
-      String key = "";
+      StringBuilder key = new StringBuilder();
       for (int i = 0; i < indexes.length; i++) {
         if (i == 0) {
-          key = row.get(indexes[i]);
+          key = new StringBuilder(row.get(indexes[i]));
         } else {
-          key = key + "-" + row.get(indexes[i]);
+          key.append("-").append(row.get(indexes[i]));
         }
       }
-      return key;
+      return key.toString();
     }
 
     public Result(Exception e) {
@@ -1660,15 +1647,15 @@ public class RemoteQuery {
 
     @Override
     public String toString() {
-      String tableString = "[";
+      StringBuilder tableString = new StringBuilder("[");
       for (int i = 0; i < table.size(); i++) {
         if (i != 0) {
-          tableString += "\n";
+          tableString.append("\n");
         }
         List<String> row = table.get(i);
-        tableString += row;
+        tableString.append(row);
       }
-      tableString += "]";
+      tableString.append("]");
       return "Result [name=" + name + ", userId=" + userId + ", size=" + size() + "\nfrom=" + from + ", totalCount="
               + totalCount + "\n" + header + "\n" + tableString + ",\nexception=" + exception + "]";
     }
@@ -1682,14 +1669,9 @@ public class RemoteQuery {
      * Creates a list of objects. The data is filled by applying corresponding set
      * methods. E.g. for Columnt FIRST_NAME it will try to call
      * setFIRST_NAME(String) or setFirstName(String)
-     *
-     * @param <E>
-     * @param claxx
-     * @return
-     * @throws Exception
      */
     public <E> List<E> asList(Class<E> claxx) {
-      List<E> list = new ArrayList<E>();
+      List<E> list = new ArrayList<>();
       try {
         if (table.size() == 0) {
           return list;
@@ -1758,8 +1740,6 @@ public class RemoteQuery {
      * Return the first row of the result as instance of the class specified. If
      * result is empty return null;
      *
-     * @param <E>
-     * @param claxx
      * @return first row of the result as instance of the class specified
      */
     public <E> E asObject(Class<E> claxx) {
@@ -1779,7 +1759,7 @@ public class RemoteQuery {
       if (index == -1) {
         return null;
       }
-      List<String> res = new ArrayList<String>(this.size());
+      List<String> res = new ArrayList<>(this.size());
       for (List<String> row : this.table) {
         res.add(row.get(index));
       }
@@ -1787,7 +1767,7 @@ public class RemoteQuery {
     }
 
     public <E> Map<String, E> asMap(String keyProperty, Class<E> claxx) {
-      Map<String, E> map = new HashMap<String, E>();
+      Map<String, E> map = new HashMap<>();
       try {
         List<E> list = this.asList(claxx);
         map = Utils.asMap(keyProperty, list);
@@ -1798,7 +1778,7 @@ public class RemoteQuery {
     }
 
     public Set<String> asSet(int index) {
-      Set<String> set = new HashSet<String>();
+      Set<String> set = new HashSet<>();
       if (index == -1 || index >= header.size()) {
         return set;
       }
@@ -1822,8 +1802,8 @@ public class RemoteQuery {
     }
 
     public <E> Map<String, List<E>> asMapList(String property, Class<E> claxx) {
-      Map<String, List<E>> map = new HashMap<String, List<E>>();
-      PropertyGetSet<E> propertyReader = new PropertyGetSet<E>(claxx, property);
+      Map<String, List<E>> map = new HashMap<>();
+      PropertyGetSet<E> propertyReader = new PropertyGetSet<>(claxx, property);
 
       try {
         List<E> list = this.asList(claxx);
@@ -1834,11 +1814,7 @@ public class RemoteQuery {
         for (E e : list) {
           // String key = m.invoke(e).toString();
           String key = propertyReader.get(e);
-          List<E> listElement = map.get(key);
-          if (listElement == null) {
-            listElement = new ArrayList<E>();
-            map.put(key, listElement);
-          }
+          List<E> listElement = map.computeIfAbsent(key, k -> new ArrayList<>());
           listElement.add(e);
         }
       } catch (Exception e) {
@@ -1848,7 +1824,7 @@ public class RemoteQuery {
     }
 
     public List<Map<String, String>> asList() {
-      List<Map<String, String>> list = new ArrayList<Map<String, String>>();
+      List<Map<String, String>> list = new ArrayList<>();
       for (List<String> row : this.table) {
         Map<String, String> map = new HashMap<>(header.size());
         for (int i = 0; i < header.size(); i++) {
@@ -1866,7 +1842,7 @@ public class RemoteQuery {
     }
 
     public Map<String, String> asMap(int keyIndex, int valueIndex) {
-      Map<String, String> map = new HashMap<String, String>();
+      Map<String, String> map = new HashMap<>();
       if (table != null) {
         for (List<String> row : table) {
           map.put(row.get(keyIndex), row.get(valueIndex));
@@ -1885,15 +1861,11 @@ public class RemoteQuery {
       int joinKeyIndex = joinResult.getHeaderIndex(joinCol);
 
       Map<String, Integer> keyIndexMap = getKeyIndexMap(joinCol);
-      Map<String, List<List<String>>> joinSubtables = new HashMap<String, List<List<String>>>();
+      Map<String, List<List<String>>> joinSubtables = new HashMap<>();
       for (List<String> joinRow : joinResult.table) {
         String key = joinRow.get(joinKeyIndex);
         if (keyIndexMap.containsKey(key)) {
-          List<List<String>> list = joinSubtables.get(key);
-          if (list == null) {
-            list = new ArrayList<List<String>>();
-            joinSubtables.put(key, list);
-          }
+          List<List<String>> list = joinSubtables.computeIfAbsent(key, k -> new ArrayList<>());
           list.add(joinRow);
         }
       }
@@ -1912,8 +1884,8 @@ public class RemoteQuery {
     }
 
     public Map<String, Integer> getKeyIndexMap(String colName) {
-      Map<String, Integer> map = new HashMap<String, Integer>();
-      Set<Object> processCheckSet = new HashSet<Object>();
+      Map<String, Integer> map = new HashMap<>();
+      Set<Object> processCheckSet = new HashSet<>();
       int keyIndex = getHeaderIndex(colName);
       for (int i = 0; i < this.table.size(); i++) {
         List<String> row = this.table.get(i);
@@ -1948,9 +1920,7 @@ public class RemoteQuery {
         return p1;
       }
       if (p2.table != null) {
-        for (List<String> row : p2.table) {
-          p1.table.add(row);
-        }
+        p1.table.addAll(p2.table);
       }
       return p1;
     }
@@ -2042,7 +2012,7 @@ public class RemoteQuery {
         for (int i = 0; i < r.length; i++) {
           r[i] = r[i].trim();
         }
-        this.roles = new HashSet<String>(Arrays.asList(r));
+        this.roles = new HashSet<>(Arrays.asList(r));
       }
     }
 
@@ -2073,7 +2043,11 @@ public class RemoteQuery {
 
     @Override
     public boolean equals(Object obj) {
-      return serviceId.equals(obj);
+      if (obj instanceof ServiceEntry) {
+        ServiceEntry _se = (ServiceEntry) obj;
+        return this.serviceId.equals(_se.serviceId);
+      }
+      return false;
     }
 
   }
@@ -2130,8 +2104,8 @@ public class RemoteQuery {
       Connection con = null;
       PreparedStatement ps = null;
       ResultSet rs = null;
-      ServiceEntry se = null;
-      List<ServiceEntry> result = new ArrayList<ServiceEntry>();
+      ServiceEntry se;
+      List<ServiceEntry> result = new ArrayList<>();
       try {
         con = getConnection();
 
@@ -2182,9 +2156,8 @@ public class RemoteQuery {
   static class StringTokenizer2 {
 
     private int index = 0;
-    private String[] tokens = null;
-    private final StringBuffer buf;
-    private boolean ignoreWhiteSpace = true;
+    private final String[] tokens;
+    private final boolean ignoreWhiteSpace;
 
     public StringTokenizer2(String string, char del, char esc) {
       this(string, del, esc, true);
@@ -2196,7 +2169,7 @@ public class RemoteQuery {
       int count = 1;
       boolean inescape = false;
       char c;
-      buf = new StringBuffer();
+      StringBuilder buf = new StringBuilder();
       for (int i = 0; i < string.length(); i++) {
         c = string.charAt(i);
         if (c == del && !inescape) {
@@ -2263,10 +2236,10 @@ public class RemoteQuery {
      */
     public static String toString(String[] tokens, char delim, char escape) {
 
-      String token = null;
+      String token;
       int i, j;
       char c;
-      StringBuffer buff = new StringBuffer();
+      StringBuilder buff = new StringBuilder();
 
       for (i = 0; i < tokens.length; i++) {
         token = tokens[i];
@@ -2287,7 +2260,7 @@ public class RemoteQuery {
 
     public static String toString(List<String> tokenList, char delim, char escape) {
       String[] t = {};
-      String[] tokens = (String[]) tokenList.toArray(t);
+      String[] tokens = tokenList.toArray(t);
       return toString(tokens, delim, escape);
     }
 
@@ -2304,47 +2277,27 @@ public class RemoteQuery {
 
     public static final String ISO_DATE_PATTERN_yyyy_MM_dd__HH_mm_ss__SSS = "yyyy-MM-dd HH:mm:ss SSS";
 
-    public static ThreadLocal<SimpleDateFormat> IsoDateTL = new ThreadLocal<SimpleDateFormat>() {
-      @Override
-      protected SimpleDateFormat initialValue() {
-        return new SimpleDateFormat(ISO_DATE_PATTERN_yyyy_MM_dd);
-      }
-    };
+    public static ThreadLocal<SimpleDateFormat> IsoDateTL = ThreadLocal.withInitial(() -> new SimpleDateFormat(ISO_DATE_PATTERN_yyyy_MM_dd));
 
-    public static ThreadLocal<SimpleDateFormat> IsoDateTimeTL = new ThreadLocal<SimpleDateFormat>() {
-      @Override
-      protected SimpleDateFormat initialValue() {
-        return new SimpleDateFormat(ISO_DATE_PATTERN_yyyy_MM_dd__HH_mm);
-      }
-    };
+    public static ThreadLocal<SimpleDateFormat> IsoDateTimeTL = ThreadLocal.withInitial(() -> new SimpleDateFormat(ISO_DATE_PATTERN_yyyy_MM_dd__HH_mm));
 
-    public static ThreadLocal<SimpleDateFormat> IsoDateTimeFullTL = new ThreadLocal<SimpleDateFormat>() {
-      @Override
-      protected SimpleDateFormat initialValue() {
-        return new SimpleDateFormat(ISO_DATE_PATTERN_yyyy_MM_dd__HH_mm_ss);
-      }
-    };
+    public static ThreadLocal<SimpleDateFormat> IsoDateTimeFullTL = ThreadLocal.withInitial(() -> new SimpleDateFormat(ISO_DATE_PATTERN_yyyy_MM_dd__HH_mm_ss));
 
-    public static ThreadLocal<SimpleDateFormat> IsoTimeTL = new ThreadLocal<SimpleDateFormat>() {
-      @Override
-      protected SimpleDateFormat initialValue() {
-        return new SimpleDateFormat(ISO_DATE_PATTERN_HH_mm);
-      }
-    };
+    public static ThreadLocal<SimpleDateFormat> IsoTimeTL = ThreadLocal.withInitial(() -> new SimpleDateFormat(ISO_DATE_PATTERN_HH_mm));
 
-    public static final String nowIsoDateTimeFull() {
+    public static String nowIsoDateTimeFull() {
       return IsoDateTimeFullTL.get().format(new Date());
     }
 
-    public static final String nowIsoDateTime() {
+    public static String nowIsoDateTime() {
       return IsoDateTimeTL.get().format(new Date());
     }
 
-    public static final String nowIsoTime() {
+    public static String nowIsoTime() {
       return IsoTimeTL.get().format(new Date());
     }
 
-    public static final String nowIsoDate() {
+    public static String nowIsoDate() {
       return IsoDateTL.get().format(new Date());
     }
 
@@ -2386,9 +2339,9 @@ public class RemoteQuery {
       }
 
       if (Commands.isCmd(cmd)) {
-        return new ImmutableTriple<String, String, String>(cmd, parameters, statement);
+        return new ImmutableTriple<>(cmd, parameters, statement);
       }
-      return new ImmutableTriple<String, String, String>("sql", statement, statement);
+      return new ImmutableTriple<>("sql", statement, statement);
     }
 
     public static Date parseDateTime(String date) throws ParseException {
@@ -2431,7 +2384,7 @@ public class RemoteQuery {
       Date d = null;
       try {
         d = IsoDateTL.get().parse(isoDateString);
-      } catch (Exception e) {
+      } catch (Exception ignored) {
       }
       return d != null;
     }
@@ -2484,22 +2437,22 @@ public class RemoteQuery {
       try {
         res = IsoDateTimeFullTL.get().parse(isoDateTimeString).getTime();
         return res;
-      } catch (ParseException e) {
+      } catch (ParseException ignored) {
       }
       try {
         res = IsoDateTimeSecTL.get().parse(isoDateTimeString).getTime();
         return res;
-      } catch (ParseException e) {
+      } catch (ParseException ignored) {
       }
       try {
         res = IsoDateTimeTL.get().parse(isoDateTimeString).getTime();
         return res;
-      } catch (ParseException e) {
+      } catch (ParseException ignored) {
       }
       try {
         res = IsoDateTL.get().parse(isoDateTimeString).getTime();
         return res;
-      } catch (ParseException e) {
+      } catch (ParseException ignored) {
       }
       logger.error("Parse error for " + isoDateTimeString + ". Return 0.");
       return res;
@@ -2513,29 +2466,24 @@ public class RemoteQuery {
       return IsoDateTimeSecTL.get().format(date);
     }
 
-    public static ThreadLocal<SimpleDateFormat> IsoDateTimeSecTL = new ThreadLocal<SimpleDateFormat>() {
-      @Override
-      protected SimpleDateFormat initialValue() {
-        return new SimpleDateFormat(ISO_DATE_PATTERN_yyyy_MM_dd__HH_mm_ss);
-      }
-    };
+    public static ThreadLocal<SimpleDateFormat> IsoDateTimeSecTL = ThreadLocal.withInitial(() -> new SimpleDateFormat(ISO_DATE_PATTERN_yyyy_MM_dd__HH_mm_ss));
 
     public static String nowIsoDateTimeSec() {
       return toIsoDateTimeSec(new Date());
     }
 
     public static String getStackTrace(Throwable t) {
-      StringBuffer buf = new StringBuffer();
+      StringBuilder buf = new StringBuilder();
       if (t != null) {
         buf.append(" <");
-        buf.append(t.toString());
+        buf.append(t);
         buf.append(">");
 
         java.io.StringWriter sw = new java.io.StringWriter(1024);
         java.io.PrintWriter pw = new java.io.PrintWriter(sw);
         t.printStackTrace(pw);
         pw.close();
-        buf.append(sw.toString());
+        buf.append(sw);
       }
       return buf.toString();
     }
@@ -2562,7 +2510,7 @@ public class RemoteQuery {
 
     public static String trim(String str) {
       if (str == null) {
-        return str;
+        return null;
       }
       return str.trim();
     }
@@ -2573,7 +2521,7 @@ public class RemoteQuery {
         return true;
       }
       for (int i = 0; i < strLen; i++) {
-        if ((Character.isWhitespace(str.charAt(i)) == false)) {
+        if ((!Character.isWhitespace(str.charAt(i)))) {
           return false;
         }
       }
@@ -2584,7 +2532,7 @@ public class RemoteQuery {
       if (str == null) {
         return null;
       }
-      StringBuffer sb = new StringBuffer();
+      StringBuilder sb = new StringBuilder();
       for (char ch : str.toCharArray()) {
         if (Character.isWhitespace(ch)) {
           continue;
@@ -2598,8 +2546,7 @@ public class RemoteQuery {
       String normalCase = head.substring(0, 1).toUpperCase() + head.substring(1);
       String camelCase = camelCase(head);
       camelCase = camelCase.substring(0, 1).toUpperCase() + camelCase.substring(1);
-      String[] res = {normalCase, camelCase};
-      return res;
+      return new String[]{normalCase, camelCase};
     }
 
     public static String camelCase(String columnName) {
@@ -2637,18 +2584,18 @@ public class RemoteQuery {
       if (isEmpty(list)) {
         return "";
       }
-      String res = "";
+      StringBuilder res = new StringBuilder();
       int i = 0;
       for (String s : list) {
         s = escape(s, del, esc);
         if (i == 0) {
-          res = s;
+          res = new StringBuilder(s);
         } else {
-          res = res + del + s;
+          res.append(del).append(s);
         }
         i++;
       }
-      return res;
+      return res.toString();
     }
 
     public static String joinTokens(String[] arr) {
@@ -2660,7 +2607,7 @@ public class RemoteQuery {
     }
 
     public static String joinTokens(String[] arr, int start, int end, char del, char esc) {
-      List<String> list = new ArrayList<String>(end - start);
+      List<String> list = new ArrayList<>(end - start);
       for (int i = start; i < arr.length && i < end; i++) {
         list.add(arr[i]);
       }
@@ -2669,14 +2616,14 @@ public class RemoteQuery {
 
     public static String escape(String in, char del, char esc) {
       char[] chars = in.toCharArray();
-      String res = "";
+      StringBuilder res = new StringBuilder();
       for (char c : chars) {
         if (c == del || c == esc) {
-          res += esc;
+          res.append(esc);
         }
-        res += c;
+        res.append(c);
       }
-      return res;
+      return res.toString();
     }
 
     public static String[] tokenize(String string, char del, char esc) {
@@ -2687,7 +2634,7 @@ public class RemoteQuery {
       int count = 1;
       boolean inescape = false;
       char c, pc = 0;
-      StringBuffer buf = new StringBuffer();
+      StringBuilder buf = new StringBuilder();
       for (int i = 0; i < string.length(); i++) {
         c = string.charAt(i);
         if (c == del && !inescape) {
@@ -2733,11 +2680,9 @@ public class RemoteQuery {
     }
 
     public static Set<String> asSet(String... values) {
-      Set<String> set = new HashSet<String>();
+      Set<String> set = new HashSet<>();
       if (values != null) {
-        for (String value : values) {
-          set.add(value);
-        }
+        set.addAll(Arrays.asList(values));
       }
       return set;
     }
@@ -2748,10 +2693,8 @@ public class RemoteQuery {
 
     @SuppressWarnings("unchecked")
     public static <E> List<E> asList(E... elements) {
-      ArrayList<E> list = new ArrayList<E>(1);
-      for (E e : elements) {
-        list.add(e);
-      }
+      ArrayList<E> list = new ArrayList<>(1);
+      list.addAll(Arrays.asList(elements));
       return list;
     }
 
@@ -2789,10 +2732,10 @@ public class RemoteQuery {
     public static String readFileToString(File file, String charsetName) {
       BufferedReader r = null;
       charsetName = charsetName == null ? ENCODING : charsetName;
-      StringBuffer buf = new StringBuffer((int) file.length());
+      StringBuilder buf = new StringBuilder((int) file.length());
       try {
         r = new BufferedReader(new InputStreamReader(new FileInputStream(file), charsetName));
-        int c = 0;
+        int c;
         while ((c = r.read()) != -1) {
           buf.append(c);
         }
@@ -2829,7 +2772,7 @@ public class RemoteQuery {
     public static void commitSilently(Connection connection) {
       try {
         connection.commit();
-      } catch (Exception e) {
+      } catch (Exception ignored) {
       }
     }
 
@@ -2843,7 +2786,7 @@ public class RemoteQuery {
 
     public static Object runQuery(Connection connection, String sqlStatement, Object... parameters) {
       PreparedStatement ps = null;
-      ResultSet rs = null;
+      ResultSet rs;
       try {
         ps = connection.prepareStatement(sqlStatement);
         for (int i = 0; i < parameters.length; i++) {
@@ -2855,14 +2798,14 @@ public class RemoteQuery {
           rs = ps.getResultSet();
           return rs;
         } else {
-          return new Integer(ps.getUpdateCount());
+          return ps.getUpdateCount();
         }
       } catch (Throwable t) {
         logger.warn(t.getMessage());
       } finally {
         Utils.closeQuietly(ps);
       }
-      return new Integer(-1);
+      return -1;
     }
 
     public static String sqlValueToString(Object value, int sqlType) throws IllegalArgumentException, SecurityException,
@@ -2879,7 +2822,7 @@ public class RemoteQuery {
       }
 
       String strValue = value.toString().trim();
-      if (value.getClass().getName().toString().startsWith("oracle.sql.TIMESTAMP")) {
+      if (value.getClass().getName().startsWith("oracle.sql.TIMESTAMP")) {
         value = value.getClass().getMethod("toJdbc").invoke(value);
       }
       if (value instanceof Timestamp) {
@@ -2915,8 +2858,8 @@ public class RemoteQuery {
         ResultSetMetaData md = rs.getMetaData();
 
         int columnCount = rs.getMetaData().getColumnCount();
-        List<String> header = new ArrayList<String>(columnCount);
-        List<Integer> sqlTypes = new ArrayList<Integer>(columnCount);
+        List<String> header = new ArrayList<>(columnCount);
+        List<Integer> sqlTypes = new ArrayList<>(columnCount);
         for (int i = 0; i < columnCount; i++) {
           String h = md.getColumnName(i + 1);
           if (Result.USE_CAMEL_CASE_FOR_RESULT_HEADER) {
@@ -2931,17 +2874,13 @@ public class RemoteQuery {
 
         sqlLogger.debug("sql-result-header " + header);
         irl.setFrom(-1);
-        String[] row = null;
+        String[] row;
         boolean firstRow = true;
-        List<String> sqlTypeNames = new ArrayList<String>();
+        List<String> sqlTypeNames = new ArrayList<>();
 
         while (rs.next()) {
 
           if (counter >= start && ((counter < start + max) || max == -1)) {
-            if (fromDone) {
-              irl.setFrom(counter);
-              fromDone = true;
-            }
 
             row = new String[columnCount];
 
@@ -2966,20 +2905,15 @@ public class RemoteQuery {
 
             irl.addRow(row);
             sqlLogger.debug("sql-result-row " + counter + " : " + Arrays.toString(row));
-          } else {
-            //
-          }
+          }  //
+
           counter++;
         }
-        if (fromDone == false) {
-          irl.setFrom(-1);
-        }
+        irl.setFrom(-1);
         irl.setTotalCount(counter);
 
       } catch (Exception e) {
         irl.setException(e.getMessage());
-      } finally {
-
       }
     }
 
@@ -3010,7 +2944,7 @@ public class RemoteQuery {
     }
 
     public static Map<String, String> asMap(Object obj) {
-      Map<String, String> map = new HashMap<String, String>();
+      Map<String, String> map = new HashMap<>();
       Method[] methods = obj.getClass().getMethods();
       Field[] fields = obj.getClass().getFields();
 
@@ -3069,11 +3003,11 @@ public class RemoteQuery {
         }
         String[] res = createSetGetNames(propertyName);
         Method m = null;
-        Field f = null;
+        Field f;
         for (String setGetName : res) {
           try {
             m = claxx.getMethod("set" + setGetName, String.class);
-          } catch (Exception e1) {
+          } catch (Exception ignored) {
           }
           if (m != null) {
             break;
@@ -3083,13 +3017,13 @@ public class RemoteQuery {
         if (m != null) {
           try {
             m.invoke(e, values.get(propertyName));
-          } catch (Exception e1) {
+          } catch (Exception ignored) {
           }
         } else {
           try {
             f = claxx.getField(propertyName);
             f.set(e, values.get(propertyName));
-          } catch (Exception e1) {
+          } catch (Exception ignored) {
           }
         }
         colIndex++;
@@ -3099,7 +3033,7 @@ public class RemoteQuery {
 
     public static Serializable deepClone(Serializable s) {
       if (s == null) {
-        return s;
+        return null;
       }
       Serializable object = null;
       try {
@@ -3142,10 +3076,10 @@ public class RemoteQuery {
     @SuppressWarnings("unchecked")
     public static <E> Map<String, E> asMap(String keyProperty, List<E> list) {
       if (isEmpty(list)) {
-        return new HashMap<String, E>();
+        return new HashMap<>();
       }
       Class<E> claxx = (Class<E>) list.get(0).getClass();
-      Map<String, E> map = new HashMap<String, E>();
+      Map<String, E> map = new HashMap<>();
       try {
         String methodName = "get" + keyProperty.substring(0, 1).toUpperCase() + keyProperty.substring(1);
         Method m = null;
@@ -3170,7 +3104,7 @@ public class RemoteQuery {
     }
 
     public static Map<String, String> asPropertyMap(Object object) {
-      Map<String, String> map = new HashMap<String, String>();
+      Map<String, String> map = new HashMap<>();
       Method[] methods = object.getClass().getMethods();
       for (Method method : methods) {
         String name = Utils.getStringGetterMethodName(method);
@@ -3190,7 +3124,7 @@ public class RemoteQuery {
     }
 
     public static String resolve_value(String term, Request request) {
-      String val = "";
+      String val;
       // reference to parameter
       term = term == null ? "" : term.trim();
       try {
@@ -3209,7 +3143,7 @@ public class RemoteQuery {
       } catch (Exception e) {
         logger.debug(e.getMessage());
       }
-      return term == null ? "" : term;
+      return term;
     }
 
   }
@@ -3220,8 +3154,7 @@ public class RemoteQuery {
 
     public static String toJson(Object object) {
       Gson gson = new Gson();
-      String jsonStr = gson.toJson(object);
-      return jsonStr;
+      return gson.toJson(object);
     }
 
     public static <T> T fromJson(String jsonStr, Class<T> classOfT) {
@@ -3253,11 +3186,7 @@ public class RemoteQuery {
     }
 
     public static JsonObject toJsonObject(String s) {
-      //JsonParser jp = JsonParser.parseString(s);
-
-      JsonObject jo = JsonParser.parseString(s).getAsJsonObject();
-
-      return jo;
+      return JsonParser.parseString(s).getAsJsonObject();
     }
 
     public static String exception(String message) {
@@ -3271,7 +3200,7 @@ public class RemoteQuery {
     public static Map<String, String> toStringMap(String jsonString) {
       JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
       Set<Map.Entry<String, JsonElement>> jsonElements = jsonObject.entrySet();
-      Map<String, String> map = new HashMap<String, String>();
+      Map<String, String> map = new HashMap<>();
       for (Map.Entry<String, JsonElement> entry : jsonElements) {
         String key = entry.getKey();
         JsonElement je = entry.getValue();
@@ -3319,7 +3248,7 @@ public class RemoteQuery {
     public static <E> E toObjectSilently(String json, Class<E> claxx) {
       try {
         return new Gson().fromJson(json, claxx);
-      } catch (Exception e) {
+      } catch (Exception ignored) {
       }
       return null;
     }
@@ -3348,7 +3277,7 @@ public class RemoteQuery {
     }
 
     private static Object _toListMapA(JsonArray ja) {
-      List<Object> list = new ArrayList<Object>(ja.size());
+      List<Object> list = new ArrayList<>(ja.size());
       for (int i = 0; i < ja.size(); i++) {
         JsonElement je = ja.get(i);
         Object v = _toListMapE(je);
@@ -3361,7 +3290,7 @@ public class RemoteQuery {
 
     private static Object _toListMapO(JsonObject jo) {
       Set<Map.Entry<String, JsonElement>> jes = jo.entrySet();
-      Map<String, Object> map = new HashMap<String, Object>();
+      Map<String, Object> map = new HashMap<>();
       for (Map.Entry<String, JsonElement> entry : jes) {
         String key = entry.getKey();
         Object v = _toListMapE(entry.getValue());
@@ -3395,7 +3324,6 @@ public class RemoteQuery {
       E[] array = null;
       Gson g = new Gson();
       JsonElement je = JsonParser.parseString(jsonString).getAsJsonObject();
-      ;
       if (je.isJsonArray()) {
         JsonArray a = je.getAsJsonArray();
         array = (E[]) Array.newInstance(claxx, a.size());
@@ -3433,7 +3361,7 @@ public class RemoteQuery {
       if (roles != null) {
         this.roles = roles;
       } else {
-        this.roles = new HashSet<String>();
+        this.roles = new HashSet<>();
       }
     }
 
@@ -3442,7 +3370,7 @@ public class RemoteQuery {
     }
 
     public ObjectStore(Class<E> resultClass) {
-      this(resultClass, RemoteQuery.ANONYMOUS, new HashSet<String>());
+      this(resultClass, RemoteQuery.ANONYMOUS, new HashSet<>());
     }
 
     public E asObject(Map<String, String> params) {
@@ -3478,7 +3406,7 @@ public class RemoteQuery {
       return result;
     }
 
-    public List<E> search(String serviceId, Object object) throws Exception {
+    public List<E> search(String serviceId, Object object) {
       if (object == null) {
         return search(serviceId);
       }
@@ -3487,7 +3415,7 @@ public class RemoteQuery {
     }
 
     public List<E> search(String serviceId) {
-      return search(serviceId, (Map<String, String>) null);
+      return search(serviceId, null);
     }
 
     public E get(String serviceId, Map<String, String> params) {
@@ -3501,13 +3429,10 @@ public class RemoteQuery {
     }
 
     /**
-     * @param serviceId
-     * @param parameters
      * @return map
-     * @throws Exception
      * @deprecated use Request.run() ...
      */
-    public Map<String, String> getMap(String serviceId, Map<String, String> parameters) throws Exception {
+    public Map<String, String> getMap(String serviceId, Map<String, String> parameters) {
       Request request = new Request();
       request.setUserId(userId);
       request.setRoles(roles);
@@ -3521,18 +3446,18 @@ public class RemoteQuery {
       if (r.size() > 0) {
         return r.getRowAsMap(0);
       }
-      return new HashMap<String, String>();
+      return new HashMap<>();
     }
 
     public E get(String serviceId) {
-      return get(serviceId, new HashMap<String, String>());
+      return get(serviceId, new HashMap<>());
     }
 
     public Result update(String serviceId, Map<String, String> parameters) {
       return _process(serviceId, parameters);
     }
 
-    public Result update(String serviceId, E object) throws Exception {
+    public Result update(String serviceId, E object) {
       Map<String, String> params = Utils.asMap(object);
       return _process(serviceId, params);
     }
@@ -3563,17 +3488,17 @@ public class RemoteQuery {
 
       try {
         getMethod = claxx.getMethod("get" + baseName);
-      } catch (Exception e) {
+      } catch (Exception ignored) {
 
       }
       try {
         setMethod = claxx.getMethod("set" + baseName, String.class);
-      } catch (Exception e) {
+      } catch (Exception ignored) {
 
       }
       try {
         field = claxx.getField(property);
-      } catch (Exception e) {
+      } catch (Exception ignored) {
       }
       if (field == null && getMethod == null) {
         logger.info("No read access to property : " + property + " in class " + claxx.getSimpleName());
@@ -3587,7 +3512,7 @@ public class RemoteQuery {
       if (getMethod != null)
         try {
           return getMethod.invoke(e).toString();
-        } catch (Exception e1) {
+        } catch (Exception ignored) {
 
         }
       if (field != null)
@@ -3604,7 +3529,7 @@ public class RemoteQuery {
         try {
           setMethod.invoke(e, value);
           return;
-        } catch (Exception e1) {
+        } catch (Exception ignored) {
         }
       if (field != null)
         try {
@@ -3676,7 +3601,7 @@ public class RemoteQuery {
       this.cmd = cmd;
       this.parameter = parameter;
       this.statement = statement;
-      this.children = new ArrayList<StatementNode>();
+      this.children = new ArrayList<>();
     }
 
     public StatementNode(String cmd) {
@@ -3684,9 +3609,7 @@ public class RemoteQuery {
     }
 
     public StatementNode append(StatementNode... cbChildren) {
-      for (StatementNode cbChild : cbChildren) {
-        children.add(cbChild);
-      }
+      children.addAll(Arrays.asList(cbChildren));
       return this;
     }
 
@@ -3697,7 +3620,7 @@ public class RemoteQuery {
     }
 
     private void _toString(String indent, StringBuffer sb) {
-      sb.append(indent + this.cmd + " -> " + parameter + "\n");
+      sb.append(indent).append(this.cmd).append(" -> ").append(parameter).append("\n");
       for (StatementNode child : this.children) {
         child._toString(" " + indent, sb);
       }
@@ -3750,7 +3673,7 @@ public class RemoteQuery {
 
     public Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry) {
       String[] nv = Utils.tokenize(statementNode.parameter, '=');
-      if (nv == null || nv.length != 2) {
+      if (nv.length != 2) {
         logger.warn("Expected parameter-part should be like name1 = name2. But was: " + statementNode.parameter);
         return currentResult;
       }
@@ -3780,9 +3703,13 @@ public class RemoteQuery {
     @Override
     public Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry) {
 
-      StatementNode iCb = null;
+      StatementNode iCb;
 
       Triple<String, String, String> t = Utils.parse_statement(statementNode.parameter);
+      if (t == null || t.getLeft() == null) {
+        logger.error("Could not parse statement: " + statementNode.parameter);
+        return currentResult;
+      }
       String cmd = t.getLeft();
       String parameter = t.getMiddle();
       String statement = t.getRight();
@@ -3801,7 +3728,7 @@ public class RemoteQuery {
         }
       }
 
-      Map<String, String> paramters = iResult.size() > 0 ? iResult.getRowAsMap(0) : new HashMap<String, String>();
+      Map<String, String> paramters = iResult.size() > 0 ? iResult.getRowAsMap(0) : new HashMap<>();
 
       for (String key : iResult.header) {
         if (Utils.isEmpty(request.get(key)) || overwrite) {
@@ -3827,9 +3754,13 @@ public class RemoteQuery {
     @Override
     public Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry) {
 
-      StatementNode iCb = null;
+      StatementNode iCb;
 
       Triple<String, String, String> t = Utils.parse_statement(statementNode.parameter);
+      if (t == null || t.getLeft() == null) {
+        logger.error("Could not parse statement: " + statementNode.parameter);
+        return currentResult;
+      }
       String cmd = t.getLeft();
       String parameter = t.getMiddle();
       String statement = t.getRight();
@@ -3848,10 +3779,10 @@ public class RemoteQuery {
         }
       }
 
-      Map<String, List<String>> listMap = new HashMap<String, List<String>>(iResult.header.size());
+      Map<String, List<String>> listMap = new HashMap<>(iResult.header.size());
 
       for (String head : iResult.header) {
-        listMap.put(head, new ArrayList<String>(iResult.table.size()));
+        listMap.put(head, new ArrayList<>(iResult.table.size()));
       }
 
       for (int i = 0; i < iResult.table.size(); i++) {
@@ -3884,8 +3815,7 @@ public class RemoteQuery {
   public static class ServiceIdCommand implements ICommand {
     public Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry) {
       Request iRequest = request.deepCopy().setServiceId(statementNode.parameter);
-      Result result = iRequest.run();
-      return result;
+      return iRequest.run();
     }
   }
 
@@ -3937,7 +3867,7 @@ public class RemoteQuery {
       // !Utils.isBlank(request.get(statementNode.parameter));
       boolean isThen = condition.length() > 0;
 
-      isThen = ifEmpty ? !isThen : isThen;
+      isThen = ifEmpty != isThen;
 
       for (StatementNode cbChild : statementNode.children) {
         if ("else".equals(cbChild.cmd)) {
@@ -3983,8 +3913,6 @@ public class RemoteQuery {
           if (caseParameter.equals(switchValue)) {
             caseFound = true;
             inSwitch = true;
-          } else {
-            inSwitch = inSwitch || false;
           }
         }
 
@@ -4095,9 +4023,9 @@ public class RemoteQuery {
   //
   public static class DataCache {
 
-    private Object lock = new Object();
-    private Map<String, Result> cache = new HashMap<String, Result>();
-    private Map<String, Long> times = new HashMap<String, Long>();
+    private final Object lock = new Object();
+    private final Map<String, Result> cache = new HashMap<>();
+    private final Map<String, Long> times = new HashMap<>();
 
     public Result get(String cacheKey, Integer cacheSeconds) {
       Long time = times.get(cacheKey);
@@ -4127,9 +4055,10 @@ public class RemoteQuery {
       }
       synchronized (lock) {
         cache.put(cacheKey, r);
-        times.put(cacheKey, new Long(System.currentTimeMillis()));
+        times.put(cacheKey, System.currentTimeMillis());
       }
     }
   }
+
 
 }
