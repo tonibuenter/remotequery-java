@@ -163,4 +163,15 @@ public class RemoteQueryUtils {
 
   }
 
+  public static Result exceptionResult(String exception) {
+    return new RemoteQuery.Result(new RemoteQuery.RQException(exception));
+  }
+
+  public static Result statusResult(String status, String userMessage, String systemMessage) {
+    RemoteQuery.Result result = new Result("status", "userMessage", "systemMessage");
+    result.addRowVar(status, userMessage, systemMessage);
+    return result;
+  }
+
+
 }

@@ -60,6 +60,9 @@ public class RemoteQuery {
 
   public static class Commands {
 
+    private Commands() {
+    }
+
     public static final Set<String> StartBlock = new HashSet<>();
 
     static {
@@ -128,7 +131,7 @@ public class RemoteQuery {
   // START OF SQL VALUE
   //
 
-  public static Map<Integer, ISqlValue> SqlValueMap = new HashMap<>();
+  public static final Map<Integer, ISqlValue> SqlValueMap = new HashMap<>();
 
   /**
    * This interface is used for creating customized conversions of JDBC ResultSet
@@ -171,6 +174,9 @@ public class RemoteQuery {
    */
   public static class DataSources {
 
+    private DataSources() {
+    }
+
     private static final Map<String, DataSource> dss = new HashMap<>();
 
     public static DataSource get() {
@@ -208,6 +214,12 @@ public class RemoteQuery {
     Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry);
   }
 
+  public static class RQException extends Exception {
+    public RQException(String exception) {
+      super(exception);
+    }
+  }
+
   /**
    * Interface for service repositories. Currently we have a JSON base and a SQL
    * base service repository.
@@ -216,7 +228,7 @@ public class RemoteQuery {
    */
   public interface IServiceRepository {
 
-    ServiceEntry get(String serviceId) throws Exception;
+    ServiceEntry get(String serviceId) throws RQException, SQLException;
 
   }
 
@@ -292,12 +304,12 @@ public class RemoteQuery {
         try {
           Triple<String, String, String> t = Utils.parse_statement(stmt);
           if (t == null || t.getMiddle() == null) {
-            throw new Exception("Can not process include stmt:  " + stmt);
+            throw new RQException("Can not process include stmt:  " + stmt);
           }
           serviceId = t.getMiddle();
           ServiceEntry se = ServiceRepositoryHolder.get().get(serviceId);
           if (se == null) {
-            throw new Exception("Did not find service for include command:  " + serviceId);
+            throw new RQException("Did not find service for include command:  " + serviceId);
           }
           String includeStatements = se.statements;
           int counter = recursionCounter.get(serviceId) == null ? 0 : recursionCounter.get(serviceId);
@@ -307,7 +319,7 @@ public class RemoteQuery {
             List<String> resolvedList2 = resolveIncludes(includeStatements, recursionCounter);
             resolvedList.addAll(resolvedList2);
           } else {
-            throw new Exception("include command overflow " + serviceId);
+            throw new RQException("include command overflow " + serviceId);
           }
         } catch (Exception e) {
           ProcessLog.Current().error(e, rqMainLogger);
@@ -415,6 +427,12 @@ public class RemoteQuery {
 
     } catch (Exception e) {
       pLog.error(e, logger);
+      if (currentResult != null) {
+        currentResult.setException(e.getMessage());
+        return currentResult;
+      } else {
+        return new Result(new RQException(e.getMessage()));
+      }
     }
 
     return null;
@@ -425,7 +443,7 @@ public class RemoteQuery {
 
     DataSource ds = DataSources.get(serviceEntry.datasource);
     if (ds == null) {
-      Exception e = new Exception("Missing datasourceName: " + serviceEntry.datasource + " in service: "
+      RQException e = new RQException("Missing datasourceName: " + serviceEntry.datasource + " in service: "
               + serviceEntry.serviceId + ". Can not continue!");
       log.error(e.getMessage(), logger);
       irl.setException(e.getMessage());
@@ -684,8 +702,9 @@ public class RemoteQuery {
         ServiceEntry serviceEntry = ServiceRepositoryHolder.get().get(serviceId);
         log.serviceEntry_Start(serviceEntry);
         if (serviceEntry == null) {
-          log.error("No ServiceEntry found for " + serviceId, logger);
-          return new Result(log);
+          String exception = String.format("No ServiceEntry found for %s.", serviceId);
+          log.error(exception, logger);
+          return new Result(new RQException(exception));
         }
         //
         // CHECK ACCESS
@@ -708,7 +727,9 @@ public class RemoteQuery {
           log.warn("No access to " + serviceId + " for " + userId + " (service roles: " + roles + ", request roles: "
                   + request.getRoles() + ")", logger);
           log.statusCode = "403";
-          return new Result(log);
+          Result r = new Result(log);
+          r.setException(String.format("Access denied to '%s'!", serviceId));
+          return r;
         }
         //
         // START PROCESSING STATEMENTS
@@ -820,10 +841,10 @@ public class RemoteQuery {
     public static final int ERROR_CODE = 3000;
     public static final int SYSTEM_CODE = 4000;
 
-    public static final String Warning = "Warning";
-    public static final String Error = "Error";
+    public static final String WARNING = "Warning";
+    public static final String ERROR = "Error";
     public static final String OK = "OK";
-    public static final String System = "System";
+    public static final String SYSTEM = "System";
     private static final long serialVersionUID = 1L;
     private static final String FILE_ID = "_FILE_ID_";
 
@@ -831,8 +852,8 @@ public class RemoteQuery {
 
     static {
       USER_CODE_MAP.put(OK, USER_OK_CODE);
-      USER_CODE_MAP.put(Warning, USER_WARNING_CODE);
-      USER_CODE_MAP.put(Error, USER_ERROR_CODE);
+      USER_CODE_MAP.put(WARNING, USER_WARNING_CODE);
+      USER_CODE_MAP.put(ERROR, USER_ERROR_CODE);
     }
 
     public static final ThreadLocal<ProcessLog> TL = ThreadLocal.withInitial(ProcessLog::new);
@@ -879,16 +900,16 @@ public class RemoteQuery {
       }
 
       private int prio(String state) {
-        if (Error.equals(state)) {
+        if (ERROR.equals(state)) {
           return 1;
         }
-        if (Warning.equals(state)) {
+        if (WARNING.equals(state)) {
           return 2;
         }
         if (OK.equals(state)) {
           return 3;
         }
-        if (System.equals(state)) {
+        if (SYSTEM.equals(state)) {
           return 4;
         }
         return 5;
@@ -1008,18 +1029,18 @@ public class RemoteQuery {
     }
 
     public void warnUser(String line, Logger logger) {
-      add(USER_WARNING_CODE, line, Warning);
+      add(USER_WARNING_CODE, line, WARNING);
       _writeLog(line, Level.WARNING, logger);
     }
 
     public void errorUser(String line, Logger... logger) {
-      add(USER_ERROR_CODE, line, Error);
+      add(USER_ERROR_CODE, line, ERROR);
       _writeLog(line, Level.SEVERE, logger);
     }
 
     public void error(String line, Logger... logger) {
-      this.state = Error;
-      add(ERROR_CODE, line, Error);
+      this.state = ERROR;
+      add(ERROR_CODE, line, ERROR);
       _writeLog(line, Level.SEVERE, logger);
     }
 
@@ -1028,24 +1049,24 @@ public class RemoteQuery {
     }
 
     public void error(String line, Throwable t, Logger... logger) {
-      this.state = Error;
-      add(ERROR_CODE, line, Error);
+      this.state = ERROR;
+      add(ERROR_CODE, line, ERROR);
       _writeLog(line + "\n" + Utils.getStackTrace(t), Level.SEVERE, logger);
     }
 
     public void error(int code, String line, Logger... logger) {
-      this.state = Error;
-      add(code, line, Error);
+      this.state = ERROR;
+      add(code, line, ERROR);
       _writeLog(line, Level.SEVERE, logger);
     }
 
     public void warn(String line, Logger... logger) {
-      add(WARNING_CODE, line, Warning);
+      add(WARNING_CODE, line, WARNING);
       _writeLog(line, Level.WARNING, logger);
     }
 
     public void system(String line, Logger... logger) {
-      add(SYSTEM_CODE, line, System);
+      add(SYSTEM_CODE, line, SYSTEM);
       _writeLog(line, Level.INFO, logger);
     }
 
@@ -1094,7 +1115,7 @@ public class RemoteQuery {
     }
 
     public boolean isError() {
-      return Error.equals(this.state);
+      return ERROR.equals(this.state);
     }
 
     public String getState() {
@@ -2993,7 +3014,7 @@ public class RemoteQuery {
     // OBJECT UTILS
     //
 
-    public static <E> E newObject(Map<String, String> values, Class<E> claxx) throws Exception {
+    public static <E> E newObject(Map<String, String> values, Class<E> claxx) throws InstantiationException, IllegalAccessException {
       E e;
       e = claxx.newInstance();
       int colIndex = 0;
@@ -3051,7 +3072,7 @@ public class RemoteQuery {
         bis.close();
         bais.close();
       } catch (Exception e1) {
-        logger.error(e1 + "");
+        logger.error(String.format("%s", e1));
       }
       return object;
     }
@@ -3423,7 +3444,7 @@ public class RemoteQuery {
       return !Utils.isEmpty(result) ? result.get(0) : null;
     }
 
-    public E get(String serviceId, E object) throws Exception {
+    public E get(String serviceId, E object) {
       List<E> result = this.search(serviceId, object);
       return !Utils.isEmpty(result) ? result.get(0) : null;
     }
