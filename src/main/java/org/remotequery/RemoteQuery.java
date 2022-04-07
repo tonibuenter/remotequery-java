@@ -214,6 +214,7 @@ public class RemoteQuery {
     Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry);
   }
 
+
   public static class RQException extends Exception {
     public RQException(String exception) {
       super(exception);
@@ -804,6 +805,7 @@ public class RemoteQuery {
                   requestC.put(e.getKey() + "", e.getValue() + "");
                 }
               }
+              RequestLogger.log(requestC);
               resultC = mainQuery.run(requestC);
               if (resultC == null) {
                 pLog.error("Unexpected 'null' for service " + serviceId + " (index:" + i + ")", logger);
@@ -1280,22 +1282,22 @@ public class RemoteQuery {
       return runner.run(this);
     }
 
-    public Result run(String serviceId) {
-      this.setServiceId(serviceId);
-      return run();
-    }
+//    public Result run(String serviceId) {
+//      this.setServiceId(serviceId);
+//      return run();
+//    }
 
-    public Result run(String serviceId, Map<String, String> map) {
-      this.setServiceId(serviceId);
-      this.put(map);
-      return run();
-    }
+//    public Result run(String serviceId, Map<String, String> map) {
+//      this.setServiceId(serviceId);
+//      this.put(map);
+//      return run();
+//    }
 
-    public Result runWith(String serviceId, Object object) {
-      this.setServiceId(serviceId);
-      this.putObject(object);
-      return run();
-    }
+//    public Result runWith(String serviceId, Object object) {
+//      this.setServiceId(serviceId);
+//      this.putObject(object);
+//      return run();
+//    }
 
     public Request setParameters(Map<String, String> parametersIn) {
       this.parameters = parametersIn;

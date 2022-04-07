@@ -173,5 +173,4 @@ public class RemoteQueryUtils {
     return result;
   }
 
-
 }
