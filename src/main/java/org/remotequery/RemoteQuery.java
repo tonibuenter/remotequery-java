@@ -245,7 +245,9 @@ public class RemoteQuery {
 
     IResultListener setHeader(List<String> header);
 
-    IResultListener setTypes(List<String> header);
+    IResultListener setSqlHeader(List<String> sqlHeader);
+
+    IResultListener setTypes(List<String> types);
 
     IResultListener addRow(String[] row);
 
@@ -479,7 +481,7 @@ public class RemoteQuery {
 
     pLog.system("sql before conversion: " + sql);
     sqlLogger.debug("start sql **************************************");
-    sqlLogger.debug("Start sql (in service : " + serviceId + ")\n" + sql);
+    sqlLogger.debug(String.format("Start sql (in service : %s)\n%s", serviceId, sql));
 
     QueryAndParams qap = new QueryAndParams(sql, request.getParameterSnapshhot());
     qap.convertQuery();
@@ -495,7 +497,7 @@ public class RemoteQuery {
 
     for (String param : qap.param_list) {
       String val = qap.req_params.get(param);
-      String conv = PARAM_CONVERT.getOrDefault(param, "");
+
       if (val == null) {
         pLog.system("processSql: No value provided for parameter: " + param + " (serviceId: " + request.serviceId
                 + "). Will use empty string.", logger);
@@ -522,7 +524,7 @@ public class RemoteQuery {
           obj = val;
         }
         paramObjects.add(obj);
-        sqlLogger.debug("sql-parameter:  " + param + " : " + val);
+        sqlLogger.debug("sql-parameter:  " + param + " : " + val + " (" + _type + ")");
         cacheKey.append(param).append(":").append(val);
       }
     }
@@ -557,7 +559,7 @@ public class RemoteQuery {
         int rowsAffected = ps.getUpdateCount();
         pLog.system("ServiceEntry : " + serviceId + "; rowsAffected : " + rowsAffected);
         irl.setRowsAffected(rowsAffected);
-        sqlLogger.debug("sql-rows-affected : " + rowsAffected);
+        sqlLogger.debug(String.format("sql-rows-affected : %s", rowsAffected));
         dataCache.put(cacheKey.toString(), irl, cacheSeconds);
       }
     } catch (SQLException e) {
@@ -1470,6 +1472,7 @@ public class RemoteQuery {
 
     public List<List<String>> table = new ArrayList<>();
     public List<String> header = new ArrayList<>();
+    public List<String> sqlHeader = new ArrayList<>();
     public List<String> types = new ArrayList<>();
     public String exception = null;
     public ProcessLog processLog = null;
@@ -1551,7 +1554,7 @@ public class RemoteQuery {
      * @return Result
      */
     public Result addColumns(Map<String, String> map) {
-      if (table.size() == 0) {
+      if (table.isEmpty()) {
         table.add(new ArrayList<>());
       }
       for (Entry<String, String> e : map.entrySet()) {
@@ -1561,7 +1564,7 @@ public class RemoteQuery {
     }
 
     public Result addColumn(String head, String value) {
-      if (table.size() == 0) {
+      if (table.isEmpty()) {
         table.add(new ArrayList<>());
       }
       List<String> row = table.get(0);
@@ -1974,7 +1977,13 @@ public class RemoteQuery {
     public IResultListener setHeader(List<String> header) {
       this.header.clear();
       this.header.addAll(header);
-      // _header(header);
+      return this;
+    }
+
+    @Override
+    public IResultListener setSqlHeader(List<String> sqlHeader) {
+      this.sqlHeader.clear();
+      this.sqlHeader.addAll(header);
       return this;
     }
 
@@ -2882,9 +2891,11 @@ public class RemoteQuery {
 
         int columnCount = rs.getMetaData().getColumnCount();
         List<String> header = new ArrayList<>(columnCount);
+        List<String> sqlHeader = new ArrayList<>(columnCount);
         List<Integer> sqlTypes = new ArrayList<>(columnCount);
         for (int i = 0; i < columnCount; i++) {
           String h = md.getColumnName(i + 1);
+          sqlHeader.add(h);
           if (Result.USE_CAMEL_CASE_FOR_RESULT_HEADER) {
             h = camelCase(h);
           }
@@ -2894,6 +2905,7 @@ public class RemoteQuery {
         //
         int counter = 0;
         irl.setHeader(header);
+        irl.setSqlHeader(sqlHeader);
 
         sqlLogger.debug("sql-result-header " + header);
         irl.setFrom(-1);
@@ -4026,7 +4038,7 @@ public class RemoteQuery {
     public Result run(Request request, Result currentResult, StatementNode statementNode, ServiceEntry serviceEntry) {
       if (!Utils.isBlank(statementNode.parameter)) {
         String comment = RemoteQueryUtils.texting(statementNode.parameter, request.getParameterSnapshhot());
-        logger.info("comment: " + comment);
+        logger.info(String.format("comment: %s", comment));
         ProcessLog.Current().infoUser(comment);
       }
       return currentResult;
